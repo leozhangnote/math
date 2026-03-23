@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Averages — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#00695c,#00897b); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Averages</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 4 &nbsp;·&nbsp; Mean, missing values, weighted groups, overlapping segments, and average-speed traps</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Compute</span>
+      <span class="badge badge-L2">Find Missing</span>
+      <span class="badge badge-L3">Add / Remove</span>
+      <span class="badge badge-L4">Weighted</span>
+      <span class="badge badge-L5">Overlap</span>
+      <span class="badge badge-rule">Traps</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Average Formulas</h3>
+      <ul>
+        <li><strong>Average = Sum ÷ Count</strong></li>
+        <li><strong>Sum = Average × Count</strong> ← flip this to find missing values</li>
+        <li><strong>Missing = Avg × n − (sum of known values)</strong></li>
+        <li><strong>Add one value:</strong> New avg = (Old avg × n + new value) ÷ (n + 1)</li>
+        <li><strong>Remove one value:</strong> New avg = (Old avg × n − removed) ÷ (n − 1)</li>
+        <li><strong>Combine two groups:</strong> (n₁ × A₁ + n₂ × A₂) ÷ (n₁ + n₂)</li>
+        <li><strong>Overlap element:</strong> x = Sum₁ + Sum₂ − Total Sum</li>
+        <li><strong>Average speed (equal distance):</strong> 2v₁v₂ ÷ (v₁ + v₂) — NOT (v₁+v₂)÷2</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_averages_g4";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct equation: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return {
+    id, type: "mc", skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: cidx },
+    choices: rendered,
+    explainSteps,
+    hint,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  compute_avg: {
+    name: "Level 1: Computing the Average", level: 1, badgeClass: "badge-L1",
+    summary: "Average = Sum ÷ Count. Add all values together, then divide by how many values there are.",
+    steps: [
+      "Add all the values together to get the total sum.",
+      "Count how many values are in the set (every single one).",
+      "Divide: Average = Sum ÷ Count.",
+      "Check: Average × Count should give back the original sum.",
+    ],
+    example: {
+      problemHTML: `Ada scored 72, 85, 90, 68, and 80 on five tests. Let x = her average score. Which equation is correct?`,
+      solutionHTML: `Sum = 72 + 85 + 90 + 68 + 80 = 395. Count = 5.<br>
+        Correct: ${mi('x = (72 + 85 + 90 + 68 + 80) \\div 5')}.<br>
+        x = 395 ÷ 5 = 79.`,
+    },
+    misconception: "Don't divide by (count − 1). Every value is included in the denominator.",
+    keyConcepts: [
+      { label: "Average as Fair Share", prompt: "Five friends have 6, 8, 10, 12, and 14 tokens. If they pool all tokens and share equally, how many does each get? Show this equals (6+8+10+12+14)÷5." },
+      { label: "Sum = Average × Count", prompt: "If the average of 6 numbers is 14, what is their total sum? Explain how to find the sum without knowing any individual values." },
+    ],
+  },
+
+  find_missing: {
+    name: "Level 2: Find the Missing Value", level: 2, badgeClass: "badge-L2",
+    summary: "Sum = Average × Count. Missing = Total Sum − sum of all known values.",
+    steps: [
+      "Compute the total sum: Sum = Average × Count.",
+      "Add up all the known values.",
+      "Subtract: Missing = Total Sum − Sum of known values.",
+    ],
+    example: {
+      problemHTML: `Five numbers have an average of 10. Four of them are 8, 12, 9, and 11. Let x = the fifth number. Which equation finds x?`,
+      solutionHTML: `Total sum = 10 × 5 = 50.<br>
+        Known sum = 8 + 12 + 9 + 11 = 40.<br>
+        Correct: ${mi('x = 10 \\times 5 - (8 + 12 + 9 + 11)')}.<br>
+        x = 50 − 40 = 10.`,
+    },
+    misconception: "Use Average × Count for the total, not Average × (Count − 1). Count every value including the missing one.",
+    keyConcepts: [
+      { label: "Why Subtract the Known Sum", prompt: "The average of 5 numbers is 20. Four are 18, 22, 15, and 25. Show step by step why x = 20×5 − (18+22+15+25). Why can't you just average the four known values?" },
+      { label: "Working Backwards from the Average", prompt: "7 students took a test. The average is 84. Six scored 80, 88, 76, 90, 82, and 86. Find the seventh score. Show each calculation step." },
+    ],
+  },
+
+  add_remove: {
+    name: "Level 3: Adding or Removing a Value", level: 3, badgeClass: "badge-L3",
+    summary: "Adding or removing one value changes both the sum and the count. New Average = New Sum ÷ New Count.",
+    steps: [
+      "Compute the old sum: Old Sum = Old Average × Old Count.",
+      "Adjust the sum: add the new value, or subtract the removed value.",
+      "Adjust the count: +1 if adding, −1 if removing.",
+      "New Average = New Sum ÷ New Count.",
+    ],
+    example: {
+      problemHTML: `The average of 5 numbers is 24. A 6th number, 42, is added. Let x = the new average. Which equation is correct?`,
+      solutionHTML: `Old sum = 24 × 5 = 120. New sum = 120 + 42 = 162. New count = 6.<br>
+        Correct: ${mi('x = (24 \\times 5 + 42) \\div 6')}.<br>
+        x = 162 ÷ 6 = 27.`,
+    },
+    misconception: "Don't average the old average with the new value: (24+42)÷2 = 33 ≠ 27. The group already has 5 members, not 1.",
+    keyConcepts: [
+      { label: "Why (old avg + new value) ÷ 2 Fails", prompt: "The average of 5 numbers is 24 and a 6th value of 42 is added. Why is (24+42)÷2 = 33 wrong, while (24×5+42)÷6 = 27 is correct? What does ×5 represent?" },
+      { label: "Find What Was Added or Removed", prompt: "A class of 20 students had an average score of 82. After the top student left, the average dropped to 80. Write an equation to find the top student's score. What is it?" },
+    ],
+  },
+
+  weighted_avg: {
+    name: "Level 4: Weighted Average", level: 4, badgeClass: "badge-L4",
+    summary: "Combined average = (n₁ × A₁ + n₂ × A₂) ÷ (n₁ + n₂). Simple averaging of averages only works when group sizes are equal.",
+    steps: [
+      "Compute each group's total sum: Sum = Average × Count.",
+      "Add both sums together.",
+      "Divide by the total count (n₁ + n₂).",
+    ],
+    example: {
+      problemHTML: `Team A: 4 members, average score 90. Team B: 6 members, average score 75. Let x = the combined average. Which equation is correct?`,
+      solutionHTML: `Team A sum = 4 × 90 = 360. Team B sum = 6 × 75 = 450.<br>
+        Correct: ${mi('x = (4 \\times 90 + 6 \\times 75) \\div (4 + 6)')}.<br>
+        x = 810 ÷ 10 = 81. Note: (90+75)÷2 = 82.5 is wrong!`,
+    },
+    misconception: "(A₁ + A₂) ÷ 2 only works when both groups are the same size. Always weight by group size.",
+    keyConcepts: [
+      { label: "Why Simple Averaging Fails", prompt: "Team A (4 members, avg 90) and Team B (6 members, avg 75). Why does (90+75)÷2 = 82.5 give the wrong combined average of 81? Which group pulls harder and why?" },
+      { label: "Equal-Size Special Case", prompt: "Show algebraically that (n×A₁ + n×A₂)÷(n+n) simplifies to (A₁+A₂)÷2. When is simple averaging safe to use?" },
+    ],
+  },
+
+  overlap_seg: {
+    name: "Level 5: Overlapping Segments", level: 5, badgeClass: "badge-L5",
+    summary: "When two sub-lists overlap at exactly one element, that element = Sum₁ + Sum₂ − Total Sum.",
+    steps: [
+      "Compute Sum₁ = Average₁ × Count₁.",
+      "Compute Sum₂ = Average₂ × Count₂.",
+      "Compute Total Sum = Overall Average × Total Count.",
+      "Overlap element = Sum₁ + Sum₂ − Total Sum. (The shared element was counted twice in Sum₁+Sum₂, so subtracting the total removes the double-count.)",
+    ],
+    example: {
+      problemHTML: `7 numbers in a row. First 4 average 8. Last 4 average 13. All 7 average 11. Let x = the 4th number. Which equation is correct?`,
+      solutionHTML: `Sum₁ = 4×8 = 32. Sum₂ = 4×13 = 52. Total = 7×11 = 77.<br>
+        The 4th number is in both segments — counted twice!<br>
+        Correct: ${mi('x = 4 \\times 8 + 4 \\times 13 - 7 \\times 11')}.<br>
+        x = 32 + 52 − 77 = 7.`,
+    },
+    misconception: "The overlap element is not the average of the two segment averages. Compare the segment sums against the total sum.",
+    keyConcepts: [
+      { label: "Why the Shared Element Is Double-Counted", prompt: "In the 7-number example, list which positions belong to the 'first 4' and which to the 'last 4'. Which position appears in both? Why does Sum₁ + Sum₂ count it twice?" },
+      { label: "Setting Up as an Equation", prompt: "Let x = the 4th number. First 4 sum to 32, last 4 sum to 52. Write: (32 − x) + x + (52 − x) = 77. Solve for x. Verify it equals 4×8 + 4×13 − 7×11." },
+    ],
+  },
+
+  avg_trap: {
+    name: "Rule: Two Average Traps", level: 0, badgeClass: "badge-rule",
+    summary: "Trap 1 — Average speed with equal distance: use 2v₁v₂÷(v₁+v₂), not (v₁+v₂)÷2. Trap 2 — Unequal groups: use weighted average, not simple average of averages.",
+    steps: [
+      "Speed trap: let the one-way distance = d. Time₁ = d÷v₁, Time₂ = d÷v₂.",
+      "Average speed = 2d ÷ (d÷v₁ + d÷v₂) = 2v₁v₂ ÷ (v₁ + v₂).",
+      "Group trap: if n₁ ≠ n₂, always use (n₁×A₁ + n₂×A₂) ÷ (n₁+n₂), never (A₁+A₂)÷2.",
+      "Quick check: when speeds or group sizes differ, the simple average will be wrong.",
+    ],
+    example: {
+      problemHTML: `Adam walks to school at 3 km/h and runs back at 6 km/h. Let x = his average speed for the round trip. Which equation is correct?`,
+      solutionHTML: `Let each leg = d km. Total distance = 2d. Total time = d÷3 + d÷6 = d/2.<br>
+        Average speed = 2d ÷ (d/2) = 4 km/h.<br>
+        Correct: ${mi('x = 2 \\times 3 \\times 6 \\div (3 + 6)')}.<br>
+        Wrong: (3+6)÷2 = 4.5 — you spend MORE time walking (slow), pulling the average below 4.5.`,
+    },
+    misconception: "Equal distance ≠ equal time. Slower speed means more time, which drags the average down. Always use total distance ÷ total time.",
+    keyConcepts: [
+      { label: "Why (v₁+v₂)÷2 Fails for Equal Distance", prompt: "Walk 3 km/h, run 6 km/h, 6 km each way. Calculate: time walking, time running, total distance, total time, true average speed. Show why 4.5 is wrong and 4 is right." },
+      { label: "When Is (v₁+v₂)÷2 Correct?", prompt: "If Adam walks for exactly 1 hour at 3 km/h then runs for exactly 1 hour at 6 km/h, what is the average speed? Is (3+6)÷2 correct now? Explain why equal time — not equal distance — is the condition for arithmetic mean." },
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Computing the Average ──────────────────────────────── */
+const POOL_L1 = [
+  // 4 values (zero-sum deltas guarantee integer average)
+  () => {
+    const avg = math.randInt(8, 16);
+    const [d1,d2,d3,d4] = math.pick([[-3,-1,2,2],[1,-2,3,-2],[-2,2,-1,1],[3,-2,-3,2],[0,2,-3,1],[-4,1,2,1]]);
+    const [a,b,c,d] = [avg+d1, avg+d2, avg+d3, avg+d4];
+    const item = math.pick(["test score","quiz mark","step count","reading pages"]);
+    const correctLatex = `x = (${a} + ${b} + ${c} + ${d}) \\div 4`;
+    return {
+      promptHTML: `Four students' ${item}s are <strong>${a}, ${b}, ${c},</strong> and <strong>${d}</strong>. Let x = their average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${a} + ${b} + ${c} + ${d}) \\div 3`, error: `There are 4 values — divide by 4, not 3` },
+        { eq: `x = (${a} + ${b} + ${c}) \\div 4`, error: `${d} is missing from the sum — include all four values` },
+        { eq: `x = (${a} + ${b} + ${c} + ${d}) \\times 4`, error: `Average uses ÷ count, not × count` },
+      ],
+      hint: `Sum all 4 values, then divide by 4.`,
+    };
+  },
+  // 5 heights
+  () => {
+    const avg = math.randInt(130, 148);
+    const [d1,d2,d3,d4,d5] = math.pick([[-5,-3,0,4,4],[-4,1,3,2,-2],[-6,2,4,-3,3],[5,-1,-5,2,-1],[-3,4,-2,3,-2]]);
+    const [a,b,c,d,e] = [avg+d1, avg+d2, avg+d3, avg+d4, avg+d5];
+    const correctLatex = `x = (${a} + ${b} + ${c} + ${d} + ${e}) \\div 5`;
+    return {
+      promptHTML: `Five friends' heights (cm) are <strong>${a}, ${b}, ${c}, ${d},</strong> and <strong>${e}</strong>. Let x = their average height. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${a} + ${b} + ${c} + ${d} + ${e}) \\div 4`, error: `There are 5 heights — divide by 5, not 4` },
+        { eq: `x = (${a} + ${e}) \\div 2`, error: `All five heights must be summed, not just the first and last` },
+        { eq: `x = (${a} + ${b} + ${c} + ${d}) \\div 5`, error: `${e} cm is missing from the sum` },
+      ],
+      hint: `Add all 5 heights, then divide by 5.`,
+    };
+  },
+  // 3 temperatures
+  () => {
+    const avg = math.randInt(15, 28);
+    const [d1,d2,d3] = math.pick([[-3,1,2],[2,-1,-1],[4,-3,-1],[-2,0,2],[-4,3,1],[3,-4,1]]);
+    const [a,b,c] = [avg+d1, avg+d2, avg+d3];
+    const correctLatex = `x = (${a} + ${b} + ${c}) \\div 3`;
+    return {
+      promptHTML: `The temperatures on three days were <strong>${a}°C, ${b}°C,</strong> and <strong>${c}°C</strong>. Let x = the average temperature. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${a} + ${b} + ${c}) \\div 2`, error: `There are 3 days — divide by 3, not 2` },
+        { eq: `x = (${a} + ${b}) \\div 3`, error: `${c}°C is missing — include all three days` },
+        { eq: `x = ${a} + ${b} + ${c}`, error: `This is the total, not the average — divide by 3` },
+      ],
+      hint: `Sum the three temperatures, then divide by 3.`,
+    };
+  },
+  // 6 daily sales
+  () => {
+    const avg = math.randInt(15, 25);
+    const [d1,d2,d3,d4,d5,d6] = math.pick([[-3,2,1,-2,4,-2],[2,-1,3,-4,1,-1],[-4,3,-2,5,-1,-1],[1,1,-3,2,3,-4]]);
+    const [a,b,c,d,e,f] = [avg+d1, avg+d2, avg+d3, avg+d4, avg+d5, avg+d6];
+    const correctLatex = `x = (${a}+${b}+${c}+${d}+${e}+${f}) \\div 6`;
+    return {
+      promptHTML: `A store's daily sales over 6 days were <strong>${a}, ${b}, ${c}, ${d}, ${e},</strong> and <strong>${f}</strong> items. Let x = the average daily sales. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${a}+${b}+${c}+${d}+${e}+${f}) \\div 5`, error: `There are 6 days — divide by 6, not 5` },
+        { eq: `x = (${a}+${b}+${c}+${d}+${e}) \\div 6`, error: `Day 6 (${f} items) is missing from the sum` },
+        { eq: `x = (${a}+${b}+${c}+${d}+${e}+${f}) \\div 7`, error: `There are 6 days — divide by 6, not 7` },
+      ],
+      hint: `Sum all 6 days' sales, then divide by 6.`,
+    };
+  },
+];
+
+/* ── L2: Find the Missing Value ─────────────────────────────── */
+const POOL_L2 = [
+  // n=5
+  () => {
+    const avg = math.randInt(8, 16), n = 5;
+    const [d1,d2,d3,d4] = math.pick([[-3,-1,2,0],[1,-2,3,2],[-2,2,-1,3],[3,-2,-3,1],[-4,1,2,3],[2,0,-3,4]]);
+    const known = [avg+d1, avg+d2, avg+d3, avg+d4];
+    const knownSum = known.reduce((s,v) => s+v, 0);
+    const item = math.pick(["score","mark","count","length"]);
+    const correctLatex = `x = ${avg} \\times ${n} - (${known.join(' + ')})`;
+    return {
+      promptHTML: `${n} numbers have an average of <strong>${avg}</strong>. Four of them are <strong>${known.join(', ')}</strong>. Let x = the fifth number. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${avg} \\times ${n-1} - (${known.join(' + ')})`, error: `Total sum = average × ${n} (all five values), not × ${n-1}` },
+        { eq: `x = ${avg} \\times ${n} + (${known.join(' + ')})`, error: `Missing = total − known sum; use minus, not plus` },
+        { eq: `x = (${known.join(' + ')}) \\div ${n-1}`, error: `This averages the 4 known values — it does not find the missing fifth` },
+      ],
+      hint: `Total = ${avg}×${n} = ${avg*n}. Missing = ${avg*n} − (${known.join('+')} = ${knownSum}).`,
+    };
+  },
+  // n=4
+  () => {
+    const avg = math.randInt(10, 20), n = 4;
+    const [d1,d2,d3] = math.pick([[-3,-1,2],[1,-2,3],[-2,2,-1],[3,-2,-3],[-4,1,2],[2,0,-3]]);
+    const known = [avg+d1, avg+d2, avg+d3];
+    const knownSum = known.reduce((s,v) => s+v, 0);
+    const missing = avg * n - knownSum;
+    const item = math.pick(["daily steps","apples collected","points scored","pages read"]);
+    const correctLatex = `x = ${avg} \\times ${n} - (${known.join(' + ')})`;
+    return {
+      promptHTML: `${n} students' ${item} have an average of <strong>${avg}</strong>. Three of the values are <strong>${known.join(', ')}</strong>. Let x = the fourth value. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${avg} \\times ${n} + (${known.join(' + ')})`, error: `Missing = total − known; subtract, don't add` },
+        { eq: `x = ${avg} \\times ${n-1} - (${known.join(' + ')})`, error: `Total sum uses all ${n} values: avg × ${n}, not × ${n-1}` },
+        { eq: `x = (${avg} + ${known.join(' + ')}) \\div ${n}`, error: `Don't mix the average with the known values — compute total = avg × ${n} first` },
+      ],
+      hint: `Total = ${avg}×${n} = ${avg*n}. x = ${avg*n} − ${knownSum} = ${missing}.`,
+    };
+  },
+  // n=6
+  () => {
+    const avg = math.randInt(12, 22), n = 6;
+    const [d1,d2,d3,d4,d5] = math.pick([[2,-1,-3,4,-2],[3,1,-2,-4,2],[-3,2,4,-1,-2],[1,-3,2,3,-3],[4,-2,-4,1,1]]);
+    const known = [avg+d1, avg+d2, avg+d3, avg+d4, avg+d5];
+    const knownSum = known.reduce((s,v) => s+v, 0);
+    const missing = avg * n - knownSum;
+    const correctLatex = `x = ${avg} \\times ${n} - (${known.join(' + ')})`;
+    return {
+      promptHTML: `${n} test scores have an average of <strong>${avg}</strong>. Five of them are <strong>${known.join(', ')}</strong>. Let x = the sixth score. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${avg} \\times ${n+1} - (${known.join(' + ')})`, error: `There are ${n} scores — total sum = avg × ${n}, not × ${n+1}` },
+        { eq: `x = ${avg} \\times ${n} - ${known[0]}`, error: `Subtract the sum of all 5 known values, not just the first one` },
+        { eq: `x = (${known.join(' + ')}) \\div ${n-1}`, error: `This averages the known values — it does not find the missing sixth` },
+      ],
+      hint: `Total = ${avg}×${n} = ${avg*n}. x = ${avg*n} − (${known.join('+')} = ${knownSum}).`,
+    };
+  },
+  // n=5, real names
+  () => {
+    const avg = math.randInt(70, 88), n = 5;
+    const [d1,d2,d3,d4] = math.pick([[-8,-4,6,6],[4,-6,10,-4],[-10,6,8,-4],[8,-4,-10,6],[-6,2,8,-4],[6,-8,4,-2]]);
+    const known = [avg+d1, avg+d2, avg+d3, avg+d4];
+    const knownSum = known.reduce((s,v) => s+v, 0);
+    const missing = avg * n - knownSum;
+    const [nm1,nm2,nm3,nm4] = math.pick([["Ada","Ben","Cara","Dan"],["Tom","Sam","Lily","Max"],["Xiao Ming","Xiao Hua","Xiao Fang","Xiao Lei"]]);
+    const correctLatex = `x = ${avg} \\times ${n} - (${known.join(' + ')})`;
+    return {
+      promptHTML: `Five students took a test with an average of <strong>${avg}</strong>. ${nm1} scored ${known[0]}, ${nm2} scored ${known[1]}, ${nm3} scored ${known[2]}, and ${nm4} scored ${known[3]}. Let x = the fifth student's score. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${avg} \\times ${n} + (${known.join(' + ')})`, error: `Missing = total − others; use subtraction` },
+        { eq: `x = ${avg} \\times ${n-1} - (${known.join(' + ')})`, error: `Five students took the test — use avg × 5, not × 4` },
+        { eq: `x = (${known.join(' + ')}) \\div ${n-1}`, error: `This averages the four known scores — that is not the missing score` },
+      ],
+      hint: `Total = ${avg}×5 = ${avg*5}. x = ${avg*5} − (${known.join('+')} = ${knownSum}).`,
+    };
+  },
+];
+
+/* ── L3: Adding or Removing a Value ─────────────────────────── */
+
+// Pre-validated combos (verified by: newAvg = (n*oldAvg + newVal)/(n+1))
+const L3_ADD = [
+  [5,24,42,27], [4,16,31,19], [6,20,34,22], [5,30,48,33],
+  [4,18,33,21], [6,15,29,17], [5,20,32,22], [4,22,37,25],
+];
+// Pre-validated (verified by: newAvg = (n*oldAvg - removed)/(n-1))
+const L3_REM = [
+  [6,20,15,21], [5,18,10,20], [6,25,15,27], [5,16,8,18],
+  [6,18,13,19], [5,22,14,24], [6,14,9,15], [5,24,12,27],
+];
+// Find the value that was added: added = newAvg*(n+1) - oldAvg*n
+const L3_FIND_ADD = [
+  [4,20,23], [5,16,18], [4,25,28], [5,30,33],
+  [4,12,15], [5,18,21], [4,22,25], [5,24,26],
+];
+// Find the value that was removed: removed = oldAvg*n - newAvg*(n-1)
+const L3_FIND_REM = [
+  [6,20,22], [5,18,20], [6,25,27], [5,24,26],
+  [6,16,18], [5,30,33], [6,14,16], [5,22,25],
+];
+
+const POOL_L3 = [
+  // Add one value, find new average
+  () => {
+    const [n, oldAvg, newVal, newAvg] = math.pick(L3_ADD);
+    const correctLatex = `x = (${oldAvg} \\times ${n} + ${newVal}) \\div ${n+1}`;
+    return {
+      promptHTML: `The average of <strong>${n} numbers</strong> is <strong>${oldAvg}</strong>. A <strong>${n+1}th number, ${newVal}</strong>, is added. Let x = the new average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldAvg} + ${newVal}) \\div 2`, error: `You can't average the old average and the new value — the group has ${n} members, so the old sum is ${oldAvg}×${n}` },
+        { eq: `x = (${oldAvg} \\times ${n} + ${newVal}) \\div ${n}`, error: `After adding one more, the count is ${n+1}, not ${n}` },
+        { eq: `x = (${oldAvg} \\times ${n+1} + ${newVal}) \\div ${n+1}`, error: `The original group has ${n} members — old sum = ${oldAvg}×${n}, not ×${n+1}` },
+      ],
+      hint: `Old sum = ${oldAvg}×${n} = ${oldAvg*n}. New sum = ${oldAvg*n}+${newVal} = ${oldAvg*n+newVal}. Divide by ${n+1}.`,
+    };
+  },
+  // Remove one value, find new average
+  () => {
+    const [n, oldAvg, removed, newAvg] = math.pick(L3_REM);
+    const context = math.pick([
+      `one member whose value was <strong>${removed}</strong> left the group`,
+      `the value <strong>${removed}</strong> was removed from the set`,
+      `after dropping the entry <strong>${removed}</strong>`,
+    ]);
+    const correctLatex = `x = (${oldAvg} \\times ${n} - ${removed}) \\div ${n-1}`;
+    return {
+      promptHTML: `The average of <strong>${n} numbers</strong> is <strong>${oldAvg}</strong>. After ${context}, let x = the new average of the remaining ${n-1}. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldAvg} \\times ${n} - ${removed}) \\div ${n}`, error: `After removing one, the count is ${n-1}, not ${n}` },
+        { eq: `x = (${oldAvg} \\times ${n} + ${removed}) \\div ${n-1}`, error: `The value was removed — subtract it from the sum, don't add it` },
+        { eq: `x = (${oldAvg} - ${removed}) \\div ${n-1}`, error: `The old sum is ${oldAvg}×${n}, not just ${oldAvg} — compute old sum first` },
+      ],
+      hint: `Old sum = ${oldAvg}×${n} = ${oldAvg*n}. Remove ${removed}: new sum = ${oldAvg*n-removed}. Count = ${n-1}.`,
+    };
+  },
+  // Average changed after adding — find what was added
+  () => {
+    const [n, oldAvg, newAvg] = math.pick(L3_FIND_ADD);
+    const added = newAvg * (n+1) - oldAvg * n;
+    const correctLatex = `x = ${newAvg} \\times ${n+1} - ${oldAvg} \\times ${n}`;
+    return {
+      promptHTML: `The average of <strong>${n} numbers</strong> is <strong>${oldAvg}</strong>. After one more number x is added, the average becomes <strong>${newAvg}</strong>. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${newAvg} \\times ${n} - ${oldAvg} \\times ${n}`, error: `After adding x there are ${n+1} numbers — use new avg × ${n+1}, not × ${n}` },
+        { eq: `x = ${newAvg} - ${oldAvg}`, error: `This is just the change in average — the actual added value is much larger` },
+        { eq: `x = ${newAvg} \\times ${n+1} + ${oldAvg} \\times ${n}`, error: `x = new sum − old sum; subtract, don't add` },
+      ],
+      hint: `New sum = ${newAvg}×${n+1} = ${newAvg*(n+1)}. Old sum = ${oldAvg}×${n} = ${oldAvg*n}. x = ${newAvg*(n+1)}-${oldAvg*n} = ${added}.`,
+    };
+  },
+  // Average changed after removing — find what was removed
+  () => {
+    const [n, oldAvg, newAvg] = math.pick(L3_FIND_REM);
+    const removed = oldAvg * n - newAvg * (n-1);
+    const correctLatex = `x = ${oldAvg} \\times ${n} - ${newAvg} \\times ${n-1}`;
+    return {
+      promptHTML: `A class of <strong>${n} students</strong> has an average score of <strong>${oldAvg}</strong>. After one student (scoring x) leaves, the average rises to <strong>${newAvg}</strong>. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${oldAvg} \\times ${n-1} - ${newAvg} \\times ${n-1}`, error: `Old sum = ${oldAvg}×${n} (all ${n} students), not ×${n-1}` },
+        { eq: `x = ${oldAvg} \\times ${n} + ${newAvg} \\times ${n-1}`, error: `Old sum − x = new sum; rearrange to x = old sum − new sum. Subtract, don't add` },
+        { eq: `x = ${newAvg} - ${oldAvg}`, error: `This is just the difference in averages — the removed score is much larger` },
+      ],
+      hint: `Old sum = ${oldAvg}×${n} = ${oldAvg*n}. New sum = ${newAvg}×${n-1} = ${newAvg*(n-1)}. x = ${oldAvg*n}-${newAvg*(n-1)} = ${removed}.`,
+    };
+  },
+];
+
+/* ── L4: Weighted Average ───────────────────────────────────── */
+
+// Pre-validated (n1,avg1,n2,avg2,combined) where combined is integer
+const L4_COMBOS = [
+  [4,90,6,75,81],
+  [3,88,7,78,81],
+  [4,85,6,75,79],
+  [2,90,8,60,66],
+  [5,84,5,76,80],
+  [3,90,9,70,75],
+  [4,80,6,70,74],
+  [6,88,4,78,84],
+];
+
+const POOL_L4 = [
+  // Two classes
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `Class A has <strong>${n1} students</strong> with average score <strong>${avg1}</strong>. Class B has <strong>${n2} students</strong> with average score <strong>${avg2}</strong>. Let x = the combined class average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `Simple averaging only works if both classes are the same size — Class A has ${n1}, Class B has ${n2}` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} \\times ${n2})`, error: `Divide by total count (${n1}+${n2}=${n1+n2}), not the product` },
+        { eq: `x = (${n1} \\times ${avg1}) \\div (${n1} + ${n2})`, error: `Both classes' sums must be included in the numerator` },
+      ],
+      hint: `Sum A = ${n1}×${avg1} = ${n1*avg1}. Sum B = ${n2}×${avg2} = ${n2*avg2}. x = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}.`,
+    };
+  },
+  // Boys vs girls
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `In a group, <strong>${n1} boys</strong> averaged <strong>${avg1} points</strong> and <strong>${n2} girls</strong> averaged <strong>${avg2} points</strong> on a quiz. Let x = the overall group average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `Groups are unequal (${n1} boys vs ${n2} girls) — simple averaging gives the wrong answer` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div ${n1}`, error: `Divide by total count (${n1+n2}), not just the boys' count` },
+        { eq: `x = (${avg1} \\times ${n2} + ${avg2} \\times ${n1}) \\div (${n1} + ${n2})`, error: `Counts and averages are swapped — ${n1} boys average ${avg1}, ${n2} girls average ${avg2}` },
+      ],
+      hint: `Boys total = ${n1}×${avg1} = ${n1*avg1}. Girls total = ${n2}×${avg2} = ${n2*avg2}. x = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}.`,
+    };
+  },
+  // Morning vs afternoon
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `A camp has <strong>${n1} morning-session</strong> students (average score <strong>${avg1}</strong>) and <strong>${n2} afternoon-session</strong> students (average score <strong>${avg2}</strong>). Let x = the camp-wide average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `Sessions have different sizes (${n1} vs ${n2}) — weight each by its size` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} - ${n2})`, error: `Divide by total count (${n1}+${n2}=${n1+n2}), not the difference` },
+        { eq: `x = (${n1+n2}) \\times (${avg1} + ${avg2}) \\div 2`, error: `The total count multiplied by the simple average is not the same as the weighted average` },
+      ],
+      hint: `Morning total = ${n1}×${avg1} = ${n1*avg1}. Afternoon total = ${n2}×${avg2} = ${n2*avg2}. x = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}.`,
+    };
+  },
+  // Two teams
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `Team Red has <strong>${n1} members</strong> averaging <strong>${avg1} points</strong>. Team Blue has <strong>${n2} members</strong> averaging <strong>${avg2} points</strong>. Let x = the combined average. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `Teams are different sizes (${n1} vs ${n2}) — cannot simply average the two team averages` },
+        { eq: `x = (${n1} \\times ${avg2} + ${n2} \\times ${avg1}) \\div (${n1} + ${n2})`, error: `Averages are swapped — Team Red (${n1}) averages ${avg1}, Team Blue (${n2}) averages ${avg2}` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div 2`, error: `Divide by total members (${n1+n2}), not by 2` },
+      ],
+      hint: `Red total = ${n1}×${avg1} = ${n1*avg1}. Blue total = ${n2}×${avg2} = ${n2*avg2}. x = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}.`,
+    };
+  },
+];
+
+/* ── L5: Overlapping Segments ───────────────────────────────── */
+
+// Pre-validated [N, n1, n2, avg1, avg2, avgTotal, overlap]
+// Constraint: n1+n2 = N+1 (one shared element), overlap = n1*avg1+n2*avg2-N*avgTotal (integer)
+const L5_PARAMS = [
+  [7, 4, 4,  8, 13, 11,  7],
+  [7, 4, 4,  6, 10,  8,  8],
+  [7, 4, 4,  7, 12, 10,  6],
+  [9, 5, 5, 10, 16, 13, 13],
+  [9, 5, 5,  8, 14, 11, 11],
+  [5, 3, 3,  6, 10,  8,  8],
+  [5, 3, 3,  4,  8,  6,  6],
+  [7, 4, 4,  9, 15, 12, 12],
+];
+
+const POOL_L5 = [
+  // Numbers in a row
+  () => {
+    const [N,n1,n2,avg1,avg2,avgT,overlap] = math.pick(L5_PARAMS);
+    const pos = n1;
+    const correctLatex = `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} - ${N} \\times ${avgT}`;
+    return {
+      promptHTML: `There are <strong>${N} numbers</strong> in a row. The first <strong>${n1}</strong> have an average of <strong>${avg1}</strong>. The last <strong>${n2}</strong> have an average of <strong>${avg2}</strong>. All <strong>${N}</strong> together have an average of <strong>${avgT}</strong>. Let x = the <strong>${pos}th number</strong> (shared by both groups). Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `Subtract the total sum — the shared element is double-counted in Sum₁+Sum₂, so subtract (not add) the total` },
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `The overlap element is not the average of the two segment averages — compute each segment's sum` },
+        { eq: `x = ${n1} \\times ${avg1} - ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `Both segment sums are added together before subtracting the total: Sum₁ + Sum₂ − Total` },
+      ],
+      hint: `Sum₁=${n1}×${avg1}=${n1*avg1}. Sum₂=${n2}×${avg2}=${n2*avg2}. Total=${N}×${avgT}=${N*avgT}. x=${n1*avg1}+${n2*avg2}−${N*avgT}=${overlap}.`,
+    };
+  },
+  // Sports tournament ranking
+  () => {
+    const [N,n1,n2,avg1,avg2,avgT,overlap] = math.pick(L5_PARAMS);
+    const pos = n1;
+    const sport = math.pick(["swimming","long jump","archery","gymnastics"]);
+    const correctLatex = `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} - ${N} \\times ${avgT}`;
+    return {
+      promptHTML: `In a ${sport} tournament, <strong>${N} athletes</strong> are ranked by score. The top <strong>${n1}</strong> average <strong>${avg1} points</strong>. The bottom <strong>${n2}</strong> average <strong>${avg2} points</strong>. All ${N} together average <strong>${avgT} points</strong>. Let x = the score of the <strong>${pos}th-ranked athlete</strong> (included in both groups). Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `The ${pos}th athlete's score is double-counted in Sum₁+Sum₂ — subtract the total, don't add it` },
+        { eq: `x = ${avgT}`, error: `The overlap athlete's score is not equal to the overall average — compute it from the segment sums` },
+        { eq: `x = ${n1} \\times ${avg2} + ${n2} \\times ${avg1} - ${N} \\times ${avgT}`, error: `Averages swapped — top ${n1} average ${avg1}, bottom ${n2} average ${avg2}` },
+      ],
+      hint: `Top sum=${n1}×${avg1}=${n1*avg1}. Bottom sum=${n2}×${avg2}=${n2*avg2}. Total=${N*avgT}. x=${n1*avg1}+${n2*avg2}−${N*avgT}=${overlap}.`,
+    };
+  },
+  // Lap times
+  () => {
+    const [N,n1,n2,avg1,avg2,avgT,overlap] = math.pick(L5_PARAMS);
+    const pos = n1;
+    const correctLatex = `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} - ${N} \\times ${avgT}`;
+    return {
+      promptHTML: `A runner completed <strong>${N} laps</strong>. The first <strong>${n1} laps</strong> averaged <strong>${avg1} seconds</strong> each. The last <strong>${n2} laps</strong> averaged <strong>${avg2} seconds</strong> each. All ${N} laps averaged <strong>${avgT} seconds</strong>. Let x = the time for <strong>Lap ${pos}</strong> (the only lap in both groups). Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `Lap ${pos} is double-counted in Sum₁+Sum₂ — subtract the total sum to remove the double-count` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div 2`, error: `Dividing by 2 is wrong — subtract the total sum: Sum₁ + Sum₂ − Total` },
+        { eq: `x = ${N} \\times ${avgT} - ${n1} \\times ${avg1} - ${n2} \\times ${avg2}`, error: `The correct form is Sum₁ + Sum₂ − Total, not Total − Sum₁ − Sum₂ (the sign is reversed)` },
+      ],
+      hint: `Laps 1–${n1} sum=${n1*avg1}. Laps ${pos}–${N} sum=${n2*avg2}. Full total=${N*avgT}. Lap ${pos}=${n1*avg1}+${n2*avg2}−${N*avgT}=${overlap}.`,
+    };
+  },
+  // General ranked list
+  () => {
+    const [N,n1,n2,avg1,avg2,avgT,overlap] = math.pick(L5_PARAMS);
+    const pos = n1;
+    const item = math.pick(["books read","points scored","km walked","stamps collected"]);
+    const correctLatex = `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} - ${N} \\times ${avgT}`;
+    return {
+      promptHTML: `<strong>${N} participants</strong> are ranked by ${item}. The <strong>top ${n1}</strong> averaged <strong>${avg1}</strong> each. The <strong>bottom ${n2}</strong> averaged <strong>${avg2}</strong> each. The <strong>overall</strong> average is <strong>${avgT}</strong>. The <strong>${pos}th participant</strong> appears in both groups. Let x = their count. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `Overlap = Sum₁ + Sum₂ − Total (subtract, not add, the total sum)` },
+        { eq: `x = (${avg1} + ${avg2} + ${avgT}) \\div 3`, error: `Averaging the three given averages does not find the overlap value` },
+        { eq: `x = ${N} \\times ${avgT} - ${n1} \\times ${avg1} + ${n2} \\times ${avg2}`, error: `Correct form: Sum₁ + Sum₂ − Total. Both sums are added before the total is subtracted` },
+      ],
+      hint: `Top sum=${n1*avg1}. Bottom sum=${n2*avg2}. Total=${N*avgT}. x=${n1*avg1}+${n2*avg2}−${N*avgT}=${overlap}.`,
+    };
+  },
+];
+
+/* ── Rule: Two Average Traps ────────────────────────────────── */
+
+// Speed trap combos [v1, v2, avgSpeed] verified: 2*v1*v2/(v1+v2) = integer
+const SPEED_COMBOS = [[3,6,4],[4,12,6],[2,6,3],[6,12,8]];
+
+const POOL_RULE = [
+  // Speed trap: walk/run
+  () => {
+    const [v1,v2,avgSpeed] = math.pick(SPEED_COMBOS);
+    const correctLatex = `x = 2 \\times ${v1} \\times ${v2} \\div (${v1} + ${v2})`;
+    return {
+      promptHTML: `Adam walks to school at <strong>${v1} km/h</strong> and runs back the same route at <strong>${v2} km/h</strong>. Let x = his average speed for the round trip. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${v1} + ${v2}) \\div 2`, error: `Arithmetic mean only works for equal time, not equal distance. Adam spends more time at ${v1} km/h, pulling the average below ${(v1+v2)/2}` },
+        { eq: `x = 2 \\times (${v1} + ${v2}) \\div (${v1} \\times ${v2})`, error: `Numerator and denominator are swapped — correct form: 2×v₁×v₂ ÷ (v₁+v₂)` },
+        { eq: `x = (${v2} - ${v1}) \\div 2`, error: `Half the speed difference is not an average speed — use total distance ÷ total time` },
+      ],
+      hint: `Let d = one-way distance. Avg speed = 2d÷(d÷${v1}+d÷${v2}) = 2×${v1}×${v2}÷(${v1}+${v2}) = ${avgSpeed} km/h.`,
+    };
+  },
+  // Speed trap: train two legs
+  () => {
+    const [v1,v2,avgSpeed] = math.pick(SPEED_COMBOS);
+    const correctLatex = `x = 2 \\times ${v1} \\times ${v2} \\div (${v1} + ${v2})`;
+    return {
+      promptHTML: `A train travels from City A to City B at <strong>${v1} km/h</strong> and returns at <strong>${v2} km/h</strong>. The distance each way is the same. Let x = the train's average speed for the full journey. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${v1} + ${v2}) \\div 2`, error: `Equal distance does not mean equal time. The train spends more time at ${v1} km/h, pulling the average below ${(v1+v2)/2}` },
+        { eq: `x = ${v1} \\times ${v2} \\div (${v1} + ${v2})`, error: `Missing the factor of 2 in the numerator — correct: 2×v₁×v₂ ÷ (v₁+v₂)` },
+        { eq: `x = 2 \\times (${v1} + ${v2})`, error: `Average speed = total distance ÷ total time, not 2 × (sum of speeds)` },
+      ],
+      hint: `Avg speed = 2×${v1}×${v2}÷(${v1}+${v2}) = ${2*v1*v2}÷${v1+v2} = ${avgSpeed} km/h. Note: ${avgSpeed} < ${(v1+v2)/2} (arithmetic mean) ✓`,
+    };
+  },
+  // Group trap: teacher makes simple-averaging mistake
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const wrongAvg = (avg1+avg2)/2;
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `A teacher says the combined average is (${avg1}+${avg2})÷2 = <strong>${wrongAvg}</strong>, because one class of <strong>${n1} students</strong> averaged <strong>${avg1}</strong> and another of <strong>${n2} students</strong> averaged <strong>${avg2}</strong>. The teacher is wrong. Let x = the correct combined average. Which equation gives x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `This is the teacher's mistake — simple averaging requires equal group sizes, but ${n1} ≠ ${n2}` },
+        { eq: `x = (${n1} + ${n2}) \\div (${avg1} + ${avg2})`, error: `The formula is upside-down — divide the weighted sum of scores by the count, not the other way around` },
+        { eq: `x = (${n1} \\times ${avg2} + ${n2} \\times ${avg1}) \\div (${n1} + ${n2})`, error: `Counts and averages are swapped — ${n1}-student class averages ${avg1}, ${n2}-student class averages ${avg2}` },
+      ],
+      hint: `True combined = (${n1}×${avg1}+${n2}×${avg2})÷${n1+n2} = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}. Teacher's ${wrongAvg} is wrong.`,
+    };
+  },
+  // Group trap: student claims simple average is right
+  () => {
+    const [n1,avg1,n2,avg2,combined] = math.pick(L4_COMBOS);
+    const correctLatex = `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div (${n1} + ${n2})`;
+    return {
+      promptHTML: `Team A has <strong>${n1} members</strong> averaging <strong>${avg1}</strong> and Team B has <strong>${n2} members</strong> averaging <strong>${avg2}</strong>. A student claims the combined average x is just (${avg1}+${avg2})÷2. Which equation gives the <em>correct</em> combined average?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${avg1} + ${avg2}) \\div 2`, error: `The student's mistake — only valid for equal group sizes. Team A has ${n1}, Team B has ${n2}` },
+        { eq: `x = (${n1} \\times ${avg1} + ${n2} \\times ${avg2}) \\div ${n2}`, error: `Divide by total members (${n1+n2}), not just Team B's count` },
+        { eq: `x = (${avg1} \\times ${n2} + ${avg2} \\times ${n1}) \\div (${n1} + ${n2})`, error: `Counts and averages are swapped — Team A (${n1} members) averages ${avg1}` },
+      ],
+      hint: `A total = ${n1}×${avg1} = ${n1*avg1}. B total = ${n2}×${avg2} = ${n2*avg2}. x = ${n1*avg1+n2*avg2}÷${n1+n2} = ${combined}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_compute_avg(id)  { const t = math.pick(POOL_L1)();   return buildEqQ(id,"compute_avg",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_find_missing(id) { const t = math.pick(POOL_L2)();   return buildEqQ(id,"find_missing", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_add_remove(id)   { const t = math.pick(POOL_L3)();   return buildEqQ(id,"add_remove",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_weighted_avg(id) { const t = math.pick(POOL_L4)();   return buildEqQ(id,"weighted_avg", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_overlap_seg(id)  { const t = math.pick(POOL_L5)();   return buildEqQ(id,"overlap_seg",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_avg_trap(id)     { const t = math.pick(POOL_RULE)(); return buildEqQ(id,"avg_trap",     t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  compute_avg:  gen_compute_avg,
+  find_missing: gen_find_missing,
+  add_remove:   gen_add_remove,
+  weighted_avg: gen_weighted_avg,
+  overlap_seg:  gen_overlap_seg,
+  avg_trap:     gen_avg_trap,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:    state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore:  state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i + 1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk     = skillLibrary[sid];
+    const r      = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct    = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /, "")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L" + sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /, "")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L" + sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /, "")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i + 1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0, allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You have a strong command of average problems." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [
+      { title: "Linear Equation in One Variable",
+        url:   "../grade_4/linear_equation_1var_grade4.html",
+        reason: "Average problems often reduce to solving a one-variable equation — mastering the balance model helps you set up and verify each step." },
+    ],
+    challenge: [
+      { title: "Mean, Median & Mode",
+        url:   "../grade_5/mean_median_mode_grade5.html",
+        reason: "Mean, median, and mode extend the concept of average — you will use outlier analysis, work-backwards techniques, and learn when mean is not the best summary." },
+      { title: "System of Two Linear Equations",
+        url:   "../grade_5/system_2eq_2var_grade5.html",
+        reason: "The overlapping-segment technique generalizes naturally into systems of two equations — the same sum-balancing logic, with two unknowns." },
+    ],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 4 student learning about averages.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 4 student learning about averages.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

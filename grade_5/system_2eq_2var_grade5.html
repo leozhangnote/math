@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System of Two Linear Equations — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#004d40,#00796b); }
+    .sys-display {
+      background: #e8f5e9; border-left: 3px solid #00796b;
+      padding: .35rem .9rem; border-radius: 0 6px 6px 0;
+      margin: .4rem 0; display: inline-block; line-height: 2.3;
+    }
+    .eq-num {
+      color: #00695c; font-weight: 700; margin-right: .45rem; font-size: .95rem;
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>System of Two Linear Equations</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Solve two-unknown problems using substitution and elimination</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Concepts</span>
+      <span class="badge badge-L2">Substitution</span>
+      <span class="badge badge-L3">Elimination</span>
+      <span class="badge badge-L4">Scale &amp; Eliminate</span>
+      <span class="badge badge-L5">Word Problems</span>
+      <span class="badge badge-rule">Strategy &amp; Verify</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Two Methods</h3>
+      <ul>
+        <li><strong>Substitution:</strong> From one equation, express x (or y) in terms of the other. Substitute into the second equation to get one variable, then back-substitute.</li>
+        <li><strong>Elimination:</strong> Add or subtract equations to cancel one variable. If coefficients don't match, scale one or both equations first.</li>
+      </ul>
+      <h3>Choosing the Method</h3>
+      <ul>
+        <li>A coefficient is <strong>1</strong>? → Substitution is fast.</li>
+        <li>One variable has <strong>equal coefficients</strong>? → Subtract directly (no scaling).</li>
+        <li>No equal coefficients? → Scale one or both equations, then eliminate.</li>
+        <li><strong>Always verify:</strong> substitute (x, y) back into <em>both</em> original equations.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_system_2eq_2var_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+const mi = s => math.inline(s);
+
+/** LaTeX string for "ax + by = c" where a, b > 0. */
+function eqLx(a, b, c) {
+  const xp = a === 1 ? 'x' : `${a}x`;
+  const yp = b === 1 ? 'y' : `${b}y`;
+  return `${xp} + ${yp} = ${c}`;
+}
+
+/** LaTeX string allowing negative b: "ax + by = c" or "ax - |b|y = c". */
+function eqLxS(a, b, c) {
+  const xp = a === 1 ? 'x' : `${a}x`;
+  if (b === 0)  return `${xp} = ${c}`;
+  if (b > 0)    return `${xp} + ${b === 1 ? '' : b}y = ${c}`;
+  /* b < 0 */   return `${xp} - ${-b === 1 ? '' : -b}y = ${c}`;
+}
+
+/** Styled HTML block showing the two equations with ①② labels. */
+function sysHTML(eq1Latex, eq2Latex) {
+  return `<div class="sys-display">` +
+    `<span class="eq-num">①</span>${mi(eq1Latex)}<br>` +
+    `<span class="eq-num">②</span>${mi(eq2Latex)}` +
+    `</div>`;
+}
+
+/** Build an MC question with numeric answer choices (shuffled). */
+function mcQ(id, skillId, promptHTML, correct, decoys, explainSteps, hint) {
+  const all = math.shuffle([String(correct), ...decoys.map(String)]);
+  return {
+    id, type: 'mc', skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: all.indexOf(String(correct)) },
+    choices: all,
+    explainSteps, hint,
+  };
+}
+
+/** Build an MC question with pre-rendered HTML choices. */
+function mcQHTML(id, skillId, promptHTML, correctIdx, renderedChoices, explainSteps, hint) {
+  return {
+    id, type: 'mc', skills: [skillId],
+    promptHTML,
+    answer: { correctIdx },
+    choices: renderedChoices,
+    explainSteps, hint,
+  };
+}
+
+/** Generate 3 plausible wrong numeric answers near `correct`. */
+function numDecoys(correct, spread) {
+  const d = [];
+  const cands = [correct + 1, correct - 1, correct + 2, correct - 2,
+                 correct + spread, correct - spread, correct + 3, correct - 3];
+  for (const c of cands) {
+    if (c > 0 && c !== correct && !d.includes(c) && d.length < 3) d.push(c);
+  }
+  while (d.length < 3) d.push(d[d.length - 1] + 1);
+  return d.slice(0, 3);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  sys_concepts: {
+    name: "Level 1: System Concepts", level: 1, badgeClass: "badge-L1",
+    summary: "A system of two linear equations in two unknowns (x, y) requires that BOTH equations are satisfied simultaneously. Checking a solution means substituting into both.",
+    steps: [
+      "A system has two equations and two unknowns — both must be true at the same time.",
+      "A 'solution' is a pair (x, y) that satisfies BOTH equations.",
+      "To check: substitute the pair into each equation and verify both sides match.",
+      "One equation alone has infinitely many solutions; two together usually pin down exactly one.",
+      "Two situations where a system is needed: two different unknown quantities, each with its own constraint.",
+    ],
+    example: {
+      problemHTML: `Which pair (x, y) is the solution to the system?<br>
+        ${sysHTML('2x + y = 7', 'x + 3y = 11')}`,
+      solutionHTML:
+        `Test (2, 3): ① 2×2 + 3 = 7 ✓ &nbsp; ② 2 + 3×3 = 11 ✓ &nbsp; → <strong>(2, 3) is the solution.</strong><br>
+         Test (3, 1): ① 2×3 + 1 = 7 ✓ but ② 3 + 3×1 = 6 ≠ 11 ✗ → Not a solution (fails ②).`,
+    },
+    misconception: "A pair that satisfies only ONE equation is not the solution — it must satisfy BOTH.",
+    keyConcepts: [
+      { label: "What Is a System of Equations?",
+        prompt: "What is a system of two linear equations in two unknowns? Why do we need TWO equations to find TWO unknowns? Explain with a concrete example." },
+      { label: "How to Check a Solution",
+        prompt: "After solving a system of equations and getting x = 3, y = 5, how do I check my answer? What exactly should I substitute and verify? Show an example with 2 equations." },
+    ],
+  },
+
+  substitution: {
+    name: "Level 2: Substitution Method", level: 2, badgeClass: "badge-L2",
+    summary: "Express one variable from an equation where its coefficient is 1. Substitute that expression into the other equation to get one variable, then back-substitute.",
+    steps: [
+      "Find an equation where x or y has coefficient 1.",
+      "Express that variable: x = ... or y = ...",
+      "Substitute the expression into the OTHER equation.",
+      "Solve the resulting single-variable equation.",
+      "Back-substitute to find the first variable. Check both equations.",
+    ],
+    example: {
+      problemHTML: `Solve using substitution:<br>${sysHTML('x + 2y = 8', '3x + y = 9')}`,
+      solutionHTML:
+        `From ①: ${mi('x = 8 - 2y')}<br>
+         Substitute into ②: ${mi('3(8 - 2y) + y = 9')}<br>
+         Expand: ${mi('24 - 6y + y = 9')} → ${mi('-5y = -15')} → ${mi('y = 3')}<br>
+         Back-sub: ${mi('x = 8 - 2 \\times 3 = 2')}<br>
+         Check ①: 2 + 2×3 = 8 ✓ &nbsp; Check ②: 3×2 + 3 = 9 ✓`,
+    },
+    misconception: "Substituting back into the SAME equation you used to express x — always substitute into the OTHER equation.",
+    keyConcepts: [
+      { label: "Why Use Substitution?",
+        prompt: "Explain the substitution method for solving a system of two equations. Why do we choose the equation with a coefficient of 1? Walk through solving: x + 3y = 10 and 2x + y = 9 step by step." },
+      { label: "Back-Substitution",
+        prompt: "After using substitution to find y = 4 in the system x + 2y = 10, 3x + y = 7, how do I find x? Show the back-substitution step and the verification." },
+    ],
+  },
+
+  elimination_direct: {
+    name: "Level 3: Elimination (Direct)", level: 3, badgeClass: "badge-L3",
+    summary: "When both equations have the same coefficient for one variable, subtract one equation from the other to eliminate that variable in one step.",
+    steps: [
+      "Identify a variable whose coefficient is the same in both equations.",
+      "Subtract one equation from the other — that variable cancels.",
+      "Solve the remaining single-variable equation.",
+      "Substitute back into either original equation to find the other variable.",
+      "Check both equations.",
+    ],
+    example: {
+      problemHTML: `Solve using elimination:<br>${sysHTML('3x + 2y = 16', 'x + 2y = 8')}`,
+      solutionHTML:
+        `Both equations have ${mi('2y')}. Subtract ②:  ${mi('(3x + 2y) - (x + 2y) = 16 - 8')}<br>
+         ${mi('2x = 8')} → ${mi('x = 4')}<br>
+         Substitute into ②: ${mi('4 + 2y = 8')} → ${mi('y = 2')}<br>
+         Check ①: 3×4 + 2×2 = 16 ✓ &nbsp; Check ②: 4 + 2×2 = 8 ✓`,
+    },
+    misconception: "Forgetting to subtract BOTH sides — you must subtract the entire left side AND the entire right side.",
+    keyConcepts: [
+      { label: "Why Does Subtraction Eliminate?",
+        prompt: "In elimination, why does subtracting one equation from another cancel a variable? Use the example 3x + 2y = 16 and x + 2y = 8. What property of equations makes this work?" },
+      { label: "Which Equation to Subtract?",
+        prompt: "When I have 2x + 5y = 19 and 2x + 3y = 13 (both with 2x), should I subtract ① from ② or ② from ①? Does it matter? Show both and explain which is easier." },
+    ],
+  },
+
+  elimination_scale: {
+    name: "Level 4: Elimination (Scale First)", level: 4, badgeClass: "badge-L4",
+    summary: "When no variable has equal coefficients, multiply one or both equations by constants to create a match, then subtract to eliminate.",
+    steps: [
+      "Choose which variable to eliminate and look at its coefficients: (a, b).",
+      "Scale one equation: if one coefficient divides the other evenly (b = k·a), multiply the smaller by k.",
+      "Scale both equations: if neither divides the other, multiply eq① by the coefficient from eq②, and vice versa.",
+      "Subtract to eliminate; solve; back-substitute.",
+      "Check both original equations with your solution.",
+    ],
+    example: {
+      problemHTML: `Solve:<br>${sysHTML('2x + 3y = 12', '4x + y = 14')}`,
+      solutionHTML:
+        `Eliminate x — coefficient in ② (4) = 2 × coefficient in ① (2). Multiply ① by 2:<br>
+         ${mi('4x + 6y = 24')} ← ①'<br>
+         Subtract ②: ${mi('(4x + 6y) - (4x + y) = 24 - 14')} → ${mi('5y = 10')} → ${mi('y = 2')}<br>
+         Substitute into ①: ${mi('2x + 6 = 12')} → ${mi('x = 3')}<br>
+         Check ①: 2×3 + 3×2 = 12 ✓ &nbsp; Check ②: 4×3 + 2 = 14 ✓`,
+    },
+    misconception: "Scaling only the left side — when you multiply an equation by k, you must multiply BOTH the left side AND the right side by k.",
+    keyConcepts: [
+      { label: "Scale One Equation",
+        prompt: "Solve 3x + y = 10 and 6x + 5y = 26 by scaling one equation. Which equation do you multiply and by what? Walk through every step to the solution." },
+      { label: "Scale Both Equations",
+        prompt: "Solve 2x + 3y = 13 and 3x + 2y = 12 — neither x nor y has equal coefficients. Explain how to scale BOTH equations to eliminate x. Show all steps." },
+    ],
+  },
+
+  word_prob: {
+    name: "Level 5: Word Problem Setup", level: 5, badgeClass: "badge-L5",
+    summary: "Find two unknowns from a story: identify both unknowns, write two equations (one per constraint), solve, verify the answer fits the story.",
+    steps: [
+      "Identify the two unknowns. Write: Let x = ... and y = ...",
+      "Find the two constraints — each gives one equation.",
+      "Write the system of two equations.",
+      "Solve using substitution or elimination.",
+      "Answer in words and check both conditions of the original story.",
+    ],
+    example: {
+      problemHTML: `2 pencils and 3 erasers cost ¥12. 1 pencil and 2 erasers cost ¥7. What is the price of one pencil?`,
+      solutionHTML:
+        `Let x = pencil price (¥), y = eraser price (¥).<br>
+         ${sysHTML('2x + 3y = 12', 'x + 2y = 7')}<br>
+         From ②: ${mi('x = 7 - 2y')}. Sub into ①: ${mi('2(7-2y)+3y=12')} → ${mi('-y=-2')} → ${mi('y=2')}<br>
+         ${mi('x = 7 - 4 = 3')}. One pencil costs <strong>¥3</strong>.<br>
+         Check ①: 2×3 + 3×2 = 12 ✓ &nbsp; Check ②: 3 + 2×2 = 7 ✓`,
+    },
+    misconception: "Writing only one equation — a two-unknown problem needs exactly two independent equations to have a unique solution.",
+    keyConcepts: [
+      { label: "Setting Up Two Equations",
+        prompt: "How do I translate a word problem into a system of two equations? Walk me through: '3 apples and 2 bananas cost ¥11. 1 apple and 4 bananas cost ¥9.' Identify the two unknowns and the two constraints." },
+      { label: "Checking the Answer in Context",
+        prompt: "After solving a word problem system and getting x = 5, y = 3, how do I verify the answer fits the original story? Show the verification steps for a pricing problem." },
+    ],
+  },
+
+  strategy_verify: {
+    name: "Rule: Strategy & Verify", level: 0, badgeClass: "badge-rule",
+    summary: "Choose the fastest method (substitution if a coefficient is 1; direct elimination if coefficients match; scale if needed). Always verify by substituting into BOTH original equations.",
+    steps: [
+      "Scan for coefficient 1 → substitution is fastest.",
+      "Equal coefficients in one variable → direct elimination (no scaling).",
+      "No match → scale one or both, then eliminate.",
+      "After solving, substitute (x, y) into BOTH equations — check each.",
+      "If one check fails, your arithmetic is wrong somewhere — redo that step.",
+    ],
+    example: {
+      problemHTML:
+        `<strong>System A:</strong> ${sysHTML('x + 3y = 11', '2x + y = 7')}<br>
+         <strong>System B:</strong> ${sysHTML('3x + 2y = 16', 'x + 2y = 8')}`,
+      solutionHTML:
+        `<strong>A → Substitution</strong> (①has x with coeff 1): x = 11−3y → 2(11−3y)+y=7 → y=3, x=2.<br>
+         Verify: ①2+9=11 ✓ ②4+3=7 ✓<br>
+         <strong>B → Direct elimination</strong> (both have 2y): ①−② → 2x=8 → x=4, y=2.<br>
+         Verify: ①12+4=16 ✓ ②4+4=8 ✓`,
+    },
+    misconception: "Verifying only in the equation you used last — check BOTH original equations, not just the one you substituted into.",
+    keyConcepts: [
+      { label: "Which Method to Choose?",
+        prompt: "I have three systems: (a) x + 2y=9, 3x+y=7  (b) 4x+3y=19, 4x+y=11  (c) 2x+3y=12, 3x+2y=11. For each, explain which method (substitution, direct elimination, or scale-then-eliminate) is most efficient and why." },
+      { label: "Verify Both Equations",
+        prompt: "After solving a system and getting x=4, y=2, I check only equation ① and it works. Do I need to check ② as well? Explain why, and give an example where ① checks out but ② doesn't." },
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: System Concepts ──────────────────────────────────── */
+
+const CONCEPT_B_ITEMS = [
+  {
+    situation: `The sum of two numbers is <strong>20</strong>, and their difference is <strong>6</strong>. Find both numbers.`,
+    needsSystem: true,
+    reason: `Two unknowns (x, y) with two conditions: x + y = 20 AND x − y = 6. Cannot solve with one equation alone.`,
+  },
+  {
+    situation: `A bag has <strong>12 apples</strong>. After removing 4, how many remain?`,
+    needsSystem: false,
+    reason: `One unknown, one step: 12 − 4 = 8. No system needed.`,
+  },
+  {
+    situation: `<strong>2 adult tickets</strong> and <strong>3 child tickets</strong> cost ¥22. <strong>1 adult</strong> and <strong>2 child</strong> tickets cost ¥13. Find the adult price.`,
+    needsSystem: true,
+    reason: `Two unknowns (adult price x, child price y) with two price conditions. Needs a system.`,
+  },
+  {
+    situation: `A number multiplied by <strong>4</strong> equals <strong>28</strong>. Find the number.`,
+    needsSystem: false,
+    reason: `One unknown: 4x = 28 → x = 7. One equation is enough.`,
+  },
+];
+
+function gen_sys_concepts(id) {
+  if (Math.random() < 0.5) {
+    // Type A: which (x, y) pair satisfies BOTH equations?
+    const xv = math.randInt(2, 7), yv = math.randInt(2, 7);
+    const a1 = math.randInt(1, 4), b1 = math.randInt(1, 4);
+    const a2 = math.randInt(1, 4), b2 = math.randInt(1, 4);
+    // ensure non-singular
+    if (a1 * b2 === a2 * b1) return gen_sys_concepts(id);
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const correct = `(${xv}, ${yv})`;
+    const wrongs  = [`(${xv + 1}, ${yv})`, `(${xv}, ${yv + 1})`, `(${yv}, ${xv})`];
+    const all     = math.shuffle([correct, ...wrongs]);
+    const cidx    = all.indexOf(correct);
+    return mcQHTML(id, "sys_concepts",
+      `Which pair (x,&thinsp;y) satisfies <strong>both</strong> equations?<br>${sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2))}`,
+      cidx, all,
+      [
+        `The solution must satisfy ① AND ②.`,
+        `Test (${xv}, ${yv}): ① ${a1}×${xv} + ${b1}×${yv} = ${c1} ✓  ② ${a2}×${xv} + ${b2}×${yv} = ${c2} ✓`,
+        `The other pairs fail at least one equation — try substituting to confirm.`,
+      ],
+      `Substitute each pair into BOTH equations. Only one pair makes both true.`
+    );
+  } else {
+    // Type B: which real-world situation needs a system?
+    const items = math.shuffle(CONCEPT_B_ITEMS);
+    const trueItem  = items.find(it => it.needsSystem);
+    const falseItems = items.filter(it => !it.needsSystem).slice(0, 3);
+    const all  = math.shuffle([trueItem, ...falseItems]);
+    const cidx = all.indexOf(trueItem);
+    return mcQHTML(id, "sys_concepts",
+      `Which situation <strong>requires</strong> a system of two equations to solve?`,
+      cidx,
+      all.map(it => it.situation),
+      [
+        `A system is needed when there are TWO unknowns and TWO independent conditions.`,
+        `Correct situation: "${trueItem.situation}"`,
+        `Reason: ${trueItem.reason}`,
+        `The other options each have only one unknown or can be solved with a single equation.`,
+      ],
+      `Count the unknowns. If there are two, you need two equations.`
+    );
+  }
+}
+
+/* ── L2: Substitution ────────────────────────────────────── */
+
+function gen_substitution(id) {
+  let xv, yv, a1, b1, c1, a2, b2, c2, subVar, attempts = 0;
+  do {
+    xv = math.randInt(2, 7); yv = math.randInt(2, 7);
+    subVar = Math.random() < 0.5 ? 'x' : 'y';
+    if (subVar === 'x') {
+      // eq1: x + b1*y = c1 (coefficient of x is 1)
+      b1 = math.randInt(2, 5); a1 = 1;
+      a2 = math.randInt(2, 5); b2 = math.randInt(2, 5);
+    } else {
+      // eq1: a1*x + y = c1 (coefficient of y is 1)
+      a1 = math.randInt(2, 5); b1 = 1;
+      a2 = math.randInt(2, 5); b2 = math.randInt(2, 5);
+    }
+    c1 = a1 * xv + b1 * yv;
+    c2 = a2 * xv + b2 * yv;
+    attempts++;
+  } while ((a1 * b2 - a2 * b1 === 0) && attempts < 50);
+
+  const ask_x   = Math.random() < 0.5;
+  const correct = ask_x ? xv : yv;
+  const promptHTML = sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2)) +
+    `<p style="margin-top:.4rem">Find <strong>${ask_x ? 'x' : 'y'}</strong> using the substitution method.</p>`;
+
+  let steps;
+  if (subVar === 'x') {
+    // Express x from ①, substitute into ②
+    // a2*(c1 - b1*y) + b2*y = c2  →  (b2 - a2*b1)*y = c2 - a2*c1
+    const coeff = b2 - a2 * b1;
+    const rhs   = c2 - a2 * c1;  // = coeff * yv by construction
+    steps = [
+      `From ①: ${mi(`x = ${c1} - ${b1 === 1 ? '' : b1}y`)}`,
+      `Substitute into ②: ${mi(`${a2}(${c1} - ${b1 === 1 ? '' : b1}y) + ${b2 === 1 ? '' : b2}y = ${c2}`)}`,
+      `Expand: ${mi(`${a2 * c1} - ${a2 * b1}y + ${b2}y = ${c2}`)}`,
+      `Combine y terms: ${mi(`${coeff}y = ${rhs}`)} → ${mi(`y = ${yv}`)}`,
+      `Back-sub: ${mi(`x = ${c1} - ${b1} \\times ${yv} = ${xv}`)}. Check ①: ${c1} ✓  Check ②: ${c2} ✓`,
+    ];
+  } else {
+    // Express y from ①, substitute into ②
+    // a2*x + b2*(c1 - a1*x) = c2  →  (a2 - b2*a1)*x = c2 - b2*c1
+    const coeff = a2 - b2 * a1;
+    const rhs   = c2 - b2 * c1;  // = coeff * xv by construction
+    steps = [
+      `From ①: ${mi(`y = ${c1} - ${a1 === 1 ? '' : a1}x`)}`,
+      `Substitute into ②: ${mi(`${a2 === 1 ? '' : a2}x + ${b2 === 1 ? '' : b2}(${c1} - ${a1 === 1 ? '' : a1}x) = ${c2}`)}`,
+      `Expand: ${mi(`${a2}x + ${b2 * c1} - ${b2 * a1}x = ${c2}`)}`,
+      `Combine x terms: ${mi(`${coeff}x = ${rhs}`)} → ${mi(`x = ${xv}`)}`,
+      `Back-sub: ${mi(`y = ${c1} - ${a1} \\times ${xv} = ${yv}`)}. Check ①: ${c1} ✓  Check ②: ${c2} ✓`,
+    ];
+  }
+  const hint = subVar === 'x'
+    ? `Equation ① has x with coefficient 1. Express x = ${c1} − ${b1}y and substitute into ②.`
+    : `Equation ① has y with coefficient 1. Express y = ${c1} − ${a1}x and substitute into ②.`;
+  return mcQ(id, "substitution", promptHTML, correct, numDecoys(correct, 2), steps, hint);
+}
+
+/* ── L3: Elimination Direct ──────────────────────────────── */
+
+function gen_elimination_direct(id) {
+  let xv, yv, a1, b1, c1, a2, b2, c2, elimVar, k, attempts = 0;
+  do {
+    xv = math.randInt(2, 7); yv = math.randInt(2, 7);
+    elimVar = Math.random() < 0.5 ? 'x' : 'y';
+    k = math.randInt(2, 5);
+    if (elimVar === 'x') {
+      // both equations have k*x, different y coefficients
+      b1 = math.randInt(1, 5); b2 = math.randInt(1, 5);
+      if (b1 === b2) { attempts++; continue; }
+      a1 = k; a2 = k;
+    } else {
+      // both equations have k*y, different x coefficients
+      a1 = math.randInt(1, 5); a2 = math.randInt(1, 5);
+      if (a1 === a2) { attempts++; continue; }
+      b1 = k; b2 = k;
+    }
+    c1 = a1 * xv + b1 * yv;
+    c2 = a2 * xv + b2 * yv;
+    attempts++;
+  } while (attempts < 60 && (a1 * b2 - a2 * b1 === 0));
+
+  const ask_x   = Math.random() < 0.5;
+  const correct = ask_x ? xv : yv;
+  const promptHTML = sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2)) +
+    `<p style="margin-top:.4rem">Find <strong>${ask_x ? 'x' : 'y'}</strong> using the elimination method.</p>`;
+
+  let steps;
+  if (elimVar === 'x') {
+    // Subtract to get (b1-b2)*y = c1-c2, pick direction for positive coeff
+    const [db, dc] = b1 > b2 ? [b1 - b2, c1 - c2] : [b2 - b1, c2 - c1];
+    const subDir   = b1 > b2 ? '①−②' : '②−①';
+    steps = [
+      `Both equations have ${mi(`${k}x`)}. Subtract (${subDir}):`,
+      `${mi(`${db}y = ${dc}`)} → ${mi(`y = ${yv}`)}`,
+      `Substitute y = ${yv} into ①: ${mi(`${k}x + ${b1} \\times ${yv} = ${c1}`)}`,
+      `${mi(`${k}x = ${c1 - b1 * yv}`)} → ${mi(`x = ${xv}`)}`,
+      `Check ①: ${a1 * xv + b1 * yv} = ${c1} ✓  Check ②: ${a2 * xv + b2 * yv} = ${c2} ✓`,
+    ];
+  } else {
+    // Subtract to get (a1-a2)*x = c1-c2
+    const [da, dc] = a1 > a2 ? [a1 - a2, c1 - c2] : [a2 - a1, c2 - c1];
+    const subDir   = a1 > a2 ? '①−②' : '②−①';
+    steps = [
+      `Both equations have ${mi(`${k}y`)}. Subtract (${subDir}):`,
+      `${mi(`${da}x = ${dc}`)} → ${mi(`x = ${xv}`)}`,
+      `Substitute x = ${xv} into ①: ${mi(`${a1} \\times ${xv} + ${k}y = ${c1}`)}`,
+      `${mi(`${k}y = ${c1 - a1 * xv}`)} → ${mi(`y = ${yv}`)}`,
+      `Check ①: ${a1 * xv + b1 * yv} = ${c1} ✓  Check ②: ${a2 * xv + b2 * yv} = ${c2} ✓`,
+    ];
+  }
+  return mcQ(id, "elimination_direct", promptHTML, correct, numDecoys(correct, 2), steps,
+    `Both equations have ${k}${elimVar === 'x' ? 'x' : 'y'}. Subtract one from the other to eliminate it.`);
+}
+
+/* ── L4: Elimination with Scaling ────────────────────────── */
+
+function gen_elimination_scale(id) {
+  const useScaleBoth = Math.random() < 0.4;
+  let xv, yv, a1, b1, c1, a2, b2, c2, steps, hint, attempts = 0;
+
+  if (!useScaleBoth) {
+    // Scale ONE equation: eq2 has k * (x or y coefficient of eq1)
+    do {
+      xv = math.randInt(2, 6); yv = math.randInt(2, 6);
+      const k = math.randInt(2, 3);
+      const elimVar = Math.random() < 0.5 ? 'x' : 'y';
+      if (elimVar === 'x') {
+        a1 = math.randInt(2, 4); a2 = k * a1;
+        b1 = math.randInt(2, 5);
+        do { b2 = math.randInt(2, 5); } while (b2 === k * b1);
+      } else {
+        b1 = math.randInt(2, 4); b2 = k * b1;
+        a1 = math.randInt(2, 5);
+        do { a2 = math.randInt(2, 5); } while (a2 === k * a1);
+      }
+      c1 = a1 * xv + b1 * yv;
+      c2 = a2 * xv + b2 * yv;
+      const [ka, kb] = [a1, b1].map((v, i) => [a2, b2][i] / v);
+      const scaleFactor = Math.round(a2 / a1) === a2 / a1 && a2 / a1 > 1 ? a2 / a1
+                        : Math.round(b2 / b1) === b2 / b1 && b2 / b1 > 1 ? b2 / b1 : 2;
+      // Scale ① by scaleFactor then subtract from ②
+      const sc1_a = a1 * scaleFactor, sc1_b = b1 * scaleFactor, sc1_c = c1 * scaleFactor;
+      const rem_a = a2 - sc1_a, rem_b = b2 - sc1_b, rem_c = c2 - sc1_c;
+      // Either rem_a or rem_b is 0 (the eliminated variable)
+      if (rem_b === 0 && rem_a !== 0) {
+        const [ea, ec] = rem_a > 0 ? [rem_a, rem_c] : [-rem_a, -rem_c];
+        const eff_xv = ec / ea;
+        if (!Number.isInteger(eff_xv) || eff_xv !== xv) { attempts++; continue; }
+        steps = [
+          `Multiply ① by ${scaleFactor}: ${mi(eqLx(sc1_a, sc1_b, sc1_c))} ← ①'`,
+          `Subtract ②−①': ${mi(`${ea}x = ${ec}`)} → ${mi(`x = ${xv}`)}`,
+          `Substitute x = ${xv} into ①: ${mi(`${a1} \\times ${xv} + ${b1}y = ${c1}`)}`,
+          `${mi(`${b1}y = ${c1 - a1 * xv}`)} → ${mi(`y = ${yv}`)}`,
+          `Check ①: ${c1} ✓  Check ②: ${c2} ✓`,
+        ];
+        hint = `Multiply ① by ${scaleFactor} so x coefficient matches ②. Then subtract.`;
+        break;
+      } else if (rem_a === 0 && rem_b !== 0) {
+        const [eb, ec] = rem_b > 0 ? [rem_b, rem_c] : [-rem_b, -rem_c];
+        const eff_yv = ec / eb;
+        if (!Number.isInteger(eff_yv) || eff_yv !== yv) { attempts++; continue; }
+        steps = [
+          `Multiply ① by ${scaleFactor}: ${mi(eqLx(sc1_a, sc1_b, sc1_c))} ← ①'`,
+          `Subtract ②−①': ${mi(`${eb}y = ${ec}`)} → ${mi(`y = ${yv}`)}`,
+          `Substitute y = ${yv} into ①: ${mi(`${a1}x + ${b1} \\times ${yv} = ${c1}`)}`,
+          `${mi(`${a1}x = ${c1 - b1 * yv}`)} → ${mi(`x = ${xv}`)}`,
+          `Check ①: ${c1} ✓  Check ②: ${c2} ✓`,
+        ];
+        hint = `Multiply ① by ${scaleFactor} so y coefficient matches ②. Then subtract.`;
+        break;
+      }
+      attempts++;
+    } while (attempts < 80);
+  } else {
+    // Scale BOTH: pick coefficient pair where neither divides the other
+    const PAIRS = [[2, 3], [2, 5], [3, 4], [3, 5]];
+    do {
+      xv = math.randInt(2, 6); yv = math.randInt(2, 6);
+      [a1, a2] = math.pick(PAIRS);
+      b1 = math.randInt(2, 5);
+      do { b2 = math.randInt(2, 5); } while (a1 * b2 === a2 * b1);
+      c1 = a1 * xv + b1 * yv;
+      c2 = a2 * xv + b2 * yv;
+      // Scale ① by a2 and ② by a1 → both get a1*a2*x
+      const sc1 = { a: a1 * a2, b: b1 * a2, c: c1 * a2 };
+      const sc2 = { a: a2 * a1, b: b2 * a1, c: c2 * a1 };
+      // Subtract: (sc1.b - sc2.b)*y = sc1.c - sc2.c
+      const rem_b = sc1.b - sc2.b, rem_c = sc1.c - sc2.c;
+      if (rem_b === 0) { attempts++; continue; }
+      const [eb, ec] = rem_b > 0 ? [rem_b, rem_c] : [-rem_b, -rem_c];
+      const eff_yv = ec / eb;
+      if (!Number.isInteger(eff_yv) || eff_yv !== yv) { attempts++; continue; }
+      steps = [
+        `To eliminate x: multiply ① by ${a2} and ② by ${a1}.`,
+        `${a2}×①: ${mi(eqLx(sc1.a, sc1.b, sc1.c))}`,
+        `${a1}×②: ${mi(eqLx(sc2.a, sc2.b, sc2.c))}`,
+        `Subtract: ${mi(`${eb}y = ${ec}`)} → ${mi(`y = ${yv}`)}`,
+        `Substitute into ①: ${mi(`${a1}x + ${b1} \\times ${yv} = ${c1}`)} → ${mi(`x = ${xv}`)}. Check ①: ${c1} ✓  ②: ${c2} ✓`,
+      ];
+      hint = `Neither coefficient of x is a multiple of the other. Multiply ① by ${a2} and ② by ${a1} to match.`;
+      break;
+    } while (attempts < 80);
+  }
+
+  // Fallback: if loops exhausted without building steps, retry with scale-one
+  if (!steps) return gen_elimination_scale(id);
+
+  const ask_x = Math.random() < 0.5;
+  const correct = ask_x ? xv : yv;
+  const promptHTML = sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2)) +
+    `<p style="margin-top:.4rem">Find <strong>${ask_x ? 'x' : 'y'}</strong>. Scale the equations first.</p>`;
+  return mcQ(id, "elimination_scale", promptHTML, correct, numDecoys(correct, 2), steps, hint);
+}
+
+/* ── L5: Word Problems ──────────────────────────────────── */
+
+const WORD_POOL = [
+  // Stationery: ax + by = c style, use substitution
+  () => {
+    const xv = math.randInt(2, 8), yv = math.randInt(1, 5);
+    const a1 = math.randInt(1, 3), b1 = math.randInt(2, 4);
+    const a2 = 1,                  b2 = math.randInt(2, 4);
+    if (a1 * b2 === a2 * b1) return WORD_POOL[0]();
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `${a1} ${a1 === 1 ? 'pen' : 'pens'} and ${b1} erasers cost <strong>¥${c1}</strong>. ` +
+              `1 pen and ${b2} erasers cost <strong>¥${c2}</strong>. ` +
+              `What is the price of <strong>one ${ask_x ? 'pen' : 'eraser'}</strong>?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = pen price (¥), y = eraser price (¥).`,
+        `System: ${sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2))}`,
+        `From ②: ${mi(`x = ${c2} - ${b2}y`)}. Sub into ①: ${mi(`${a1}(${c2}-${b2}y)+${b1}y=${c1}`)}`,
+        `Solve: ${mi(`y = ${yv}`)}, ${mi(`x = ${xv}`)}`,
+        `Check ①: ${a1 * xv + b1 * yv} = ${c1} ✓  ②: ${xv + b2 * yv} = ${c2} ✓`,
+      ],
+      hint: `Let x = pen price, y = eraser price. Write two equations from the two pricing facts.`,
+    };
+  },
+  // Tickets: adult (x) and child (y)
+  () => {
+    const xv = math.randInt(4, 10), yv = math.randInt(2, xv - 1);
+    const a1 = math.randInt(2, 4), b1 = math.randInt(1, 3);
+    const a2 = math.randInt(1, 3), b2 = math.randInt(2, 4);
+    if (a1 * b2 === a2 * b1) return WORD_POOL[1]();
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `${a1} adult tickets and ${b1} child tickets cost <strong>¥${c1}</strong>. ` +
+              `${a2} adult and ${b2} child tickets cost <strong>¥${c2}</strong>. ` +
+              `What is the price of one <strong>${ask_x ? 'adult' : 'child'} ticket</strong>?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = adult ticket price (¥), y = child ticket price (¥).`,
+        `System: ${sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2))}`,
+        `Eliminate x: multiply ① by ${a2} and ② by ${a1}, then subtract.`,
+        `Solve: ${mi(`x = ${xv}`)}, ${mi(`y = ${yv}`)}`,
+        `Check ①: ${a1 * xv + b1 * yv} = ${c1} ✓  ②: ${a2 * xv + b2 * yv} = ${c2} ✓`,
+      ],
+      hint: `Let x = adult price, y = child price. Use elimination to solve.`,
+    };
+  },
+  // Two numbers: sum and difference
+  () => {
+    const xv = math.randInt(5, 15), yv = math.randInt(2, xv - 1);
+    const S = xv + yv, D = xv - yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `The sum of two numbers is <strong>${S}</strong>. The greater number minus the smaller is <strong>${D}</strong>. ` +
+              `What is the <strong>${ask_x ? 'greater' : 'smaller'} number</strong>?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = greater number, y = smaller number.`,
+        `System: ${sysHTML(`x + y = ${S}`, `x - y = ${D}`)}`,
+        `Add both equations: ${mi(`2x = ${S + D}`)} → ${mi(`x = ${xv}`)}`,
+        `From ①: ${mi(`y = ${S} - ${xv} = ${yv}`)}`,
+        `Check ①: ${xv + yv} = ${S} ✓  ②: ${xv - yv} = ${D} ✓`,
+      ],
+      hint: `Let x = greater, y = smaller. Write x + y = sum and x − y = difference. Try adding the equations.`,
+    };
+  },
+  // Ages: two siblings
+  () => {
+    const xv = math.randInt(8, 16), yv = math.randInt(3, xv - 2);
+    const S = xv + yv, D = xv - yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `The sum of an older sibling's age and a younger sibling's age is <strong>${S}</strong>. ` +
+              `The older is <strong>${D} years older</strong>. ` +
+              `How old is the <strong>${ask_x ? 'older' : 'younger'} sibling</strong>?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = older sibling's age, y = younger sibling's age.`,
+        `System: ${sysHTML(`x + y = ${S}`, `x - y = ${D}`)}`,
+        `Add both equations: ${mi(`2x = ${S + D}`)} → ${mi(`x = ${xv}`)}`,
+        `${mi(`y = ${S} - ${xv} = ${yv}`)}`,
+        `Check ①: ${xv + yv} = ${S} ✓  ②: ${xv - yv} = ${D} ✓`,
+      ],
+      hint: `Let x = older age, y = younger age. Sum and difference give two equations.`,
+    };
+  },
+  // Fruit: apples and oranges by weight
+  () => {
+    const xv = math.randInt(3, 9), yv = math.randInt(2, 7);
+    const a1 = math.randInt(2, 4), b1 = math.randInt(1, 3);
+    const a2 = math.randInt(1, 3), b2 = math.randInt(2, 4);
+    if (a1 * b2 === a2 * b1) return WORD_POOL[4]();
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `${a1}&thinsp;kg of apples and ${b1}&thinsp;kg of oranges cost <strong>¥${c1}</strong>. ` +
+              `${a2}&thinsp;kg of apples and ${b2}&thinsp;kg of oranges cost <strong>¥${c2}</strong>. ` +
+              `What is the price per kg of <strong>${ask_x ? 'apples' : 'oranges'}</strong>?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = apple price (¥/kg), y = orange price (¥/kg).`,
+        `System: ${sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2))}`,
+        `Use elimination: multiply ① by ${a2} and ② by ${a1}, subtract.`,
+        `Solve: ${mi(`x = ${xv}`)}, ${mi(`y = ${yv}`)}`,
+        `Check ①: ${a1 * xv + b1 * yv} = ${c1} ✓  ②: ${a2 * xv + b2 * yv} = ${c2} ✓`,
+      ],
+      hint: `Let x = apple price/kg, y = orange price/kg. Write two equations from the two purchases.`,
+    };
+  },
+  // Speeds: two cyclists' average speeds
+  () => {
+    const xv = math.randInt(10, 20), yv = math.randInt(6, xv - 2);
+    // A travels at xv km/h, B at yv km/h
+    const t1 = math.randInt(2, 4), t2 = math.randInt(2, 4);
+    const S = t1 * xv + t2 * yv;
+    const D = xv - yv;
+    const ask_x = Math.random() < 0.5;
+    return {
+      prompt: `Cyclist A rides for ${t1}&thinsp;h and Cyclist B rides for ${t2}&thinsp;h, covering a combined distance of <strong>${S}&thinsp;km</strong>. ` +
+              `Cyclist A is <strong>${D}&thinsp;km/h faster</strong> than B. ` +
+              `What is Cyclist ${ask_x ? 'A' : 'B'}'s speed?`,
+      correct: ask_x ? xv : yv,
+      steps: [
+        `Let x = Cyclist A's speed (km/h), y = Cyclist B's speed (km/h).`,
+        `System: ${sysHTML(eqLxS(t1, t2, S), eqLxS(1, -1, D))}`,
+        `From ②: ${mi(`x = y + ${D}`)}. Sub into ①: ${mi(`${t1}(y+${D}) + ${t2}y = ${S}`)}`,
+        `Solve: ${mi(`y = ${yv}`)}, ${mi(`x = ${xv}`)}`,
+        `Check ①: ${t1 * xv + t2 * yv} = ${S} ✓  ②: ${xv - yv} = ${D} ✓`,
+      ],
+      hint: `Let x = A's speed, y = B's speed. Distance = speed × time. "A is D km/h faster" gives x − y = D.`,
+    };
+  },
+];
+
+function gen_word_prob(id) {
+  const tpl = math.pick(WORD_POOL)();
+  return mcQ(id, "word_prob", tpl.prompt, tpl.correct, numDecoys(tpl.correct, 3), tpl.steps, tpl.hint);
+}
+
+/* ── Rule: Strategy & Verify ─────────────────────────────── */
+
+function gen_strategy_verify(id) {
+  if (Math.random() < 0.5) {
+    // Type A: Student got wrong x — find correct x
+    const xv = math.randInt(2, 7), yv = math.randInt(2, 7);
+    const a1 = 1, b1 = math.randInt(2, 4);
+    const a2 = math.randInt(2, 5), b2 = math.randInt(2, 5);
+    if (a1 * b2 === a2 * b1) return gen_strategy_verify(id);
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const delta   = math.pick([1, -1, 2, -2].filter(d => xv + d > 0));
+    const wrongX  = xv + delta;
+    const correct = xv;
+    const wrongY  = (c1 - wrongX) / b1;
+    const checkW1 = a1 * wrongX + b1 * Math.round(wrongY);
+    const checkW2 = a2 * wrongX + b2 * Math.round(wrongY);
+    const steps = [
+      `Check the student's answer x = ${wrongX}: from ①, y = (${c1} − ${wrongX}) / ${b1} = ${(c1 - wrongX) / b1}`,
+      `Verify in ②: ${a2}×${wrongX} + ${b2}×${(c1 - wrongX) / b1} = ${a2 * wrongX + b2 * (c1 - wrongX) / b1} ≠ ${c2}. Wrong!`,
+      `Correct solution — from ①: ${mi(`x = ${c1} - ${b1}y`)}. Sub into ②: ${mi(`${a2}(${c1}-${b1}y)+${b2}y=${c2}`)}`,
+      `Solve: ${mi(`y = ${yv}`)}, ${mi(`x = ${xv}`)}`,
+      `Verify ①: ${a1 * xv + b1 * yv} = ${c1} ✓  ②: ${a2 * xv + b2 * yv} = ${c2} ✓`,
+    ];
+    const decoys = [wrongX, ...numDecoys(correct, 2).filter(d => d !== wrongX)].slice(0, 3);
+    return mcQ(id, "strategy_verify",
+      `A student solved the system below and got ${mi(`x = ${wrongX}`)}. What is the <strong>correct</strong> value of x?<br>` +
+      sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2)),
+      correct, decoys, steps,
+      `Substitute the student's x into ② — if it fails, the answer is wrong. Solve from scratch.`);
+  } else {
+    // Type B: Solve system, steps emphasize explicit verification of BOTH equations
+    const xv = math.randInt(2, 7), yv = math.randInt(2, 7);
+    const k = math.randInt(2, 4);
+    const b1 = math.randInt(2, 5), b2 = math.randInt(2, 5);
+    if (b1 === b2) return gen_strategy_verify(id);
+    const a1 = k, a2 = k;
+    const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
+    const ask_x = Math.random() < 0.5;
+    const correct = ask_x ? xv : yv;
+    const [db, dc] = b1 > b2 ? [b1 - b2, c1 - c2] : [b2 - b1, c2 - c1];
+    const steps = [
+      `Both equations have ${mi(`${k}x`)}. Subtract to eliminate x:`,
+      `${mi(`${db}y = ${dc}`)} → ${mi(`y = ${yv}`)}`,
+      `Substitute y = ${yv} into ①: ${mi(`${k}x = ${c1 - b1 * yv}`)} → ${mi(`x = ${xv}`)}`,
+      `<strong>Verify ①:</strong> ${a1}×${xv} + ${b1}×${yv} = ${a1 * xv + b1 * yv} = ${c1} ✓`,
+      `<strong>Verify ②:</strong> ${a2}×${xv} + ${b2}×${yv} = ${a2 * xv + b2 * yv} = ${c2} ✓ — solution confirmed!`,
+    ];
+    return mcQ(id, "strategy_verify",
+      sysHTML(eqLx(a1, b1, c1), eqLx(a2, b2, c2)) +
+      `<p style="margin-top:.4rem">Find <strong>${ask_x ? 'x' : 'y'}</strong>. (Verify BOTH equations after solving.)</p>`,
+      correct, numDecoys(correct, 2), steps,
+      `Both equations share the same x coefficient — subtract directly. Remember to verify both equations!`);
+  }
+}
+
+const generators = {
+  sys_concepts:        gen_sys_concepts,
+  substitution:        gen_substitution,
+  elimination_direct:  gen_elimination_direct,
+  elimination_scale:   gen_elimination_scale,
+  word_prob:           gen_word_prob,
+  strategy_verify:     gen_strategy_verify,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:    state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore:  state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i + 1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk    = skillLibrary[sid];
+    const r     = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct   = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /, "")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L" + sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /, "")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L" + sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /, "")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i + 1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0, allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You can confidently solve systems of two linear equations." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [
+      { title: "Averages",
+        url:   "../grade_4/averages_grade4.html",
+        reason: "The overlapping-segment technique in averages is a stepping stone to systems — the same sum-balancing idea extended to two unknowns." },
+      { title: "From Words to Multiple Equations",
+        url:   "../grade_4/words_to_equation_system_grade4.html",
+        reason: "Before solving a system, you need to set it up correctly from a word problem — this UEPG builds exactly that skill." },
+      { title: "Linear Equation in One Variable",
+        url:   "../grade_4/linear_equation_1var_grade4.html",
+        reason: "Solving a system reduces to a one-variable equation once you eliminate the other — that's the skill you need here." },
+    ],
+    challenge: [],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  if (list.length === 0) {
+    return passed
+      ? `<p class="text-muted">Excellent work! Check back as more advanced topics are added.</p>`
+      : `<p class="text-muted">Strengthen your one-variable equation skills, then return here.</p>`;
+  }
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 5 student learning to solve systems of two linear equations in two unknowns.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 5 student learning to solve systems of two linear equations in two unknowns.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

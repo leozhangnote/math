@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- FILL IN: page title -->
+  <title>FILL IN: Concept Name — Grade N</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    /* ── FILL IN: Concept-specific styles ─────────────────────── */
+    /* Add any extra CSS needed for math rendering, custom layouts, etc. */
+    /* Hero gradient override (optional — each grade can have its own color):
+       #hero { background: linear-gradient(135deg, #XXXXXX, #XXXXXX); } */
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO SECTION
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <!-- FILL IN: concept title and grade -->
+    <h1>FILL IN: Concept Title</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade N &nbsp;·&nbsp; FILL IN: short description</p>
+    <!-- FILL IN: 3–5 key skill tags -->
+    <div class="hero-tags">
+      <span class="badge badge-L1">Skill Tag 1</span>
+      <span class="badge badge-L2">Skill Tag 2</span>
+      <span class="badge badge-L3">Skill Tag 3</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       QUICK REFERENCE (collapsible)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <!-- FILL IN: key facts / strategy reminders (3–5 bullet points) -->
+      <ul style="margin-left:1.2rem;font-size:.9rem">
+        <li>FILL IN: tip 1</li>
+        <li>FILL IN: tip 2</li>
+        <li>FILL IN: tip 3</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 1 — DIAGNOSTIC (Check Knowledge)
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 2 — RESULTS & LESSONS (Checkup Results + Target Weak Spots)
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Lessons for the skills that need work. Read each one carefully.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 4 — PRACTICE WITH FEEDBACK
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 5 — MASTERY TEST
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   FILL IN: PAGE IDENTIFIER
+══════════════════════════════════════════════════════════════ */
+const PAGE_KEY  = "uepg_FILL_IN_slug";  // e.g. "uepg_linear_eq_2var_g8"
+const NAME_KEY  = "uepg_site_name";     // shared across all UEPGs on the site
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+
+/* ══════════════════════════════════════════════════════════════
+   FILL IN: SKILL LIBRARY
+   Define 4–8 skills. Each entry:
+     { name, level, badgeClass, summary, steps[],
+       example: {problemHTML, solutionHTML}, misconception,
+       keyConcepts: [{ label, prompt }] }
+   keyConcepts: 1–3 key terms or methods for this skill.
+     label  → button text shown in Step 3 ("Ask about GCD")
+     prompt → focused plain-text question sent to ChatGPT as-is
+              (the function adds student name + grade context around it)
+══════════════════════════════════════════════════════════════ */
+const skillLibrary = {
+  // ── EXAMPLE ENTRIES (replace entirely) ──────────────────────
+  skill_L1: {
+    name: "Level 1: FILL IN skill name",
+    level: 1,
+    badgeClass: "badge-L1",
+    summary: "FILL IN: one sentence describing what this skill covers.",
+    steps: [
+      "FILL IN: step 1 instruction",
+      "FILL IN: step 2 instruction",
+      "FILL IN: step 3 instruction"
+    ],
+    example: {
+      problemHTML:  "FILL IN: rendered HTML for an example problem",
+      solutionHTML: "FILL IN: rendered HTML for the worked solution"
+    },
+    misconception: "FILL IN: the most common mistake students make at this level",
+    keyConcepts: [
+      // FILL IN: { label: "Key Term", prompt: "Focused question for ChatGPT about this concept." }
+    ]
+  },
+  skill_L2: {
+    name: "Level 2: FILL IN skill name",
+    level: 2,
+    badgeClass: "badge-L2",
+    summary: "FILL IN",
+    steps: ["FILL IN step 1", "FILL IN step 2"],
+    example: { problemHTML: "FILL IN", solutionHTML: "FILL IN" },
+    misconception: "FILL IN",
+    keyConcepts: []
+  },
+  skill_L3: {
+    name: "Level 3: FILL IN skill name",
+    level: 3,
+    badgeClass: "badge-L3",
+    summary: "FILL IN",
+    steps: ["FILL IN step 1", "FILL IN step 2"],
+    example: { problemHTML: "FILL IN", solutionHTML: "FILL IN" },
+    misconception: "FILL IN",
+    keyConcepts: []
+  },
+  /* ADD MORE SKILLS AS NEEDED */
+  skill_rule: {
+    name: "Rule Check: FILL IN rule name",
+    level: 0,
+    badgeClass: "badge-rule",
+    summary: "FILL IN: the key rule students must not break",
+    steps: ["FILL IN step 1", "FILL IN step 2"],
+    example: { problemHTML: "FILL IN", solutionHTML: "FILL IN" },
+    misconception: "FILL IN",
+    keyConcepts: []
+  }
+};
+
+const ALL_SKILL_IDS = Object.keys(skillLibrary);
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 6: CONNECTIONS  (fill in after confirming with owner)
+   foundational — shown when student FAILS mastery test
+                  "you may be struggling because you need to review..."
+   challenge    — shown when student PASSES mastery test
+                  "ready to go deeper? try these next..."
+
+   Each entry: { title, url, reason }
+   title  — display name of the linked UEPG
+   url    — relative path or absolute URL to that page
+   reason — one sentence explaining the connection to the student
+
+   NOTE: Leave arrays empty ([]) until owner has confirmed the links.
+         Once confirmed, also update the linked pages to add the
+         reverse connection (this page as foundational ↔ challenge).
+══════════════════════════════════════════════════════════════ */
+const connections = {
+  foundational: [
+    // FILL IN after owner confirmation, e.g.:
+    // { title: "FILL IN title", url: "FILL IN path", reason: "FILL IN reason" },
+  ],
+  challenge: [
+    // FILL IN after owner confirmation, e.g.:
+    // { title: "FILL IN title", url: "FILL IN path", reason: "FILL IN reason" },
+  ]
+};
+
+
+/* ══════════════════════════════════════════════════════════════
+   MATH RENDERING & UTILITIES — provided by shared/math_helper.js
+   All functions below are available via the global `math` object:
+
+   math.inline('\\frac{2}{3}')      → inline KaTeX HTML string
+   math.block('x^2 = 4')            → display-mode KaTeX HTML string
+   math.frac(n, d)                   → inline \frac{n}{d} shortcut
+   math.gcd(a, b)                    → greatest common divisor
+   math.lcm(a, b)                    → least common multiple
+   math.reduce(n, d)                 → { n, d } in lowest terms
+   math.pick(arr)                    → random element
+   math.randInt(a, b)                → random integer in [a, b]
+   math.shuffle(arr)                 → new shuffled array
+
+   FILL IN: add any concept-specific math helpers below if needed.
+   Use LaTeX strings with math.inline() / math.block() for all
+   math display — do NOT use HTML <sup>, <sub>, or custom fraction CSS.
+
+   LaTeX quick reference:
+     Fraction:    \\frac{n}{d}      Superscript: x^{2}
+     Multiply:    \\times           Square root: \\sqrt{x}
+     Nested frac: \\frac{\\frac{a}{b}}{\\frac{c}{d}}
+══════════════════════════════════════════════════════════════ */
+// FILL IN: concept-specific helpers here (if any)
+function showSection(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideSection(id) { document.getElementById(id).classList.add('hidden'); }
+function setProgress(pct, label) {
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = pct + '% — ' + label;
+}
+function toggleGuide() {
+  document.getElementById('parent-guide').classList.toggle('open');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills: [],
+  practice: { topic: null, attempts: 0, correct: 0, streak: 0 },
+  mastery: { questions: [], answers: {}, score: null, bestScore: null }
+};
+
+
+/* ══════════════════════════════════════════════════════════════
+   LOCAL STORAGE
+══════════════════════════════════════════════════════════════ */
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    studentName: state.studentName,
+    weakSkills:  state.weakSkills,
+    practiceAttempts: state.practice.attempts,
+    practiceCorrect:  state.practice.correct,
+    masteryBestScore: state.mastery.bestScore
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+function resetProgress() {
+  localStorage.removeItem(PAGE_KEY);
+  location.reload();
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FILL IN: QUESTION GENERATORS
+   Write one generator per skill. Each must return a question object
+   matching the schema in UEPG_GUIDE.md.
+
+   Schema reminder:
+   {
+     id: string,
+     type: "mc" | "input",
+     skills: [skillId],
+     promptHTML: string,
+     answer: { /* concept-specific shape * / },
+     explainSteps: [string],
+     hint: string,
+     choices: [string]  // MC only
+   }
+══════════════════════════════════════════════════════════════ */
+
+function generate_skill_L1_question(idPrefix = "q") {
+  // FILL IN: generate random parameters
+  // FILL IN: compute correct answer
+  // FILL IN: build promptHTML
+  // FILL IN: build explainSteps
+  return {
+    id: idPrefix + "_L1_" + Date.now(),
+    type: "input",      // or "mc"
+    skills: ["skill_L1"],
+    promptHTML: "FILL IN: problem as HTML",
+    answer: { /* FILL IN */ },
+    explainSteps: ["FILL IN step 1", "FILL IN step 2"],
+    hint: "FILL IN: one-sentence hint",
+    choices: []         // leave empty for input type
+  };
+}
+
+function generate_skill_L2_question(idPrefix = "q") {
+  // FILL IN
+  return {
+    id: idPrefix + "_L2_" + Date.now(),
+    type: "mc",
+    skills: ["skill_L2"],
+    promptHTML: "FILL IN",
+    answer: { /* FILL IN */ },
+    explainSteps: ["FILL IN"],
+    hint: "FILL IN",
+    choices: ["FILL IN A", "FILL IN B", "FILL IN C", "FILL IN D"]
+  };
+}
+
+// FILL IN: add generator for each skill in skillLibrary
+
+// Map skill IDs to their generator functions
+const questionGenerators = {
+  skill_L1:   generate_skill_L1_question,
+  skill_L2:   generate_skill_L2_question,
+  /* FILL IN: add all skill IDs */
+};
+
+
+/* ══════════════════════════════════════════════════════════════
+   FILL IN: ANSWER VALIDATION
+   parseAnswer(rawInput) → parsed object
+   checkAnswer(parsed, expected) → { status: "correct"|"almost"|"wrong", message: string }
+══════════════════════════════════════════════════════════════ */
+
+function parseAnswer(rawInput) {
+  // FILL IN: parse student's text input into a structured object
+  // Return null if unparseable
+  const s = rawInput.trim();
+  if (!s) return null;
+  // Example for numeric answer:
+  // const n = parseFloat(s);
+  // return isNaN(n) ? null : { value: n };
+  return { raw: s }; // placeholder — replace
+}
+
+function checkAnswer(parsed, expected) {
+  // FILL IN: compare parsed answer to expected answer object
+  // Return { status: "correct"|"almost"|"wrong", message: string }
+  //
+  // "almost" = mathematically equivalent but not fully simplified/in required form
+  // Use this to give partial credit and guidance
+  //
+  // Example:
+  // if (parsed.value === expected.value) return { status: "correct", message: "Correct!" };
+  // return { status: "wrong", message: `Expected ${expected.display}` };
+  return { status: "wrong", message: "FILL IN validation logic" };
+}
+
+function checkMCAnswer(selectedChoice, expected) {
+  // FILL IN: for multiple-choice questions
+  // Return { status: "correct"|"wrong", message: string }
+  return selectedChoice === expected.correctChoice
+    ? { status: "correct", message: "Correct!" }
+    : { status: "wrong", message: `The correct answer was: ${expected.correctChoice}` };
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD DIAGNOSTIC QUESTIONS
+   Sample 1–2 questions per skill, total 6–10 questions.
+══════════════════════════════════════════════════════════════ */
+function buildDiagnosticQuestions() {
+  const qs = [];
+  // FILL IN: call each generator with prefix "diag"
+  // Example:
+  // qs.push(generate_skill_L1_question("diag"));
+  // qs.push(generate_skill_L2_question("diag"));
+  ALL_SKILL_IDS.forEach(sid => {
+    if (questionGenerators[sid]) {
+      qs.push(questionGenerators[sid]("diag"));
+    }
+  });
+  return shuffle(qs);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD MASTERY TEST QUESTIONS
+   10 questions, weighted toward weak skills, at least one hard question.
+══════════════════════════════════════════════════════════════ */
+function buildMasteryQuestions() {
+  const qs = [];
+  const skillIds = [...ALL_SKILL_IDS];
+
+  // Generate 2 questions per skill base
+  skillIds.forEach(sid => {
+    if (questionGenerators[sid]) {
+      qs.push(questionGenerators[sid]("mastery"));
+      qs.push(questionGenerators[sid]("mastery"));
+    }
+  });
+
+  // Over-sample weak skills (+1 extra per weak skill)
+  state.weakSkills.forEach(sid => {
+    if (questionGenerators[sid]) {
+      qs.push(questionGenerators[sid]("mastery_weak"));
+    }
+  });
+
+  return shuffle(qs).slice(0, 10);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER QUESTION
+══════════════════════════════════════════════════════════════ */
+function renderQuestion(q, context) {
+  // context: "diagnostic" | "practice" | "mastery"
+  const skillBadges = q.skills.map(sid =>
+    `<span class="badge ${skillLibrary[sid]?.badgeClass || ''}">${skillLibrary[sid]?.name || sid}</span>`
+  ).join('');
+
+  let inputHTML = '';
+  if (q.type === 'mc') {
+    inputHTML = `<ul class="mc-choices">${
+      q.choices.map((c,i) => `<li><label>
+        <input type="radio" name="${q.id}" value="${c}" /> ${c}
+      </label></li>`).join('')
+    }</ul>`;
+  } else {
+    inputHTML = `<input class="question-input" id="input-${q.id}"
+      type="text" placeholder="Your answer" autocomplete="off" />`;
+  }
+
+  return `
+    <div class="question-card" id="card-${q.id}">
+      <div>${skillBadges}</div>
+      <div class="question-prompt mt-1">${q.promptHTML}</div>
+      ${inputHTML}
+      <div class="action-row">
+        ${context === 'practice' ? `
+          <button class="btn btn-primary btn-sm" onclick="checkPracticeAnswer('${q.id}')">Check Answer</button>
+          <button class="btn btn-secondary btn-sm" onclick="showHint('${q.id}')">Show Hint</button>
+          <button class="btn btn-outline btn-sm" onclick="newPracticeQuestion()">New Question</button>
+        ` : ''}
+      </div>
+      <div id="feedback-${q.id}" class="feedback-msg" style="display:none"></div>
+      <div id="explain-${q.id}" class="explain-block"></div>
+    </div>`;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — START CHECKUP
+══════════════════════════════════════════════════════════════ */
+function startCheckup() {
+  // Save name site-wide if newly entered
+  const inputName = document.getElementById('student-name').value.trim();
+  if (inputName && !localStorage.getItem(NAME_KEY)) {
+    saveSiteName(inputName);
+    applyName(inputName);
+  }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+
+  const container = document.getElementById('diagnostic-questions');
+  container.innerHTML = state.diagnostic.questions
+    .map(q => renderQuestion(q, 'diagnostic'))
+    .join('');
+
+  showSection('section-diagnostic');
+  setProgress(20, 'Checkup in progress');
+  document.getElementById('section-diagnostic').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — SUBMIT DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+function submitDiagnostic() {
+  const qs = state.diagnostic.questions;
+  const results = {};
+  ALL_SKILL_IDS.forEach(sid => { results[sid] = { correct: 0, total: 0 }; });
+
+  qs.forEach(q => {
+    let isCorrect = false;
+    if (q.type === 'mc') {
+      const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+      const raw = sel ? sel.value : '';
+      const { status } = checkMCAnswer(raw, q.answer);
+      isCorrect = status === 'correct';
+    } else {
+      const raw = document.getElementById('input-' + q.id)?.value || '';
+      const parsed = parseAnswer(raw);
+      const { status } = parsed ? checkAnswer(parsed, q.answer) : { status: 'wrong' };
+      isCorrect = status === 'correct';
+    }
+    q.skills.forEach(sid => {
+      if (results[sid]) {
+        results[sid].total++;
+        if (isCorrect) results[sid].correct++;
+      }
+    });
+  });
+
+  state.diagnostic.results = results;
+  state.weakSkills = ALL_SKILL_IDS.filter(sid => {
+    const r = results[sid];
+    return r && r.total > 0 && (r.correct / r.total * 100) < WEAK_THRESHOLD;
+  });
+
+  renderResults();
+  buildLessonCards();
+  showSection('section-results');
+  setProgress(55, 'Reviewing results');
+  saveProgress();
+  document.getElementById('section-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER RESULTS SUMMARY
+══════════════════════════════════════════════════════════════ */
+function renderResults() {
+  const results = state.diagnostic.results;
+  let html = '';
+  ALL_SKILL_IDS.forEach(sid => {
+    const r = results[sid];
+    if (!r || r.total === 0) return;
+    const pct = Math.round(r.correct / r.total * 100);
+    const isWeak = state.weakSkills.includes(sid);
+    const color = pct >= 75 ? '#2e7d32' : pct >= 50 ? '#e65100' : '#c62828';
+    html += `<div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+      <span class="badge ${skillLibrary[sid]?.badgeClass || ''}">${skillLibrary[sid]?.name || sid}</span>
+      <div style="flex:1;background:#e0e0e0;border-radius:999px;height:10px">
+        <div style="width:${pct}%;background:${color};height:100%;border-radius:999px"></div>
+      </div>
+      <span style="color:${color};font-weight:700;min-width:3ch">${pct}%</span>
+      ${isWeak ? '<span style="color:#c62828;font-size:.8rem">⚠ needs work</span>' : ''}
+    </div>`;
+  });
+  document.getElementById('results-summary').innerHTML = html || '<p>No results to show.</p>';
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ASK AI
+══════════════════════════════════════════════════════════════ */
+function askAI(skillId) {
+  const sk = skillLibrary[skillId];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+
+  const prompt = [
+    `${name}I am a student practicing FILL IN: [topic] (FILL IN: [Grade N] math).`,
+    ``,
+    `I need extra help understanding: ${sk.name}.`,
+    ``,
+    `What this skill is about: ${sk.summary}`,
+    ``,
+    `Steps involved:`,
+    steps,
+    ``,
+    `Common mistake to avoid: ${sk.misconception}`,
+    ``,
+    `Please explain this concept clearly in a way a FILL IN: [Grade N] student can understand, then give me 3 practice problems with full step-by-step solutions.`
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+
+  const prompt = [
+    `${name}I am a student practicing FILL IN: [topic] (FILL IN: [Grade N] math).`,
+    ``,
+    `I have a specific question about: ${concept.label}.`,
+    ``,
+    concept.prompt
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD LESSON CARDS
+══════════════════════════════════════════════════════════════ */
+function buildLessonCards() {
+  // Show lesson cards for weak skills; if all passed, show all
+  const targets = state.weakSkills.length > 0
+    ? state.weakSkills
+    : ALL_SKILL_IDS;
+
+  const container = document.getElementById('lesson-cards');
+  container.innerHTML = targets.map(sid => {
+    const sk = skillLibrary[sid];
+    if (!sk) return '';
+    return `
+      <div class="lesson-card">
+        <div class="lesson-title">
+          <span class="badge ${sk.badgeClass}">${sk.name}</span>
+        </div>
+        <p style="font-size:.92rem;margin-bottom:.5rem">${sk.summary}</p>
+        <ol>${sk.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+        <div class="lesson-example">
+          <strong>Example:</strong> ${sk.example.problemHTML}<br/>
+          <strong>Solution:</strong> ${sk.example.solutionHTML}
+        </div>
+        <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <button class="btn btn-outline btn-sm"
+            onclick="openPractice('${sid}')">Practice this level ▶</button>
+          <button class="btn btn-ai btn-sm"
+            onclick="askAI('${sid}')">Ask AI 🤖</button>
+          ${(sk.keyConcepts || []).map((c, i) =>
+            `<button class="btn btn-ai-concept btn-sm"
+              onclick="askAIConcept('${sid}', ${i})">Ask about ${c.label}</button>`
+          ).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+function openPractice(topicId) {
+  // Build topic selector buttons
+  const btnContainer = document.getElementById('topic-buttons');
+  const topics = [
+    { id: 'mixed', label: 'Mixed (all levels)' },
+    ...ALL_SKILL_IDS.map(sid => ({
+      id: sid,
+      label: skillLibrary[sid]?.name || sid
+    }))
+  ];
+  btnContainer.innerHTML = topics.map(t =>
+    `<button class="btn btn-secondary btn-sm btn-topic" id="topic-btn-${t.id}"
+      onclick="selectTopic('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  showSection('section-practice');
+  setProgress(80, 'Practicing');
+  selectTopic(topicId || state.weakSkills[0] || 'mixed');
+  document.getElementById('section-practice').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectTopic(topicId) {
+  state.practice.topic = topicId;
+  // Highlight active button
+  document.querySelectorAll('.btn-topic').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('topic-btn-' + topicId);
+  if (activeBtn) activeBtn.classList.add('active');
+  // Reset stats for this topic
+  state.practice.attempts = 0;
+  state.practice.correct  = 0;
+  state.practice.streak   = 0;
+  newPracticeQuestion();
+}
+
+function newPracticeQuestion() {
+  const topicId = state.practice.topic || 'mixed';
+  let skillId;
+  if (topicId === 'mixed') {
+    skillId = pick(ALL_SKILL_IDS);
+  } else {
+    skillId = topicId;
+  }
+
+  const gen = questionGenerators[skillId];
+  if (!gen) {
+    document.getElementById('practice-area').innerHTML = '<p>No generator for this skill.</p>';
+    return;
+  }
+
+  const q = gen("prac");
+  state.practice.currentQuestion = q;
+
+  const statsHTML = `<div class="stats-bar">
+    <span>Attempts: <strong>${state.practice.attempts}</strong></span>
+    <span>Correct: <strong>${state.practice.correct}</strong></span>
+    <span>Streak: <strong>${state.practice.streak}</strong></span>
+  </div>`;
+
+  document.getElementById('practice-area').innerHTML =
+    statsHTML + renderQuestion(q, 'practice');
+}
+
+function checkPracticeAnswer(qId) {
+  const q = state.practice.currentQuestion;
+  if (!q || q.id !== qId) return;
+
+  let result;
+  if (q.type === 'mc') {
+    const sel = document.querySelector(`input[name="${qId}"]:checked`);
+    result = checkMCAnswer(sel ? sel.value : '', q.answer);
+  } else {
+    const raw = document.getElementById('input-' + qId)?.value || '';
+    const parsed = parseAnswer(raw);
+    result = parsed ? checkAnswer(parsed, q.answer) : { status: 'wrong', message: 'Please enter an answer.' };
+  }
+
+  state.practice.attempts++;
+  if (result.status === 'correct') {
+    state.practice.correct++;
+    state.practice.streak++;
+  } else {
+    state.practice.streak = 0;
+  }
+
+  // Apply visual feedback to card
+  const card = document.getElementById('card-' + qId);
+  card.classList.remove('feedback-correct', 'feedback-almost', 'feedback-wrong');
+  card.classList.add('feedback-' + result.status);
+
+  // Show feedback message
+  const fb = document.getElementById('feedback-' + qId);
+  fb.style.display = 'block';
+  fb.className = 'feedback-msg ' + result.status;
+  fb.textContent = result.message;
+
+  // Show explanation
+  if (result.status !== 'correct') {
+    const ex = document.getElementById('explain-' + qId);
+    ex.innerHTML = '<strong>How to solve it:</strong><ol>' +
+      q.explainSteps.map(s => `<li>${s}</li>`).join('') + '</ol>';
+    ex.classList.add('visible');
+  }
+
+  saveProgress();
+}
+
+function showHint(qId) {
+  const q = state.practice.currentQuestion;
+  if (!q) return;
+  const fb = document.getElementById('feedback-' + qId);
+  fb.style.display = 'block';
+  fb.className = 'feedback-msg';
+  fb.style.background = '#e8eaf6';
+  fb.textContent = '💡 Hint: ' + q.hint;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 6 — RENDER CONNECTIONS
+   Called inside submitMastery() after scoring.
+   passed: boolean — determines which set of links to show.
+══════════════════════════════════════════════════════════════ */
+function renderConnections(passed) {
+  const list = passed ? connections.challenge : connections.foundational;
+  if (!list || list.length === 0) return '';
+
+  const icon    = passed ? '🚀' : '🔍';
+  const heading = passed
+    ? 'Ready to go further? Try these next:'
+    : 'Still struggling? Review these first:';
+  const cardClass = passed ? 'conn-card-challenge' : 'conn-card-foundational';
+
+  const cards = list.map(c => `
+    <a class="conn-card ${cardClass}" href="${c.url}">
+      <span class="conn-icon">${icon}</span>
+      <div class="conn-body">
+        <div class="conn-title">${c.title}</div>
+        <div class="conn-reason">${c.reason}</div>
+      </div>
+    </a>`).join('');
+
+  return `<div class="connections-section">
+    <h3>${heading}</h3>
+    ${cards}
+  </div>`;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+
+  const container = document.getElementById('mastery-questions');
+  container.innerHTML = state.mastery.questions
+    .map(q => renderQuestion(q, 'mastery'))
+    .join('');
+
+  showSection('section-mastery');
+  hideSection('mastery-results');
+  document.getElementById('section-mastery').scrollIntoView({ behavior: 'smooth' });
+}
+
+function submitMastery() {
+  const qs = state.mastery.questions;
+  let correct = 0;
+  const breakdown = {};
+  ALL_SKILL_IDS.forEach(sid => { breakdown[sid] = { correct: 0, total: 0 }; });
+
+  qs.forEach(q => {
+    let isCorrect = false;
+    if (q.type === 'mc') {
+      const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+      const { status } = checkMCAnswer(sel ? sel.value : '', q.answer);
+      isCorrect = status === 'correct';
+    } else {
+      const raw = document.getElementById('input-' + q.id)?.value || '';
+      const parsed = parseAnswer(raw);
+      const { status } = parsed ? checkAnswer(parsed, q.answer) : { status: 'wrong' };
+      isCorrect = status === 'correct';
+    }
+    if (isCorrect) correct++;
+    q.skills.forEach(sid => {
+      if (breakdown[sid]) {
+        breakdown[sid].total++;
+        if (isCorrect) breakdown[sid].correct++;
+      }
+    });
+  });
+
+  const score = Math.round(correct / qs.length * 100);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) {
+    state.mastery.bestScore = score;
+  }
+
+  const passed = score >= MASTERY_THRESHOLD;
+  if (passed) setProgress(100, 'Mastery achieved!');
+
+  // Build results HTML
+  let breakdownHTML = '';
+  ALL_SKILL_IDS.forEach(sid => {
+    const r = breakdown[sid];
+    if (!r || r.total === 0) return;
+    const pct = Math.round(r.correct / r.total * 100);
+    breakdownHTML += `<div style="font-size:.9rem;margin-bottom:.3rem">
+      <span class="badge ${skillLibrary[sid]?.badgeClass || ''}">${skillLibrary[sid]?.name || sid}</span>
+      ${r.correct}/${r.total} (${pct}%)
+    </div>`;
+  });
+
+  const resultsDiv = document.getElementById('mastery-results');
+  resultsDiv.innerHTML = `
+    <div class="${passed ? 'mastery-pass' : 'mastery-fail'}">
+      ${passed
+        ? `🎉 Mastery achieved! Score: ${score}% (Best: ${state.mastery.bestScore}%)`
+        : `Score: ${score}% — Keep practicing! (Need ${MASTERY_THRESHOLD}% to pass)`}
+    </div>
+    <div class="card"><h3>Skill Breakdown</h3>${breakdownHTML}</div>
+    <button class="btn btn-outline mt-1" onclick="openMastery()">Retake with new questions</button>
+    ${renderConnections(passed)}`;
+  showSection('mastery-results');
+
+  saveProgress();
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   NAME & GREETING  (site-wide, shared across all UEPGs)
+══════════════════════════════════════════════════════════════ */
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function applyName(name) {
+  state.studentName = name;
+  document.getElementById('name-collect').style.display = 'none';
+  const greetEl = document.getElementById('greeting-msg');
+  greetEl.textContent = `${getGreeting()}, ${name}!`;
+  greetEl.style.display = 'block';
+}
+
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT — load saved name + page progress on page load
+══════════════════════════════════════════════════════════════ */
+(function init() {
+  // 1. Check site-wide name first
+  const savedName = localStorage.getItem(NAME_KEY);
+  if (savedName) {
+    applyName(savedName);
+  }
+
+  // 2. Load per-page progress
+  const saved = loadProgress();
+  if (saved) {
+    if (saved.masteryBestScore) {
+      state.mastery.bestScore = saved.masteryBestScore;
+      document.getElementById('saved-progress-msg').textContent =
+        `Best mastery score: ${saved.masteryBestScore}%`;
+    }
+  }
+})();
+</script>
+</body>
+</html>

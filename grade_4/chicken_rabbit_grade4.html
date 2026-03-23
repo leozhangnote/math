@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chicken-Rabbit Problems — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#1b5e20,#388e3c); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Chicken-Rabbit Problems</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 4 &nbsp;·&nbsp; Solve "two unknowns" problems using the assumption method</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Guess &amp; Adjust</span>
+      <span class="badge badge-L2">Assume Small</span>
+      <span class="badge badge-L3">Assume Large</span>
+      <span class="badge badge-L4">Leg-Raising</span>
+      <span class="badge badge-L5">Three Types</span>
+      <span class="badge badge-rule">Strategy</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Core Formulas</h3>
+      <ul>
+        <li><strong>Assume all small:</strong> gap = actual total − small×heads; count of large = gap ÷ (large per − small per)</li>
+        <li><strong>Assume all large:</strong> excess = large×heads − actual total; count of small = excess ÷ (large per − small per)</li>
+        <li><strong>Leg-raising:</strong> remaining = total − small×heads; count of large = remaining ÷ (large per − small per)</li>
+        <li><strong>Three types:</strong> subtract the known type first, then solve as a two-type problem</li>
+        <li><strong>Verify always:</strong> count₁ + count₂ = total heads AND per₁×count₁ + per₂×count₂ = total quantity</li>
+      </ul>
+      <h3>Common Contexts</h3>
+      <ul>
+        <li>Chickens (2 legs) &amp; Rabbits (4 legs)</li>
+        <li>Bicycles (2 wheels) &amp; Tricycles (3 wheels)</li>
+        <li>¥2 notes &amp; ¥5 notes &nbsp;|&nbsp; Child tickets &amp; Adult tickets</li>
+        <li>Small trucks (3 t) &amp; Large trucks (5 t)</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_chicken_rabbit_g4";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   CONTEXT POOLS
+══════════════════════════════════════════════════════════════ */
+
+// 2-type contexts. per[0] = small, per[1] = large.
+const CTX2 = [
+  { item: ["chickens","rabbits"],           per: [2,4], unit: "legs",   cNoun: "animals",
+    q: (H,L,askL) => `There are chickens and rabbits in a cage. There are <strong>${H} animals</strong> and <strong>${L} legs</strong> in total. How many <strong>${askL?"rabbits":"chickens"}</strong> are there?` },
+  { item: ["bicycles","tricycles"],         per: [2,3], unit: "wheels", cNoun: "vehicles",
+    q: (H,L,askL) => `A workshop has ${H} bicycles and tricycles with <strong>${L} wheels</strong> in total. How many <strong>${askL?"tricycles":"bicycles"}</strong> are there?` },
+  { item: ["¥2 notes","¥5 notes"],          per: [2,5], unit: "yuan",   cNoun: "notes",
+    q: (H,L,askL) => `Xiao Ming has <strong>${H} notes</strong> (only ¥2 and ¥5) worth <strong>¥${L}</strong> in total. How many <strong>${askL?"¥5 notes":"¥2 notes"}</strong> does he have?` },
+  { item: ["small trucks","large trucks"],  per: [3,5], unit: "tonnes", cNoun: "trucks",
+    q: (H,L,askL) => `A company has ${H} trucks. Small trucks carry 3 t each, large trucks carry 5 t each. Total capacity: <strong>${L} t</strong>. How many <strong>${askL?"large trucks":"small trucks"}</strong>?` },
+  { item: ["3-leg stools","4-leg chairs"],  per: [3,4], unit: "legs",   cNoun: "seats",
+    q: (H,L,askL) => `A room has ${H} stools and chairs. Stools have 3 legs, chairs have 4 legs. <strong>${L} legs</strong> in total. How many <strong>${askL?"chairs":"stools"}</strong>?` },
+  { item: ["child tickets","adult tickets"],per: [3,5], unit: "yuan",   cNoun: "people",
+    q: (H,L,askL) => `${H} people bought tickets. Child: ¥3, adult: ¥5. Total paid: <strong>¥${L}</strong>. How many <strong>${askL?"adults":"children"}</strong> were there?` },
+  { item: ["2-point questions","5-point questions"], per: [2,5], unit: "points", cNoun: "questions",
+    q: (H,L,askL) => `A test has <strong>${H} questions</strong> (2-point and 5-point). Total: <strong>${L} points</strong>. How many <strong>${askL?"5-point questions":"2-point questions"}</strong>?` },
+];
+
+// 3-type contexts. item[2] / per[2] is always the "known count" type.
+const CTX3 = [
+  { item: ["birds","dogs","spiders"],                    per: [2,4,8],
+    q: (n,L,askL) => `There are <strong>${n[0]+n[1]+n[2]} animals</strong> (birds: 2 legs, dogs: 4 legs, spiders: 8 legs). There are <strong>${n[2]} spiders</strong>. Total legs: <strong>${L}</strong>. How many <strong>${askL?"dogs":"birds"}</strong>?` },
+  { item: ["¥1 coins","¥5 coins","¥10 coins"],           per: [1,5,10],
+    q: (n,L,askL) => `Xiao Ming has <strong>${n[0]+n[1]+n[2]} coins</strong> (¥1, ¥5, ¥10). He has <strong>${n[2]} ten-yuan coins</strong>. Total: <strong>¥${L}</strong>. How many <strong>${askL?"¥5 coins":"¥1 coins"}</strong>?` },
+  { item: ["bicycles","tricycles","cars"],               per: [2,3,4],
+    q: (n,L,askL) => `A depot has <strong>${n[0]+n[1]+n[2]} vehicles</strong> (bicycles, tricycles, cars). There are <strong>${n[2]} cars</strong>. Total wheels: <strong>${L}</strong>. How many <strong>${askL?"tricycles":"bicycles"}</strong>?` },
+  { item: ["1-pt questions","2-pt questions","5-pt questions"], per: [1,2,5],
+    q: (n,L,askL) => `A quiz has <strong>${n[0]+n[1]+n[2]} questions</strong> (1-pt, 2-pt, 5-pt). There are <strong>${n[2]} five-point questions</strong>. Total: <strong>${L} points</strong>. How many <strong>${askL?"2-pt questions":"1-pt questions"}</strong>?` },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   SCENARIO HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function makeS2(forLegRaise) {
+  let ctx, H, nl, ns;
+  let attempts = 0;
+  do {
+    const pool = forLegRaise ? CTX2.filter(c => c.per[0] === 2) : CTX2;
+    ctx = math.pick(pool);
+    H  = math.randInt(10, 22);
+    nl = math.randInt(3, H - 3);
+    ns = H - nl;
+    attempts++;
+  } while (nl === ns && attempts < 20);
+  const [ps, pl] = ctx.per;
+  return { ctx, H, ns, nl, L: ps*ns + pl*nl, ps, pl, diff: pl - ps };
+}
+
+function makeS3() {
+  const ctx  = math.pick(CTX3);
+  const [p0, p1, p2] = ctx.per;
+  const n2   = math.randInt(2, 5);
+  const H2   = math.randInt(6, 12);
+  const n1   = math.randInt(2, H2 - 2);
+  const n0   = H2 - n1;
+  const n    = [n0, n1, n2];
+  const L    = p0*n0 + p1*n1 + p2*n2;
+  return { ctx, n, L, H_r: H2, L_r: p0*n0 + p1*n1, p0, p1, p2, diff01: p1 - p0 };
+}
+
+function makeDecoys(correct, wrong1, diff) {
+  const d = [];
+  if (wrong1 !== correct && wrong1 > 0) d.push(wrong1);
+  const cands = [correct + diff, correct - diff, correct + 1, correct - 1, correct + 2, correct - 2];
+  for (const c of cands) {
+    if (c > 0 && c !== correct && !d.includes(c) && d.length < 3) d.push(c);
+  }
+  while (d.length < 3) d.push(d[d.length - 1] + 1);
+  return d.slice(0, 3);
+}
+
+function mcQ(id, skillId, promptHTML, correct, decoys, explainSteps, hint) {
+  const all = math.shuffle([String(correct), ...decoys.map(String)]);
+  return {
+    id, type: "mc", skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: all.indexOf(String(correct)) },
+    choices: all,
+    explainSteps,
+    hint,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  guess_adjust: {
+    name: "Level 1: Guess and Adjust", level: 1, badgeClass: "badge-L1",
+    summary: "Start with any guess, count the total, then adjust up or down until it matches exactly.",
+    steps: [
+      "Note the total count (heads) — this equals the number of all items combined.",
+      "Make a starting guess (e.g., split half-and-half).",
+      "Compute the total quantity with your guess.",
+      "Too high? Replace some large-type with small-type. Too low? Do the opposite.",
+      "Each swap changes the total by exactly (large per − small per) — use this to jump straight to the answer.",
+    ],
+    example: {
+      problemHTML: `There are chickens and rabbits. <strong>10 animals, 26 legs.</strong> How many rabbits?`,
+      solutionHTML:
+        `Guess: 5 chickens + 5 rabbits → 5×2 + 5×4 = 30 legs. Too many by 4.<br>
+         Each rabbit→chicken swap removes 2 legs. Need to remove 4 ÷ 2 = 2 rabbits.<br>
+         Rabbits = 5 − 2 = <strong>3</strong>, chickens = 7.<br>
+         Check: 7×2 + 3×4 = 14 + 12 = 26 ✓`,
+    },
+    misconception: "Each swap changes the total by the DIFFERENCE (e.g., 2), not by the full large-type amount (e.g., 4).",
+    keyConcepts: [
+      { label: "Guess & Adjust",   prompt: "Explain the Guess and Adjust strategy for problems where you know a total count and a total quantity (like chickens and rabbits). How do you adjust efficiently after a first guess? Show an example." },
+      { label: "Efficient Jumping", prompt: "Once I have a first guess in a chicken-rabbit problem, how can I use the difference between the two per-unit values to jump straight to the correct answer instead of guessing many times?" },
+    ],
+  },
+
+  assume_small: {
+    name: "Level 2: Assume All Small", level: 2, badgeClass: "badge-L2",
+    summary: "Assume every item is the smaller type. The gap between actual and assumed total — divided by the per-unit difference — gives the count of the larger type.",
+    steps: [
+      "Assume all items are the smaller type → assumed total = small per × heads.",
+      "Find the gap: actual total − assumed total.",
+      "Each swap (small → large) increases the total by (large per − small per).",
+      "Count of large type = gap ÷ (large per − small per).",
+      "Count of small type = total heads − count of large.",
+    ],
+    example: {
+      problemHTML: `Xiao Ming has <strong>12 notes</strong> (¥2 and ¥5) worth <strong>¥39</strong>. How many ¥5 notes?`,
+      solutionHTML:
+        `Assume all 12 are ¥2: 12 × 2 = ¥24. Gap = 39 − 24 = ¥15.<br>
+         Each swap ¥2 → ¥5 adds ¥3. ¥5 notes = 15 ÷ 3 = <strong>5</strong>.<br>
+         ¥2 notes = 12 − 5 = 7. Check: 7×2 + 5×5 = 14 + 25 = 39 ✓`,
+    },
+    misconception: "Dividing by the LARGE per-unit (e.g., 5) instead of the DIFFERENCE (e.g., 3). Always divide by (large − small).",
+    keyConcepts: [
+      { label: "Assumption Method", prompt: "Explain the 'assume all small' method for chicken-rabbit style problems. Why do we divide the gap by the DIFFERENCE between per-unit values, not by the larger value? Show an example with ¥2 and ¥5 notes." },
+      { label: "Why Divide by the Difference?", prompt: "When I assume all items are the smaller type, I get a gap. Why does this gap equal (number of large items) × (difference per item)? Explain with a simple concrete example." },
+    ],
+  },
+
+  assume_large: {
+    name: "Level 3: Assume All Large", level: 3, badgeClass: "badge-L3",
+    summary: "Assume every item is the larger type. The excess — divided by the per-unit difference — gives the count of the smaller type.",
+    steps: [
+      "Assume all items are the larger type → assumed total = large per × heads.",
+      "Find the excess: assumed total − actual total.",
+      "Each swap (large → small) decreases the total by (large per − small per).",
+      "Count of small type = excess ÷ (large per − small per).",
+      "Count of large type = total heads − count of small.",
+    ],
+    example: {
+      problemHTML: `A room has <strong>15 seats</strong> (3-leg stools and 4-leg chairs) with <strong>52 legs</strong>. How many stools?`,
+      solutionHTML:
+        `Assume all 15 are chairs: 15 × 4 = 60 legs. Excess = 60 − 52 = 8.<br>
+         Each chair→stool swap removes 1 leg. Stools = 8 ÷ 1 = <strong>8</strong>.<br>
+         Chairs = 15 − 8 = 7. Check: 8×3 + 7×4 = 24 + 28 = 52 ✓`,
+    },
+    misconception: "After finding the small count, some students report it as the large count — always label which type you solved for.",
+    keyConcepts: [
+      { label: "Assume All Large", prompt: "Explain the 'assume all large' version of the assumption method. If I assume all items are the larger type and end up with too many, how do I use that excess to find the number of smaller items? Give a clear example." },
+      { label: "Assume Small vs Large", prompt: "When should I use 'assume all small' vs 'assume all large'? Is there a practical advantage to choosing one over the other for certain problems?" },
+    ],
+  },
+
+  leg_raise: {
+    name: "Level 4: Leg-Raising Method", level: 4, badgeClass: "badge-L4",
+    summary: "Tell ALL animals to raise their front legs (= small-type per-unit). Small-type now has 0 legs left; large-type still has (large − small) legs. Remaining legs ÷ difference = count of large.",
+    steps: [
+      "Tell all items to 'give up' the small per-unit amount: remaining = total − small per × heads.",
+      "After this: small-type has 0 left; large-type has (large per − small per) left each.",
+      "Count of large type = remaining ÷ (large per − small per).",
+      "Count of small type = total heads − large count.",
+      "This is the same formula as 'assume all small' — just described visually.",
+    ],
+    example: {
+      problemHTML: `A workshop has <strong>14 bicycles and tricycles</strong> with <strong>33 wheels</strong>. How many tricycles?`,
+      solutionHTML:
+        `Tell all vehicles to remove 2 wheels: 33 − 2×14 = 5 wheels remain.<br>
+         Bicycles now have 0 wheels; each tricycle still has 1 wheel.<br>
+         Tricycles = 5 ÷ 1 = <strong>5</strong>. Bicycles = 9.<br>
+         Check: 9×2 + 5×3 = 18 + 15 = 33 ✓`,
+    },
+    misconception: "Raising the LARGE-type per-unit (e.g., 4) instead of the SMALL-type (e.g., 2). You always remove the small-type amount from every item.",
+    keyConcepts: [
+      { label: "Leg-Raising Visualization", prompt: "Explain the 'leg-raising' method for chicken-rabbit problems. If all animals raise 2 legs at once, why do chickens end up with 0 legs and rabbits with 2? How does this make counting easy? Give an example." },
+      { label: "Why It's the Same as Assume-Small", prompt: "The leg-raising method and the 'assume all small' method always give the same answer. Can you show why they are mathematically identical even though they look different?" },
+    ],
+  },
+
+  three_type: {
+    name: "Level 5: Three-Type Problems", level: 5, badgeClass: "badge-L5",
+    summary: "When one type's count is given, subtract its contribution from both the total count and total quantity, then solve the remaining two-type problem normally.",
+    steps: [
+      "Identify the type whose count is given directly.",
+      "New count = total heads − given count.",
+      "New total = total quantity − given count × its per-unit.",
+      "Solve the two-type problem using any L2–L4 method.",
+      "Verify: all three counts add up to total heads AND all quantities add up to total.",
+    ],
+    example: {
+      problemHTML: `There are <strong>18 animals</strong> (birds: 2 legs, dogs: 4 legs, spiders: 8 legs). There are <strong>4 spiders</strong>. Total legs: <strong>72</strong>. How many dogs?`,
+      solutionHTML:
+        `Remove spiders: 18 − 4 = 14 animals; 72 − 4×8 = 40 legs.<br>
+         Two-type: 14 birds &amp; dogs, 40 legs.<br>
+         Assume all birds: 14×2 = 28. Gap = 40 − 28 = 12.<br>
+         Dogs = 12 ÷ 2 = <strong>6</strong>. Birds = 14 − 6 = 8.<br>
+         Check: 8×2 + 6×4 + 4×8 = 16 + 24 + 32 = 72 ✓`,
+    },
+    misconception: "Subtracting the known count from heads but forgetting to subtract its quantity from the total — you must update BOTH sides.",
+    keyConcepts: [
+      { label: "Reducing to Two Types", prompt: "In a three-type problem (like birds, dogs, and spiders), how do we reduce it to a two-type problem? What exactly do we subtract, and why must we subtract from BOTH the total count AND the total quantity?" },
+      { label: "Two-Step Verification", prompt: "After solving a three-type chicken-rabbit problem, what two checks must I do to verify my answer? Why is it important to check both the count sum and the quantity sum?" },
+    ],
+  },
+
+  strategy_pick: {
+    name: "Rule: Strategy Selection", level: 0, badgeClass: "badge-rule",
+    summary: "All methods give the same answer — choose the one that requires fewest steps given the numbers.",
+    steps: [
+      "Two types or three? If three, reduce first (L5), then pick L2–L4.",
+      "Small per-unit = 2 or 3? Leg-raising (L4) is very fast.",
+      "Both per-unit values are large? Assume-all-small (L2) or assume-all-large (L3).",
+      "Prefer 'assume all small' when the large type is rarer; 'assume all large' when the small type is rarer.",
+      "Always verify: count sum + quantity sum both match.",
+    ],
+    example: {
+      problemHTML:
+        `<strong>Problem A:</strong> 20 bicycles &amp; tricycles, 46 wheels.<br>
+         <strong>Problem B:</strong> 15 trucks (3 t and 5 t), 63 tonnes.`,
+      solutionHTML:
+        `<strong>A (leg-raise, fast):</strong> 46 − 2×20 = 6 remaining; tricycles = 6 ÷ 1 = <strong>6</strong>.<br>
+         <strong>B (assume all small):</strong> 15×3 = 45. Gap = 63−45 = 18. Large trucks = 18 ÷ 2 = <strong>9</strong>.`,
+    },
+    misconception: "There is no single best method for all problems. Choosing based on the numbers (small per = 2 → leg-raise is quickest) saves time.",
+    keyConcepts: [
+      { label: "Which Method When?", prompt: "I know four methods for chicken-rabbit problems: guess and adjust, assume all small, assume all large, and leg-raising. Explain when each method is most efficient, and give one example where it shines over the others." },
+      { label: "Verification Step", prompt: "After solving any chicken-rabbit style problem, what are the two checks I should always do to confirm my answer is correct?" },
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_guess_adjust(id) {
+  const { ctx, H, ns, nl, L, ps, pl, diff } = makeS2(false);
+  const [sItem, lItem] = ctx.item;
+  const correct = nl;
+  const decoys  = makeDecoys(nl, ns, diff);
+  const gNl     = Math.round(H / 2);
+  const gNs     = H - gNl;
+  const gL      = ps * gNs + pl * gNl;
+  const gDiff   = gL - L;
+  const adjDesc = gDiff === 0
+    ? "That was the exact answer!"
+    : gDiff > 0
+      ? `Too many by ${gDiff}. Swap ${gDiff/diff} ${lItem} → ${sItem} (each swap removes ${diff}).`
+      : `Too few by ${-gDiff}. Swap ${-gDiff/diff} ${sItem} → ${lItem} (each swap adds ${diff}).`;
+  const steps = [
+    `Total items: ${H} (= heads).`,
+    `Guess: ${gNs} ${sItem} + ${gNl} ${lItem} → ${ps}×${gNs}+${pl}×${gNl} = ${gL} ${ctx.unit}. ${adjDesc}`,
+    `Each swap changes total by ${diff}. Need adjustment of ${Math.abs(gDiff)} → swap ${Math.abs(gDiff)/diff} item(s).`,
+    `${lItem}: ${nl}. ${sItem}: ${ns}.`,
+    `Check: ${ps}×${ns}+${pl}×${nl} = ${ps*ns}+${pl*nl} = ${L} ✓`,
+  ];
+  return mcQ(id, "guess_adjust", ctx.q(H, L, true), correct, decoys, steps,
+    `Guess half-and-half (${gNs} ${sItem} + ${gNl} ${lItem}) first and see if legs match.`);
+}
+
+function gen_assume_small(id) {
+  const { ctx, H, ns, nl, L, ps, pl, diff } = makeS2(false);
+  const [sItem, lItem] = ctx.item;
+  const assumed = ps * H;
+  const gap     = L - assumed;
+  const steps = [
+    `Assume all ${H} are ${sItem} (${ps} ${ctx.unit} each): ${H}×${ps} = ${assumed} ${ctx.unit}.`,
+    `Actual ${ctx.unit}: ${L}. Gap = ${L} − ${assumed} = ${gap}.`,
+    `Each ${sItem}→${lItem} swap adds ${diff} ${ctx.unit}.`,
+    `${lItem} = ${gap} ÷ ${diff} = ${nl}.`,
+    `${sItem} = ${H}−${nl} = ${ns}. Check: ${ps}×${ns}+${pl}×${nl} = ${L} ✓`,
+  ];
+  return mcQ(id, "assume_small", ctx.q(H, L, true), nl, makeDecoys(nl, ns, diff), steps,
+    `Assume all ${H} are ${sItem} (${ps} ${ctx.unit} each). What is the gap from the real total?`);
+}
+
+function gen_assume_large(id) {
+  const { ctx, H, ns, nl, L, ps, pl, diff } = makeS2(false);
+  const [sItem, lItem] = ctx.item;
+  const assumed = pl * H;
+  const excess  = assumed - L;
+  const steps = [
+    `Assume all ${H} are ${lItem} (${pl} ${ctx.unit} each): ${H}×${pl} = ${assumed} ${ctx.unit}.`,
+    `Actual ${ctx.unit}: ${L}. Excess = ${assumed}−${L} = ${excess}.`,
+    `Each ${lItem}→${sItem} swap removes ${diff} ${ctx.unit}.`,
+    `${sItem} = ${excess} ÷ ${diff} = ${ns}.`,
+    `${lItem} = ${H}−${ns} = ${nl}. Check: ${ps}×${ns}+${pl}×${nl} = ${L} ✓`,
+  ];
+  return mcQ(id, "assume_large", ctx.q(H, L, false), ns, makeDecoys(ns, nl, diff), steps,
+    `Assume all ${H} are ${lItem} (${pl} ${ctx.unit} each). How much excess is there?`);
+}
+
+function gen_leg_raise(id) {
+  const { ctx, H, ns, nl, L, ps, pl, diff } = makeS2(true);
+  const [sItem, lItem] = ctx.item;
+  const remaining = L - ps * H;
+  const steps = [
+    `All ${H} items remove ${ps} ${ctx.unit} each: ${L} − ${ps}×${H} = ${remaining} ${ctx.unit} remain.`,
+    `After removal: ${sItem} has 0 left; each ${lItem} still has ${pl-ps}.`,
+    `${lItem} = ${remaining} ÷ ${diff} = ${nl}.`,
+    `${sItem} = ${H}−${nl} = ${ns}.`,
+    `Check: ${ps}×${ns}+${pl}×${nl} = ${L} ✓`,
+  ];
+  return mcQ(id, "leg_raise", ctx.q(H, L, true), nl, makeDecoys(nl, ns, diff), steps,
+    `Imagine every item removes ${ps} ${ctx.unit}. How many remain in total?`);
+}
+
+function gen_three_type(id) {
+  const { ctx, n, L, H_r, L_r, p0, p1, p2, diff01 } = makeS3();
+  const assumed = p0 * H_r;
+  const gap     = L_r - assumed;
+  const H_total = n[0] + n[1] + n[2];
+  const steps = [
+    `Remove the ${n[2]} ${ctx.item[2]} (${p2} ${ctx.unit} each): ${H_total}−${n[2]}=${H_r} items; ${L}−${n[2]}×${p2}=${L_r} ${ctx.unit} left.`,
+    `Two-type problem: ${H_r} ${ctx.item[0]} &amp; ${ctx.item[1]}, ${L_r} ${ctx.unit}.`,
+    `Assume all ${H_r} are ${ctx.item[0]} (${p0} ${ctx.unit}): ${H_r}×${p0}=${assumed}. Gap=${L_r}−${assumed}=${gap}.`,
+    `${ctx.item[1]} = ${gap} ÷ ${diff01} = ${n[1]}. ${ctx.item[0]} = ${H_r}−${n[1]} = ${n[0]}.`,
+    `Check: ${p0}×${n[0]}+${p1}×${n[1]}+${p2}×${n[2]} = ${p0*n[0]}+${p1*n[1]}+${p2*n[2]} = ${L} ✓`,
+  ];
+  return mcQ(id, "three_type", ctx.q(n, L, true), n[1], makeDecoys(n[1], n[0], diff01), steps,
+    `First remove the ${n[2]} known ${ctx.item[2]}. What two-type problem remains?`);
+}
+
+function gen_strategy_pick(id) {
+  const { ctx, H, ns, nl, L, ps, pl, diff } = makeS2(false);
+  const [sItem, lItem] = ctx.item;
+  const askL   = Math.random() < 0.5;
+  const correct = askL ? nl : ns;
+  const wrong1  = askL ? ns : nl;
+  const assumed_s = ps * H;
+  const gap_s     = L - assumed_s;
+  const assumed_l = pl * H;
+  const excess_l  = assumed_l - L;
+  const lr_rem    = ps === 2 ? L - ps * H : null;
+  const steps = [
+    `Method A – assume all ${sItem}: gap = ${L}−${ps}×${H}=${gap_s}; ${lItem} = ${gap_s}÷${diff}=${nl}.`,
+    `Method B – assume all ${lItem}: excess = ${pl}×${H}−${L}=${excess_l}; ${sItem} = ${excess_l}÷${diff}=${ns}.`,
+    lr_rem !== null
+      ? `Method C – leg-raise: ${L}−${ps}×${H}=${lr_rem}; ${lItem} = ${lr_rem}÷${diff}=${nl}.`
+      : `Leg-raise works best when the small per-unit is 2 or 3.`,
+    `All methods agree. Answer: ${correct} ${askL ? lItem : sItem}.`,
+    `Check: ${ps}×${ns}+${pl}×${nl} = ${L} ✓`,
+  ];
+  return mcQ(id, "strategy_pick", ctx.q(H, L, askL), correct, makeDecoys(correct, wrong1, diff), steps,
+    `Use whichever method feels fastest — all give the same answer.`);
+}
+
+const generators = {
+  guess_adjust:  gen_guess_adjust,
+  assume_small:  gen_assume_small,
+  assume_large:  gen_assume_large,
+  leg_raise:     gen_leg_raise,
+  three_type:    gen_three_type,
+  strategy_pick: gen_strategy_pick,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:   state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore: state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i+1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk  = skillLibrary[sid];
+    const r   = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L"+sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /,"")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L"+sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  // Weight weak skills
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0;
+  let allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score  = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You have strong command of the assumption strategy." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [
+      { title: "Smart Whole Number Arithmetic",
+        url:   "../grade_4/smart_whole_number_arithmetic_grade4.html",
+        reason: "The assumption method relies on confident multiplication and division — sharpen those skills here." },
+    ],
+    challenge: [
+      { title: "Linear Equation in One Variable",
+        url:   "../grade_4/linear_equation_1var_grade4.html",
+        reason: "Chicken-rabbit problems can be solved using a single linear equation — the next step in algebraic thinking." },
+      { title: "Combinatorial Counting",
+        url:   "../grade_5/counting_grade5.html",
+        reason: "Counting how many ways to split or arrange items extends the structured thinking you used in chicken-rabbit — now with multiplication, addition principles, and partitions." },
+    ],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  if (list.length === 0) {
+    return passed
+      ? `<p class="text-muted">Excellent! Check back as more advanced topics are added.</p>`
+      : `<p class="text-muted">Strengthen your whole-number arithmetic foundations, then return here.</p>`;
+  }
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i+1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 4 student learning to solve Chicken-Rabbit style problems using the assumption method.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 4 student learning to solve Chicken-Rabbit style problems using the assumption method.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

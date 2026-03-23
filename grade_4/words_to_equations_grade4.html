@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>From Words to One Equation — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#e65100,#f57c00); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>From Words to One Equation</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 4 &nbsp;·&nbsp; Translate word descriptions into algebraic equations</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Direct</span>
+      <span class="badge badge-L2">Reversed</span>
+      <span class="badge badge-L3">Two-Step</span>
+      <span class="badge badge-L4">Parentheses</span>
+      <span class="badge badge-L5">Stories</span>
+      <span class="badge badge-rule">Choose &amp; Check</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Setting Up an Equation — Key Forms</h3>
+      <ul>
+        <li><strong>x + a = b</strong> — "increased by a", "a added to x"</li>
+        <li><strong>x − a = b</strong> — "decreased by a", "minus a"</li>
+        <li><strong>a − x = b</strong> — "x subtracted FROM a" ← watch the direction!</li>
+        <li><strong>ax = b</strong> — "a times x", "x multiplied by a", "a times as many"</li>
+        <li><strong>x ÷ a = b</strong> — "divided by a", "one-ath of x", "shared equally among a"</li>
+        <li><strong>ax + b = c</strong> — a groups of x, plus b extra items, equals c total</li>
+        <li><strong>a(x + b) = c</strong> — a groups, each with (x + b) items, equals c total</li>
+      </ul>
+      <h3>How to Define x</h3>
+      <ul>
+        <li>Pick the unknown quantity: "Let x = ..."</li>
+        <li>Express every other quantity in terms of x.</li>
+        <li>Find the relationship in the story and write it with an = sign.</li>
+        <li><strong>Check:</strong> plug in a trial answer — does it fit the original story?</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_words_to_eq_g4";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+const mi = s => math.inline(s);
+
+/**
+ * Build an MC question where choices are KaTeX-rendered equations.
+ * correctLatex  — the correct equation as a LaTeX string
+ * decoyDefs     — array of { eq: 'latex string', error: 'why it is wrong' }
+ */
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct equation: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return {
+    id, type: "mc", skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: cidx },
+    choices: rendered,
+    explainSteps,
+    hint,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  direct_translate: {
+    name: "Level 1: Direct Translation", level: 1, badgeClass: "badge-L1",
+    summary: "Translate plain language into one-step equations: x + a = b, x − a = b, ax = b, x ÷ a = b.",
+    steps: [
+      "'Increased by a' or 'plus a' → write x + a = b.",
+      "'Decreased by a' or 'minus a' → write x − a = b.",
+      "'Multiplied by a' or 'a times x' → write ax = b.",
+      "'Divided by a' or 'shared equally among a' → write x ÷ a = b.",
+      "Always start by writing: Let x = [the unknown quantity].",
+    ],
+    example: {
+      problemHTML: `A number increased by <strong>7</strong> equals <strong>15</strong>. Let x = the number. Which equation is correct?`,
+      solutionHTML:
+        `"Increased by 7" means +7. So: ${mi('x + 7 = 15')}.<br>
+         Check: if x = 8, then 8 + 7 = 15 ✓`,
+    },
+    misconception: "'Increased by a' means +a; 'multiplied by a' means ×a. Don't swap operations.",
+    keyConcepts: [
+      { label: "Expression vs Equation", prompt: "What is the difference between an expression and an equation? Translate 'a number plus 5' and 'a number plus 5 equals 12' into math notation. Why does the '=' sign matter for setting up problems?" },
+      { label: "Defining x", prompt: "Why do we write 'Let x = ...' before writing an equation? Show step by step how to translate 'a number multiplied by 4 gives 28' into a correct equation." },
+    ],
+  },
+
+  reversed_phrasing: {
+    name: "Level 2: Reversed Phrasing", level: 2, badgeClass: "badge-L2",
+    summary: "Handle tricky phrases: 'subtracted FROM a' (→ a − x = b), 'a times as many', 'one-ath of', 'b is a more than x'.",
+    steps: [
+      "'x subtracted FROM a' → a − x = b. The FROM tells you a is first!",
+      "'a times as many as x' → ax = b (x is the smaller, a×x is the larger).",
+      "'One-ath of x' or 'divided among a groups' → x ÷ a = b.",
+      "'b is a more than x' → x + a = b (x is the smaller mystery number).",
+      "When unsure: ask 'which number is bigger?' and check by substituting.",
+    ],
+    example: {
+      problemHTML: `"A number is subtracted from <strong>13</strong>. The result is <strong>5</strong>." Let x = the number. Which equation is correct?`,
+      solutionHTML:
+        `"x subtracted FROM 13" → 13 comes first, x is taken away from it.<br>
+         Correct: ${mi('13 - x = 5')}.<br>
+         Wrong: ${mi('x - 13 = 5')} ← this says x minus 13, which is flipped!`,
+    },
+    misconception: "For 'subtracted FROM a': a is on the LEFT. 'FROM a' means a − x, not x − a.",
+    keyConcepts: [
+      { label: "'Subtracted FROM' Direction", prompt: "Explain the difference between 'x subtracted from 10' and '10 subtracted from x'. Which gives 10 − x and which gives x − 10? Use numbers to verify your answer." },
+      { label: "'Times as Many' Direction", prompt: "Lily has 3 times as many stickers as Tom. Lily has 24 stickers. Let x = Tom's count. Why is the equation 3x = 24, not x = 3 × 24? Draw a diagram to explain." },
+    ],
+  },
+
+  two_step_setup: {
+    name: "Level 3: Two-Step Setup", level: 3, badgeClass: "badge-L3",
+    summary: "Write ax + b = c: identify the repeated group (ax), the fixed extra (+b), and the total (= c).",
+    steps: [
+      "Find the quantity repeated a times: that gives the ax part.",
+      "Find the fixed extra added on top: that gives + b.",
+      "The grand total is c (right side).",
+      "Write: ax + b = c.",
+      "Common mistake: forgetting the extra b, writing ax = c instead.",
+    ],
+    example: {
+      problemHTML: `3 identical notebooks and a pen costing $4 together cost $19. Let x = price of one notebook ($). Which equation is correct?`,
+      solutionHTML:
+        `3 notebooks × price each: 3x. Plus pen: +4. Total: =19.<br>
+         Correct: ${mi('3x + 4 = 19')}.<br>
+         Check: if x = 5, then 3×5 + 4 = 19 ✓`,
+    },
+    misconception: "Don't forget the fixed extra. '3 notebooks and a $4 pen = $19' needs both 3x AND +4.",
+    keyConcepts: [
+      { label: "Finding the Two Parts", prompt: "In '5 bags of apples and 3 extra apples total 43', identify: what gets multiplied by x? What is the fixed extra? Show how to write ax + b = c step by step." },
+      { label: "ax + b vs a(x + b)", prompt: "Explain the difference: '3 notebooks + 1 pen = $19' (3x + 4 = 19) vs '3 bags each with notebooks and a pen' (3(x+4)=19). How does the story structure decide which form to use?" },
+    ],
+  },
+
+  paren_setup: {
+    name: "Level 4: Parentheses Setup", level: 4, badgeClass: "badge-L4",
+    summary: "Write a(x + b) = c: when EACH group contains both x and b items, the b goes inside the parentheses.",
+    steps: [
+      "Identify a repeated groups, each holding (x + b) items.",
+      "Total = a × (x + b) = c.",
+      "Key test: is b per group or one-time total? Per group → inside brackets.",
+      "ax + b = c means b is a one-time total. a(x + b) = c means b is per group.",
+      "Mistake to avoid: writing ax + b = c when b is per group (should be a(x+b)=c).",
+    ],
+    example: {
+      problemHTML: `4 bags, each with x apples and 3 oranges. Total fruit: 28. Which equation is correct?`,
+      solutionHTML:
+        `Each bag: (x + 3) fruit. Four bags: 4(x + 3) = 28.<br>
+         Correct: ${mi('4(x + 3) = 28')}.<br>
+         Wrong: ${mi('4x + 3 = 28')} ← means only 3 oranges total, not 3 per bag!`,
+    },
+    misconception: "4x + 3 means 3 total; 4(x+3) means 3 per group. Match the equation to the story's grouping.",
+    keyConcepts: [
+      { label: "Inside vs Outside the Brackets", prompt: "For '4 bags each with x apples and 3 oranges totaling 28 fruit', why is 3 inside: 4(x+3)=28? What would 4x+3=28 mean differently? Explain with an actual fruit count." },
+      { label: "Parentheses vs Two-Step", prompt: "Compare: (1) '3 boxes of x balls + 4 extra = 22': 3x+4=22. (2) '3 boxes, each with x balls and 4 bonus balls = 22': 3(x+4)=22. What is the key structural difference?" },
+    ],
+  },
+
+  story_setup: {
+    name: "Level 5: Real-World Stories", level: 5, badgeClass: "badge-L5",
+    summary: "Read multi-sentence problems, identify the unknown and its relationship, and choose the correct equation.",
+    steps: [
+      "Read the entire problem before writing anything.",
+      "Identify the unknown → 'Let x = ...'",
+      "Express other quantities in terms of x.",
+      "Find the key relationship (total, equality, comparison) and write it as an equation.",
+      "Check: does the equation account for every number in the story?",
+    ],
+    example: {
+      problemHTML: `Xiao Ming has 3 times as many stickers as Xiao Hua. Together they have 40 stickers. Let x = Xiao Hua's count. Which equation is correct?`,
+      solutionHTML:
+        `Xiao Hua: x. Xiao Ming: 3x. Together: x + 3x = 40.<br>
+         Correct: ${mi('x + 3x = 40')}.<br>
+         Check: if x = 10, Xiao Ming = 30, total = 40 ✓`,
+    },
+    misconception: "When one quantity is 'a times another', write ax not just a. x + 3x = 40, not x + 3 = 40.",
+    keyConcepts: [
+      { label: "Extracting Relationships", prompt: "Walk me through: 'Xiao Hua's father is 28 years older than Xiao Hua. Their ages sum to 52. Let x = Xiao Hua's age.' How do I turn these two sentences into one equation?" },
+      { label: "Choosing x Wisely", prompt: "In a chicken-rabbit problem (heads and legs given), should I let x = chickens or x = rabbits? Does it matter? Set up both equations and compare." },
+    ],
+  },
+
+  choose_and_check: {
+    name: "Rule: Choose & Check", level: 0, badgeClass: "badge-rule",
+    summary: "Given a situation or a student's wrong equation, identify the correct equation and verify it matches every detail of the story.",
+    steps: [
+      "Read the x-definition carefully before judging each equation.",
+      "Check each equation by substituting a trial value — does it match the story?",
+      "When checking a student's equation: find the exact mistake (wrong operation, wrong grouping, wrong direction).",
+      "A correct equation must match EVERY number and relationship in the story.",
+      "Choosing x wisely often means picking the quantity that appears most naturally as a factor.",
+    ],
+    example: {
+      problemHTML: `"3 groups each with x boys and 4 girls, total 21 children." A student wrote ${mi('3x + 4 = 21')}. What is the correct equation?`,
+      solutionHTML:
+        `The student wrote 3x + 4 = 21 — this says 4 girls total. But the story says 4 girls per group (= 12 girls).<br>
+         Correct: ${mi('3(x + 4) = 21')} — each group has (x + 4) children.<br>
+         Check: if x = 3, then 3(3 + 4) = 21 ✓`,
+    },
+    misconception: "3x + 4 vs 3(x + 4): if the 4 is per group, it belongs INSIDE the brackets. Always ask: is this amount per group or a one-time total?",
+    keyConcepts: [
+      { label: "Spotting a Wrong Equation", prompt: "A student wrote x − 10 = 25 for 'a number is subtracted from 10, giving 25'. What mistake did they make? Write the correct equation and explain why." },
+      { label: "Smart x Choice", prompt: "In a problem with cows (4 legs) and sheep (4 legs too — wait, try chickens 2 legs and rabbits 4 legs) with heads and legs given, which should I call x? Set it up both ways and explain which simplifies better." },
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Direct Translation ─────────────────────────────────── */
+const POOL_L1 = [
+  // x + a = b
+  () => {
+    const a = math.randInt(3, 12), x = math.randInt(4, 18), b = x + a;
+    const correctLatex = `x + ${a} = ${b}`;
+    return {
+      promptHTML: `A number <strong>increased by ${a}</strong> equals <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x - ${a} = ${b}`, error: `"Increased by ${a}" means +${a}, not −${a}` },
+        { eq: `x + ${b} = ${a}`, error: `The numbers ${a} (added) and ${b} (result) are swapped` },
+        { eq: `${a}x = ${b}`, error: `"Increased by ${a}" means add ${a}, not multiply by ${a}` },
+      ],
+      hint: `"Increased by ${a}" → + ${a}. Result is ${b}. So x + ${a} = ${b}.`,
+    };
+  },
+  // x - a = b
+  () => {
+    const a = math.randInt(3, 12), x = math.randInt(a + 2, a + 18), b = x - a;
+    const correctLatex = `x - ${a} = ${b}`;
+    return {
+      promptHTML: `A number <strong>minus ${a}</strong> equals <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x + ${a} = ${b}`, error: `"Minus ${a}" means −${a}, not +${a}` },
+        { eq: `x - ${b} = ${a}`, error: `The numbers ${a} (subtracted) and ${b} (result) are swapped` },
+        { eq: `${a} - x = ${b}`, error: `It is x minus ${a} (not ${a} minus x)` },
+      ],
+      hint: `"A number minus ${a} = ${b}" → x − ${a} = ${b}.`,
+    };
+  },
+  // ax = b
+  () => {
+    const a = math.randInt(2, 6), x = math.randInt(3, 12), b = a * x;
+    const correctLatex = `${a}x = ${b}`;
+    return {
+      promptHTML: `A number <strong>multiplied by ${a}</strong> gives <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x + ${a} = ${b}`, error: `"Multiplied by ${a}" means ×${a}, not +${a}` },
+        { eq: `${b}x = ${a}`, error: `${b} is the result, not the multiplier — ${a} and ${b} are swapped` },
+        { eq: `x \\div ${a} = ${b}`, error: `"Multiplied by ${a}" means ×${a}, not ÷${a}` },
+      ],
+      hint: `"A number × ${a} = ${b}" → ${a}x = ${b}.`,
+    };
+  },
+  // x ÷ a = b
+  () => {
+    const a = math.randInt(2, 6), b = math.randInt(3, 12), x = a * b;
+    const correctLatex = `x \\div ${a} = ${b}`;
+    return {
+      promptHTML: `A number <strong>divided by ${a}</strong> gives <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x = ${b}`, error: `"Divided by ${a}" means ÷${a}, not ×${a}` },
+        { eq: `x \\div ${b} = ${a}`, error: `${a} (divisor) and ${b} (result) are swapped` },
+        { eq: `${a} \\div x = ${b}`, error: `It is x ÷ ${a} (not ${a} ÷ x)` },
+      ],
+      hint: `"A number ÷ ${a} = ${b}" → x ÷ ${a} = ${b}.`,
+    };
+  },
+];
+
+/* ── L2: Reversed Phrasing ──────────────────────────────────── */
+const POOL_L2 = [
+  // a - x = b  ("subtracted FROM")
+  () => {
+    const x = math.randInt(3, 12), b = math.randInt(2, x - 1), a = x + b;
+    const correctLatex = `${a} - x = ${b}`;
+    return {
+      promptHTML: `A number is <strong>subtracted from ${a}</strong>. The result is <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x - ${a} = ${b}`, error: `"Subtracted FROM ${a}" means ${a} − x, not x − ${a}` },
+        { eq: `x + ${a} = ${b}`, error: `The operation is subtraction, not addition` },
+        { eq: `${b} - x = ${a}`, error: `The ${a} and ${b} are swapped — ${a} is what x is subtracted from` },
+      ],
+      hint: `"x subtracted FROM ${a}" → ${a} is first: ${a} − x = ${b}.`,
+    };
+  },
+  // ax = b  ("a times as many")
+  () => {
+    const a = math.randInt(2, 5), x = math.randInt(4, 12), b = a * x;
+    const [n1, n2] = math.pick([["Lily","Tom"],["Xiao Ming","Xiao Hua"],["Ada","Ben"],["Sara","Max"]]);
+    const item = math.pick(["stickers","marbles","cards","stamps"]);
+    const correctLatex = `${a}x = ${b}`;
+    return {
+      promptHTML: `<strong>${n1}</strong> has <strong>${a} times as many</strong> ${item} as <strong>${n2}</strong>. ${n1} has <strong>${b}</strong> ${item}. Let x = ${n2}'s count. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x + ${a} = ${b}`, error: `"${a} times as many" means ×${a}, not +${a}` },
+        { eq: `${b}x = ${a}`, error: `${b} is ${n1}'s total (the result), not the multiplier` },
+        { eq: `x = ${a} + ${b}`, error: `This just adds the two numbers — it ignores the "times" relationship` },
+      ],
+      hint: `${n1} has ${a} × (${n2}'s count): ${a}x = ${b}.`,
+    };
+  },
+  // x ÷ a = b  ("one-ath of" / "shared among")
+  () => {
+    const a = math.randInt(2, 5), b = math.randInt(3, 12), x = a * b;
+    const fname = a === 2 ? "half" : a === 3 ? "one-third" : a === 4 ? "one-quarter" : `one-${a}th`;
+    const correctLatex = `x \\div ${a} = ${b}`;
+    return {
+      promptHTML: `<strong>${fname}</strong> of a number is <strong>${b}</strong>. Let x = the number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x = ${b}`, error: `"${fname} of x" means x ÷ ${a}, not ${a} × x` },
+        { eq: `x \\div ${b} = ${a}`, error: `${a} is the divisor and ${b} is the result — they are swapped here` },
+        { eq: `x - ${a} = ${b}`, error: `"${fname} of" describes division, not subtraction` },
+      ],
+      hint: `"${fname} of x = ${b}" → x ÷ ${a} = ${b}.`,
+    };
+  },
+  // x + a = b  ("b is a more than x")
+  () => {
+    const x = math.randInt(5, 15), a = math.randInt(3, 9), b = x + a;
+    const correctLatex = `x + ${a} = ${b}`;
+    return {
+      promptHTML: `<strong>${b}</strong> is <strong>${a} more than</strong> a mystery number. Let x = the mystery number. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x - ${a} = ${b}`, error: `x is the smaller number; adding ${a} to x gives ${b}, so x + ${a} = ${b}` },
+        { eq: `x + ${b} = ${a}`, error: `The ${a} (the difference) and ${b} (the larger value) are swapped` },
+        { eq: `${a}x = ${b}`, error: `"${a} more than" means +${a}, not ×${a}` },
+      ],
+      hint: `"${b} is ${a} more than x" → x + ${a} = ${b}. (x is the smaller mystery number)`,
+    };
+  },
+];
+
+/* ── L3: Two-Step Setup ─────────────────────────────────────── */
+const POOL_L3 = [
+  // Cost per item + fixed fee
+  () => {
+    const a = math.randInt(2, 5), x = math.randInt(4, 14), b = math.randInt(2, 10);
+    const c = a * x + b;
+    const item = math.pick(["notebook","pen","ruler","eraser"]);
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `<strong>${a} ${item}s</strong> and a bag costing $<strong>${b}</strong> together cost $<strong>${c}</strong>. Let x = price of one ${item} ($). Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x = ${c}`, error: `The $${b} bag is part of the total cost and must appear in the equation` },
+        { eq: `${a}x - ${b} = ${c}`, error: `The bag is an extra cost (+${b}), not a discount (−${b})` },
+        { eq: `${b}x + ${a} = ${c}`, error: `${a} is the number of ${item}s (the multiplier), not ${b}` },
+      ],
+      hint: `${a} ${item}s × price each + $${b} bag = $${c}: ${a}x + ${b} = ${c}.`,
+    };
+  },
+  // Groups + extras
+  () => {
+    const a = math.randInt(3, 6), x = math.randInt(3, 10), b = math.randInt(1, 6);
+    const c = a * x + b;
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `There are <strong>${a} full boxes</strong> of oranges, each holding x oranges, and <strong>${b} extra oranges</strong> on the table. Total oranges: <strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x = ${c}`, error: `The ${b} extra oranges on the table must be included` },
+        { eq: `x + ${a} + ${b} = ${c}`, error: `There are ${a} boxes, each with x oranges — that's ${a}×x, not just x` },
+        { eq: `${a}x + ${c} = ${b}`, error: `The total ${c} belongs on the right side of '='` },
+      ],
+      hint: `${a} boxes × x oranges each + ${b} extra = ${c} total: ${a}x + ${b} = ${c}.`,
+    };
+  },
+  // Weekly savings + initial amount
+  () => {
+    const a = math.randInt(3, 8), x = math.randInt(5, 15), b = math.randInt(5, 20);
+    const c = a * x + b;
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `Xiao Hua saves $x each week. After <strong>${a} weeks</strong>, added to her starting amount of $<strong>${b}</strong>, she has $<strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x = ${c}`, error: `The starting $${b} is part of her total and must appear in the equation` },
+        { eq: `${a}x - ${b} = ${c}`, error: `The starting amount is added to savings (+), not subtracted` },
+        { eq: `x + ${a} + ${b} = ${c}`, error: `Saving $x per week for ${a} weeks gives ${a}×x, not just x` },
+      ],
+      hint: `${a} weeks × $x + $${b} starting = $${c}: ${a}x + ${b} = ${c}.`,
+    };
+  },
+  // Tables with chairs + extra chairs
+  () => {
+    const a = math.randInt(3, 6), x = math.randInt(3, 8), b = math.randInt(2, 6);
+    const c = a * x + b;
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `There are <strong>${a} tables</strong>, each with x chairs around them, and <strong>${b} extra chairs</strong> along the wall. Total chairs: <strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}(x + ${b}) = ${c}`, error: `The ${b} extra chairs are against the wall (one-time total), not ${b} per table` },
+        { eq: `x + ${a} + ${b} = ${c}`, error: `There are ${a} tables each with x chairs — that's ${a}×x chairs at tables` },
+        { eq: `${a}x - ${b} = ${c}`, error: `The extra chairs are in addition (+${b}), not removed (−${b})` },
+      ],
+      hint: `${a} tables × x chairs + ${b} extra = ${c}: ${a}x + ${b} = ${c}.`,
+    };
+  },
+];
+
+/* ── L4: Parentheses Setup ──────────────────────────────────── */
+const POOL_L4 = [
+  // Bags with apples and oranges
+  () => {
+    const a = math.randInt(2, 5), b = math.randInt(2, 6), x = math.randInt(4, 10);
+    const c = a * (x + b);
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `There are <strong>${a} bags</strong>. Each bag has x apples and <strong>${b} oranges</strong>. Total fruit: <strong>${c}</strong>. Let x = apples per bag. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x + ${b} = ${c}`, error: `Each of the ${a} bags has ${b} oranges — that is ${a}×${b} = ${a*b} oranges total. The ${b} must go inside the brackets` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each bag has x plus (not minus) ${b} fruit` },
+        { eq: `${a}(x + ${c}) = ${b}`, error: `The total ${c} goes on the right side of '='` },
+      ],
+      hint: `Each of ${a} bags holds (x + ${b}) items: ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+  // Families buying tickets
+  () => {
+    const a = math.randInt(3, 6), b = math.randInt(2, 6), x = math.randInt(6, 14);
+    const c = a * (x + b);
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `<strong>${a} families</strong> each buy one adult ticket ($x) and one child ticket ($<strong>${b}</strong>). Total cost: $<strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x + ${b} = ${c}`, error: `All ${a} families each pay the $${b} child ticket — that is $${a*b} in child tickets total. The ${b} belongs inside the brackets` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each family pays x + ${b} (both tickets added), not x − ${b}` },
+        { eq: `x + ${b} = ${c}`, error: `There are ${a} families — multiply the per-family cost by ${a}` },
+      ],
+      hint: `Each of ${a} families pays (x + ${b}): ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+  // Rows of seats
+  () => {
+    const a = math.randInt(3, 6), b = math.randInt(2, 5), x = math.randInt(5, 12);
+    const c = a * (x + b);
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `There are <strong>${a} rows</strong> of seats. Each row has x regular seats and <strong>${b} extra seats</strong> at the end. Total seats: <strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x + ${b} = ${c}`, error: `Each row has ${b} extra seats, so there are ${a}×${b} = ${a*b} extra seats total — the ${b} must go inside the brackets` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each row has x plus ${b} extra seats (added, not subtracted)` },
+        { eq: `(${a} + ${b})x = ${c}`, error: `${a} and ${b} serve different roles: ${a} is the number of rows, ${b} is extra seats per row` },
+      ],
+      hint: `Each of ${a} rows has (x + ${b}) seats: ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+  // Gift boxes with biscuits and candies
+  () => {
+    const a = math.randInt(2, 5), b = math.randInt(3, 7), x = math.randInt(5, 12);
+    const c = a * (x + b);
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `<strong>${a} gift boxes</strong> each contain x biscuits and <strong>${b} candies</strong>. Total items: <strong>${c}</strong>. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x + ${b} = ${c}`, error: `There are ${a} boxes each with ${b} candies — that is ${a*b} candies total. The ${b} belongs inside the parentheses` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each box has x biscuits plus ${b} candies (added, not subtracted)` },
+        { eq: `${a + 1}(x + ${b}) = ${c}`, error: `There are ${a} gift boxes, not ${a + 1}` },
+      ],
+      hint: `Each of ${a} boxes holds (x + ${b}) items: ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+];
+
+/* ── L5: Real-World Stories ─────────────────────────────────── */
+const POOL_L5 = [
+  // Age comparison
+  () => {
+    const x = math.randInt(8, 18), diff = math.randInt(20, 32), parentAge = x + diff;
+    const correctLatex = `x + ${diff} = ${parentAge}`;
+    return {
+      promptHTML: `Xiao Ming's father is <strong>${parentAge}</strong> years old. Xiao Ming is <strong>${diff} years younger</strong> than his father. Let x = Xiao Ming's age. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x - ${diff} = ${parentAge}`, error: `Xiao Ming is younger, so father's age = Xiao Ming's age + ${diff}: x + ${diff} = ${parentAge}` },
+        { eq: `x + ${parentAge} = ${diff}`, error: `${parentAge} (father's age) is the result, not a small addend` },
+        { eq: `${diff} - x = ${parentAge}`, error: `x is close to ${parentAge}, not close to ${diff}` },
+      ],
+      hint: `Xiao Ming + ${diff} years = father's age ${parentAge}: x + ${diff} = ${parentAge}.`,
+    };
+  },
+  // Shopping (two-step)
+  () => {
+    const a = math.randInt(2, 5), x = math.randInt(5, 14), b = math.randInt(3, 10);
+    const c = a * x + b;
+    const item = math.pick(["ruler","pencil","eraser","bookmark"]);
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `Xiao Hua bought <strong>${a} identical ${item}s</strong> and a pencil case costing $<strong>${b}</strong>. She spent $<strong>${c}</strong> in total. Let x = the price of one ${item} ($). Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x + ${a} + ${b} = ${c}`, error: `There are ${a} ${item}s each costing x — that is ${a}×x, not just x` },
+        { eq: `${a}x - ${b} = ${c}`, error: `She spent money on both ${item}s and the pencil case (+), not a discount (−)` },
+        { eq: `${a}x = ${c}`, error: `The $${b} pencil case is part of her total spending` },
+      ],
+      hint: `${a} ${item}s × $x each + $${b} pencil case = $${c}: ${a}x + ${b} = ${c}.`,
+    };
+  },
+  // Group outing (parentheses)
+  () => {
+    const a = math.randInt(3, 6), b = math.randInt(2, 5), x = math.randInt(5, 12);
+    const c = a * (x + b);
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `<strong>${a} classmates</strong> each brought x books and <strong>${b} pens</strong> to a study session. Together they brought <strong>${c} items</strong>. Let x = books per student. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}x + ${b} = ${c}`, error: `Each of the ${a} students also brought ${b} pens — so there are ${a*b} pens total. The ${b} must go inside the brackets` },
+        { eq: `x + ${b} = ${c}`, error: `There are ${a} students — multiply the per-student total by ${a}` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each student brought x books plus ${b} pens (added, not subtracted)` },
+      ],
+      hint: `Each student brings (x + ${b}) items, and there are ${a} students: ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+  // Sticker ratio
+  () => {
+    const r = math.randInt(2, 4), x = math.randInt(5, 15), total = x + r * x;
+    const correctLatex = `x + ${r}x = ${total}`;
+    return {
+      promptHTML: `Xiao Hua has <strong>${r} times</strong> as many stickers as Xiao Ming. Together they have <strong>${total}</strong> stickers. Let x = Xiao Ming's count. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x + ${r} = ${total}`, error: `Xiao Hua has ${r}×x stickers, not just ${r} stickers` },
+        { eq: `${r}x = ${total}`, error: `Both students' stickers must be counted: x (Xiao Ming) + ${r}x (Xiao Hua) = ${total}` },
+        { eq: `x + ${r}x = ${total - 1}`, error: `The total is ${total}, not ${total - 1}` },
+      ],
+      hint: `Xiao Ming: x. Xiao Hua: ${r}x. Together: x + ${r}x = ${total}.`,
+    };
+  },
+];
+
+/* ── Rule: Choose & Check ───────────────────────────────────── */
+
+// Type A: given x-definition, pick the correct equation
+const POOL_RULE_A = [
+  // Ratio (sheep and cows): x + r*x = total
+  () => {
+    const r = math.randInt(2, 4), x = math.randInt(5, 15), total = x + r * x;
+    const correctLatex = `x + ${r}x = ${total}`;
+    return {
+      promptHTML: `There are <strong>${total} animals</strong> on a farm. The number of cows is <strong>${r} times</strong> the number of sheep. Let x = number of sheep. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${r}x - x = ${total}`, error: `Sheep (x) and cows (${r}x) are both present — add them, don't subtract` },
+        { eq: `x + ${r} = ${total}`, error: `"${r} times as many" means ×${r}, so cows = ${r}x, not just ${r}` },
+        { eq: `${r}x = ${total}`, error: `This counts only the cows — must also add the sheep (x)` },
+      ],
+      hint: `Sheep: x. Cows: ${r}x. Total: x + ${r}x = ${total}.`,
+    };
+  },
+  // Ticket + program: ax + b = c vs a(x+b) = c
+  () => {
+    const a = math.randInt(3, 6), x = math.randInt(5, 14), b = math.randInt(3, 9);
+    const c = a * x + b;
+    const correctLatex = `${a}x + ${b} = ${c}`;
+    return {
+      promptHTML: `<strong>${a} tickets</strong> and a $<strong>${b}</strong> program booklet cost $<strong>${c}</strong> in total. <em>Let x = price of one ticket ($).</em> Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `${a}(x + ${b}) = ${c}`, error: `The $${b} booklet is one item total, not $${b} per ticket — don't group it with x` },
+        { eq: `x + ${b} = ${c}`, error: `There are ${a} tickets at price x each, so it's ${a}x, not just x` },
+        { eq: `${a}x = ${c}`, error: `The $${b} program booklet must be included in the total` },
+      ],
+      hint: `${a} tickets × $x + $${b} booklet = $${c}: ${a}x + ${b} = ${c}.`,
+    };
+  },
+];
+
+// Type B: student wrote a wrong equation — find the correct one
+const POOL_RULE_B = [
+  // Student forgot parentheses: wrote ax + b = c, should be a(x+b) = c
+  () => {
+    const a = math.randInt(2, 5), b = math.randInt(2, 6), x = math.randInt(4, 10);
+    const c = a * (x + b);
+    const wrongLatex  = `${a}x + ${b} = ${c}`;
+    const correctLatex = `${a}(x + ${b}) = ${c}`;
+    return {
+      promptHTML: `"<strong>${a} boxes</strong>, each with x apples and <strong>${b} oranges</strong>, hold <strong>${c} fruit</strong> total." A student wrote: ${mi(wrongLatex)}. What is the <strong>correct</strong> equation?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: wrongLatex, error: `This is the student's equation — it means only ${b} oranges total, but the story says ${b} per box (= ${a*b} total)` },
+        { eq: `${a}(x - ${b}) = ${c}`, error: `Each box has x plus ${b} fruit (added, not subtracted)` },
+        { eq: `x + ${b} = ${c}`, error: `Forgot to multiply by ${a} boxes` },
+      ],
+      hint: `Each box: (x + ${b}) fruit. ${a} boxes: ${a}(x + ${b}) = ${c}.`,
+    };
+  },
+  // Student reversed subtraction: wrote x - a = b, should be a - x = b
+  () => {
+    const x = math.randInt(3, 12), b = math.randInt(2, x - 1), a = x + b;
+    const wrongLatex  = `x - ${a} = ${b}`;
+    const correctLatex = `${a} - x = ${b}`;
+    return {
+      promptHTML: `"A number is subtracted from <strong>${a}</strong>, giving <strong>${b}</strong>." A student wrote: ${mi(wrongLatex)}. What is the <strong>correct</strong> equation?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: wrongLatex, error: `The student wrote x − ${a}, but the story says ${a} − x ("subtracted FROM ${a}" means ${a} comes first)` },
+        { eq: `x + ${a} = ${b}`, error: `The operation is subtraction, not addition` },
+        { eq: `${b} - x = ${a}`, error: `${a} and ${b} are swapped — ${a} is the starting value` },
+      ],
+      hint: `"x subtracted FROM ${a}" → ${a} − x = ${b}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_direct_translate(id) {
+  const tpl = math.pick(POOL_L1)();
+  return buildEqQ(id, "direct_translate", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+function gen_reversed_phrasing(id) {
+  const tpl = math.pick(POOL_L2)();
+  return buildEqQ(id, "reversed_phrasing", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+function gen_two_step_setup(id) {
+  const tpl = math.pick(POOL_L3)();
+  return buildEqQ(id, "two_step_setup", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+function gen_paren_setup(id) {
+  const tpl = math.pick(POOL_L4)();
+  return buildEqQ(id, "paren_setup", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+function gen_story_setup(id) {
+  const tpl = math.pick(POOL_L5)();
+  return buildEqQ(id, "story_setup", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+function gen_choose_and_check(id) {
+  const pool = [...POOL_RULE_A, ...POOL_RULE_B];
+  const tpl  = math.pick(pool)();
+  return buildEqQ(id, "choose_and_check", tpl.promptHTML, tpl.correctLatex, tpl.decoyDefs, tpl.hint);
+}
+
+const generators = {
+  direct_translate:  gen_direct_translate,
+  reversed_phrasing: gen_reversed_phrasing,
+  two_step_setup:    gen_two_step_setup,
+  paren_setup:       gen_paren_setup,
+  story_setup:       gen_story_setup,
+  choose_and_check:  gen_choose_and_check,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:    state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore:  state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i + 1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk     = skillLibrary[sid];
+    const r      = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct    = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /, "")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L" + sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /, "")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L" + sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /, "")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i + 1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0, allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You can confidently translate word problems into equations." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [],
+    challenge: [
+      { title: "Linear Equation in One Variable",
+        url:   "../grade_4/linear_equation_1var_grade4.html",
+        reason: "Once you can set up equations from word problems, the next step is learning to solve them using the balance model and inverse operations." },
+      { title: "From Words to Multiple Equations",
+        url:   "../grade_4/words_to_equation_system_grade4.html",
+        reason: "Apply your equation-writing skills to problems with two or three unknowns — each constraint becomes its own equation." },
+    ],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  if (list.length === 0) {
+    return passed
+      ? `<p class="text-muted">Excellent work! Check back as more advanced topics are added.</p>`
+      : `<p class="text-muted">This is a foundational skill — practice more, then return here for the Mastery Test.</p>`;
+  }
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 4 student learning to translate word problems into algebraic equations.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 4 student learning to translate word problems into algebraic equations.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

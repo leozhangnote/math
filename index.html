@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Practice — UEPG Library</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; color: #222; line-height: 1.6; }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    header {
+      background: #1a237e; color: #fff; padding: 2rem 1rem 1.5rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; margin-bottom: .3rem; }
+    header p  { font-size: 1rem; opacity: .85; }
+
+    /* ── Search & Filter Bar ──────────────────────────────────── */
+    .toolbar {
+      background: #fff; border-bottom: 1px solid #e0e0e0;
+      padding: 1rem; position: sticky; top: 0; z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,.07);
+    }
+    .toolbar-inner {
+      max-width: 960px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; gap: .8rem; align-items: center;
+    }
+    #search-input {
+      flex: 1; min-width: 200px; padding: .55rem .9rem; font-size: 1rem;
+      border: 2px solid #c5cae9; border-radius: 8px; outline: none;
+      transition: border-color .2s;
+    }
+    #search-input:focus { border-color: #1a237e; }
+
+    .grade-filters { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .grade-btn {
+      padding: .35rem .85rem; border-radius: 999px; border: 2px solid #c5cae9;
+      background: #fff; color: #555; font-size: .85rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .grade-btn:hover  { border-color: #1a237e; color: #1a237e; }
+    .grade-btn.active { background: #1a237e; border-color: #1a237e; color: #fff; }
+
+    #result-count { font-size: .85rem; color: #888; white-space: nowrap; }
+
+    /* ── Main Content ─────────────────────────────────────────── */
+    main { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+    /* ── Status / Loading ─────────────────────────────────────── */
+    #status-msg {
+      text-align: center; padding: 3rem 1rem; color: #888; font-size: 1rem;
+    }
+
+    /* ── Grade Section Headers ────────────────────────────────── */
+    .grade-section { margin-bottom: 2rem; }
+    .grade-heading {
+      font-size: 1.1rem; font-weight: 700; color: #1a237e;
+      border-left: 4px solid #1a237e; padding-left: .7rem;
+      margin-bottom: .9rem;
+    }
+
+    /* ── UEPG Cards Grid ──────────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 1rem;
+    }
+    .uepg-card {
+      background: #fff; border-radius: 10px; padding: 1.1rem 1.2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      border: 2px solid transparent;
+      display: flex; flex-direction: column; gap: .5rem;
+      transition: border-color .2s, box-shadow .2s;
+      text-decoration: none; color: inherit;
+    }
+    .uepg-card:hover {
+      border-color: #1a237e;
+      box-shadow: 0 4px 14px rgba(26,35,126,.12);
+    }
+    .uepg-card.status-planned {
+      opacity: .65; cursor: default; pointer-events: none;
+    }
+
+    .card-badges { display: flex; gap: .3rem; flex-wrap: wrap; justify-content: flex-end; margin-bottom: .3rem; }
+    .card-title { font-weight: 700; font-size: 1rem; color: #1a237e; }
+
+    .badge {
+      display: inline-block; border-radius: 999px;
+      padding: .1rem .6rem; font-size: .72rem; font-weight: 700;
+    }
+    .badge-grade    { background: #e8eaf6; color: #3949ab; }
+    .badge-subject  { background: #e0f2f1; color: #00695c; }
+    .badge-complete { background: #e8f5e9; color: #2e7d32; }
+    .badge-planned  { background: #f5f5f5; color: #757575; }
+    .badge-draft    { background: #fff3e0; color: #e65100; }
+
+    .card-fingerprint {
+      font-size: .85rem; color: #444; line-height: 1.45;
+    }
+    .card-skills {
+      font-size: .78rem; color: #777;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-footer {
+      margin-top: auto; padding-top: .4rem;
+      font-size: .8rem; font-weight: 600; color: #1a237e;
+    }
+    .uepg-card.status-planned .card-footer { color: #999; }
+
+    /* ── Empty State ──────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 3rem 1rem; color: #999;
+      grid-column: 1 / -1;
+    }
+    .empty-state strong { display: block; font-size: 1.1rem; margin-bottom: .4rem; color: #bbb; }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    footer {
+      text-align: center; padding: 1.5rem 1rem;
+      font-size: .82rem; color: #aaa; border-top: 1px solid #e0e0e0;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Math Practice Library</h1>
+  <p>Concept-by-concept practice pages for Grades 4 – 12</p>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <input id="search-input" type="search" placeholder="Search by topic, concept, or skill…" autocomplete="off" />
+    <div class="grade-filters">
+      <button class="grade-btn active" data-grade="all">All Grades</button>
+      <button class="grade-btn" data-grade="4">Grade 4</button>
+      <button class="grade-btn" data-grade="5">Grade 5</button>
+      <button class="grade-btn" data-grade="6">Grade 6</button>
+      <button class="grade-btn" data-grade="7">Grade 7</button>
+      <button class="grade-btn" data-grade="8">Grade 8</button>
+      <button class="grade-btn" data-grade="9">Grade 9</button>
+      <button class="grade-btn" data-grade="10">Grade 10</button>
+      <button class="grade-btn" data-grade="11">Grade 11</button>
+      <button class="grade-btn" data-grade="12">Grade 12</button>
+    </div>
+    <span id="result-count"></span>
+  </div>
+</div>
+
+<main>
+  <div id="status-msg">Loading…</div>
+  <div id="content" style="display:none"></div>
+</main>
+
+<footer>
+  Math Practice Library &nbsp;·&nbsp; Static UEPG Collection
+</footer>
+
+<script>
+"use strict";
+
+/* ── Registry shards to load ──────────────────────────────────── */
+const GRADE_SHARDS = [4, 5, 6, 7, 8, 9, 10, 11, 12];
+const SHARD_PATH   = grade => `registry/registry_grade_${grade}.json`;
+
+const GRADE_LABELS = {
+  4: "Grade 4 and below",
+  5: "Grade 5", 6: "Grade 6", 7: "Grade 7",  8: "Grade 8",
+  9: "Grade 9", 10: "Grade 10", 11: "Grade 11", 12: "Grade 12"
+};
+
+/* ── State ────────────────────────────────────────────────────── */
+let allEntries   = [];   // flat array of all registry entries, sorted by grade
+let activeGrade  = "all";
+let searchQuery  = "";
+
+/* ── Load all shards ──────────────────────────────────────────── */
+async function loadRegistry() {
+  const results = await Promise.allSettled(
+    GRADE_SHARDS.map(g =>
+      fetch(SHARD_PATH(g))
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    )
+  );
+
+  allEntries = [];
+  results.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      const shard = result.value;
+      (shard.uepgs || []).forEach(entry => {
+        allEntries.push({ ...entry, _shardGrade: GRADE_SHARDS[i] });
+      });
+    }
+  });
+
+  // Sort: by _shardGrade asc, then by grade asc within shard, then title
+  allEntries.sort((a, b) =>
+    a._shardGrade - b._shardGrade ||
+    (a.grade - b.grade) ||
+    a.title.localeCompare(b.title)
+  );
+
+  render();
+}
+
+/* ── Filtering ────────────────────────────────────────────────── */
+function filtered() {
+  const q = searchQuery.toLowerCase().trim();
+  return allEntries.filter(e => {
+    // Grade filter
+    if (activeGrade !== "all" && String(e._shardGrade) !== activeGrade) return false;
+    // Search filter — match against multiple fields
+    if (!q) return true;
+    const haystack = [
+      e.title,
+      e.concept_fingerprint,
+      e.skills_summary,
+      ...(e.topics || []),
+      e.subject || ""
+    ].join(" ").toLowerCase();
+    // Support multi-word: all words must appear somewhere
+    return q.split(/\s+/).every(word => haystack.includes(word));
+  });
+}
+
+/* ── Render ───────────────────────────────────────────────────── */
+function render() {
+  const entries = filtered();
+  const content = document.getElementById("content");
+  const statusMsg = document.getElementById("status-msg");
+
+  statusMsg.style.display = "none";
+  content.style.display   = "block";
+
+  // Update result count
+  document.getElementById("result-count").textContent =
+    entries.length === allEntries.length
+      ? `${allEntries.length} pages`
+      : `${entries.length} of ${allEntries.length} pages`;
+
+  if (entries.length === 0) {
+    content.innerHTML = `<div class="cards-grid">
+      <div class="empty-state">
+        <strong>No pages found</strong>
+        Try different keywords or select a different grade.
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Group by shard grade
+  const byGrade = {};
+  entries.forEach(e => {
+    const g = e._shardGrade;
+    if (!byGrade[g]) byGrade[g] = [];
+    byGrade[g].push(e);
+  });
+
+  const html = Object.keys(byGrade)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(g => {
+      const cards = byGrade[g].map(e => renderCard(e)).join("");
+      const label = GRADE_LABELS[g] || `Grade ${g}`;
+      return `<div class="grade-section">
+        <div class="grade-heading">${label}</div>
+        <div class="cards-grid">${cards}</div>
+      </div>`;
+    }).join("");
+
+  content.innerHTML = html;
+}
+
+/* ── Render a single UEPG card ────────────────────────────────── */
+function renderCard(e) {
+  const isComplete = e.status === "complete";
+  const isPlanned  = e.status === "planned" || e.status === "stub" || !e.file;
+
+  const statusBadge = isComplete
+    ? `<span class="badge badge-complete">✓ ready</span>`
+    : isPlanned
+      ? `<span class="badge badge-planned">coming soon</span>`
+      : `<span class="badge badge-draft">draft</span>`;
+
+  const subjectBadge = e.subject
+    ? `<span class="badge badge-subject">${e.subject}</span>` : "";
+
+  const gradeBadge = `<span class="badge badge-grade">Grade ${e.grade}</span>`;
+
+  const footer = isComplete
+    ? `Open practice page →`
+    : `Not yet available`;
+
+  const cardContent = `
+    <div class="card-badges">${gradeBadge}${subjectBadge}${statusBadge}</div>
+    <div class="card-title">${e.title}</div>
+    <div class="card-fingerprint">${e.concept_fingerprint}</div>
+    ${e.skills_summary
+      ? `<div class="card-skills">Skills: ${e.skills_summary}</div>`
+      : ""}
+    <div class="card-footer">${footer}</div>`;
+
+  if (isComplete && e.file) {
+    return `<a class="uepg-card status-complete" href="${e.file}">${cardContent}</a>`;
+  } else {
+    return `<div class="uepg-card status-planned">${cardContent}</div>`;
+  }
+}
+
+/* ── Event Listeners ──────────────────────────────────────────── */
+document.getElementById("search-input").addEventListener("input", e => {
+  searchQuery = e.target.value;
+  render();
+});
+
+document.querySelectorAll(".grade-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".grade-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeGrade = btn.dataset.grade;
+    render();
+  });
+});
+
+/* ── Init ─────────────────────────────────────────────────────── */
+loadRegistry().catch(err => {
+  document.getElementById("status-msg").textContent =
+    "Could not load registry. Make sure this page is served over HTTP (not opened as a local file).";
+  console.error(err);
+});
+</script>
+</body>
+</html>

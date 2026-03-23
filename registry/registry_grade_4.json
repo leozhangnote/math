@@ -1,0 +1,201 @@
+{
+  "_shard": "math_grade_4",
+  "_description": "All math UEPG concepts at grade 4 and below (grades K–4): counting, place value, basic operations, introduction to fractions, basic geometry",
+  "_last_updated": "2026-03-21",
+  "_entry_count": 8,
+  "uepgs": [
+    {
+      "id": "averages_grade4",
+      "title": "Averages",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "mean and its applications — computing average, finding a missing value, adjusting for added/removed values, weighted average of groups, overlapping-segment trick, and average-speed trap",
+      "topics": [
+        "average", "mean", "sum divided by count", "missing value", "weighted average",
+        "combined average", "add remove value", "overlapping segments", "shared element",
+        "average speed", "harmonic mean", "equal distance", "arithmetic mean trap"
+      ],
+      "skills_summary": "compute average (sum÷count), find missing (total−known), add/remove one value (new sum÷new count), weighted average (n₁A₁+n₂A₂)÷(n₁+n₂), overlap element (Sum₁+Sum₂−Total), average speed trap 2v₁v₂÷(v₁+v₂)",
+      "connections": {
+        "foundational": [
+          { "id": "linear_equation_1var_grade4", "title": "Linear Equation in One Variable", "file": "grade_4/linear_equation_1var_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "system_2eq_2var_grade5", "title": "System of Two Linear Equations", "file": "grade_5/system_2eq_2var_grade5.html" }
+        ]
+      },
+      "file": "grade_4/averages_grade4.html",
+      "status": "complete",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "words_to_equations_grade4",
+      "title": "From Words to Multiple Equations",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "setting up a system of equations from a word description — sum & difference, count + quantity (chicken-rabbit), two price scenarios, ratio + total, and three-variable systems",
+      "topics": [
+        "equation system", "system of equations", "two unknowns", "three unknowns",
+        "sum and difference", "count and quantity", "chicken rabbit", "two prices",
+        "ratio", "multiple equations", "from words", "setup", "build equations"
+      ],
+      "skills_summary": "sum & difference (x+y=a, x-y=b), count+quantity (x+y=H, ax+by=Q), two price scenarios (a1x+b1y=c1, a2x+b2y=c2), ratio+total (x=ry, x+y=T), three variables (three equations), build & verify",
+      "connections": {
+        "foundational": [
+          { "id": "words_to_equations_grade4", "title": "From Words to One Equation", "file": "grade_4/words_to_equations_grade4.html" },
+          { "id": "chicken_rabbit_grade4", "title": "Chicken-Rabbit Problems", "file": "grade_4/chicken_rabbit_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "system_2eq_2var_grade5", "title": "System of Two Linear Equations", "file": "grade_5/system_2eq_2var_grade5.html" }
+        ]
+      },
+      "file": "grade_4/words_to_equation_system_grade4.html",
+      "status": "complete",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "words_to_equations_grade4",
+      "title": "From Words to One Equation",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "translating word descriptions into algebraic equations — direct language, reversed phrasing, two-step (ax+b=c), parentheses (a(x+b)=c), multi-sentence stories, and choosing x wisely",
+      "topics": [
+        "equation setup", "word problems", "translate words", "from words to equations",
+        "direct translation", "subtracted from", "times as many", "one-ath of",
+        "two-step equation", "parentheses", "grouping", "choose x", "check equation",
+        "ax+b=c setup", "a(x+b)=c setup"
+      ],
+      "skills_summary": "direct translation (x+a=b x-a=b ax=b x÷a=b), reversed phrasing (a-x=b times-as-many fraction-of more-than), two-step setup (ax+b=c), parentheses setup (a(x+b)=c), real-world stories, choose x and check",
+      "connections": {
+        "foundational": [],
+        "challenge": [
+          { "id": "linear_equation_1var_grade4", "title": "Linear Equation in One Variable", "file": "grade_4/linear_equation_1var_grade4.html" }
+        ]
+      },
+      "file": "grade_4/words_to_equations_grade4.html",
+      "status": "complete",
+      "created": "2026-03-21"
+    },
+    {
+      "id": "fraction_basics_grade3",
+      "title": "Fraction Basics",
+      "grade": 3,
+      "subject": "arithmetic",
+      "concept_fingerprint": "introduction to fractions — what a fraction means, reading and writing unit and non-unit fractions, comparing fractions with the same numerator or denominator",
+      "topics": [
+        "fractions", "numerator", "denominator", "parts of a whole", "equal parts",
+        "unit fraction", "non-unit fraction", "comparing fractions", "greater than",
+        "less than", "same denominator", "same numerator", "fraction basics"
+      ],
+      "skills_summary": "parts of a whole, unit fractions (1/2 1/3 1/4 1/6 1/8), non-unit fractions, comparing with same denominator, comparing with same numerator, fraction misconceptions",
+      "connections": {
+        "foundational": [],
+        "challenge": [
+          { "id": "fraction_simplification_grade4", "title": "Fraction Simplification", "file": "grade_4/fraction_simplification_grade4.html" }
+        ]
+      },
+      "file": "grade_3/fraction_basics_grade3.html",
+      "status": "complete",
+      "created": "2026-03-19"
+    },
+    {
+      "id": "fraction_simplification_grade4",
+      "title": "Fraction Simplification",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "reducing a fraction to lowest terms by dividing numerator and denominator by their greatest common divisor (GCD)",
+      "topics": [
+        "fractions", "simplification", "simplify", "reduce", "lowest terms",
+        "GCD", "greatest common divisor", "equivalent fractions", "numerator",
+        "denominator", "common factors", "cancellation", "nested fractions", "variables"
+      ],
+      "skills_summary": "basic reduction by GCD, simplification within fraction division, parentheses-first operations, variable factor cancellation, nested fraction simplification",
+      "connections": {
+        "foundational": [
+          { "id": "fraction_basics_grade3", "title": "Fraction Basics", "file": "grade_3/fraction_basics_grade3.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_4/fraction_simplification_grade4.html",
+      "status": "complete",
+      "created": "2026-03-18"
+    },
+    {
+      "id": "smart_whole_number_arithmetic_grade4",
+      "title": "Smart Whole Number Arithmetic",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "calculation strategies for whole number expressions — common factor, complement to round number, two-level regrouping, ratio shortcut, and factor splitting (125×8=1000, 25×4=100)",
+      "topics": [
+        "whole numbers", "arithmetic strategies", "mental math", "distributive law",
+        "common factor", "factoring", "complement method", "round numbers",
+        "ratio", "factor splitting", "125 times 8", "25 times 4",
+        "fast calculation", "smart arithmetic"
+      ],
+      "skills_summary": "common factor (distributive law), complement to round number (99×n, 98×n), two-level regrouping, ratio shortcut between whole numbers, factor splitting (friendly pairs), strategy selection",
+      "connections": {
+        "foundational": [
+          { "id": "fraction_simplification_grade4", "title": "Fraction Simplification", "file": "grade_4/fraction_simplification_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "smart_decimal_arithmetic_grade5", "title": "Smart Decimal Arithmetic", "file": "grade_5/smart_decimal_arithmetic_grade5.html" },
+          { "id": "chicken_rabbit_grade4", "title": "Chicken-Rabbit Problems", "file": "grade_4/chicken_rabbit_grade4.html" }
+        ]
+      },
+      "file": "grade_4/smart_whole_number_arithmetic_grade4.html",
+      "status": "complete",
+      "created": "2026-03-20"
+    },
+    {
+      "id": "chicken_rabbit_grade4",
+      "title": "Chicken-Rabbit Problems",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "solving two-unknown problems (chicken-rabbit style) using the assumption method — guess-and-adjust, assume all small, assume all large, leg-raising visualization, and three-type reduction",
+      "topics": [
+        "chicken rabbit", "assumption method", "two unknowns", "guess and adjust",
+        "leg raising", "heads and legs", "system of two constraints",
+        "mental math", "logic", "word problems", "three types", "strategy selection",
+        "bicycles tricycles", "bills notes", "tickets", "trucks cargo"
+      ],
+      "skills_summary": "guess and adjust, assume all small type, assume all large type, leg-raising visualization, three-type reduction to two-type, strategy selection",
+      "connections": {
+        "foundational": [
+          { "id": "smart_whole_number_arithmetic_grade4", "title": "Smart Whole Number Arithmetic", "file": "grade_4/smart_whole_number_arithmetic_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "linear_equation_1var_grade4", "title": "Linear Equation in One Variable", "file": "grade_4/linear_equation_1var_grade4.html" }
+        ]
+      },
+      "file": "grade_4/chicken_rabbit_grade4.html",
+      "status": "complete",
+      "created": "2026-03-20"
+    },
+    {
+      "id": "linear_equation_1var_grade4",
+      "title": "Linear Equation in One Variable",
+      "grade": 4,
+      "subject": "arithmetic",
+      "concept_fingerprint": "solving one-variable linear equations using the balance model and inverse operations — x+a=b, x-a=b, ax=b, x÷a=b, two-step ax+b=c and a(x+b)=c, word problem setup, solution verification",
+      "topics": [
+        "linear equation", "one variable", "equation", "solve for x", "balance model",
+        "inverse operations", "addition equation", "subtraction equation",
+        "multiplication equation", "division equation", "two-step equation",
+        "word problems", "verify solution", "check answer", "algebra"
+      ],
+      "skills_summary": "equation concepts and balance model, one-step add/subtract (x+a=b x-a=b a-x=b), one-step mul/div (ax=b x÷a=b), two-step (ax+b=c and a(x+b)=c), word problem setup (6 templates including chicken-rabbit bridge), verify and reflect",
+      "connections": {
+        "foundational": [
+          { "id": "chicken_rabbit_grade4", "title": "Chicken-Rabbit Problems", "file": "grade_4/chicken_rabbit_grade4.html" },
+          { "id": "smart_whole_number_arithmetic_grade4", "title": "Smart Whole Number Arithmetic", "file": "grade_4/smart_whole_number_arithmetic_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "system_2eq_2var_grade5", "title": "System of Two Linear Equations", "file": "grade_5/system_2eq_2var_grade5.html" }
+        ]
+      },
+      "file": "grade_4/linear_equation_1var_grade4.html",
+      "status": "complete",
+      "created": "2026-03-20"
+    }
+  ]
+}

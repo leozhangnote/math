@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Whole Number Arithmetic — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Smart Whole Number Arithmetic</h1>
+    <p class="subtitle">Grade 4 &nbsp;·&nbsp; Learn to calculate whole numbers faster by spotting hidden patterns — no written working needed!</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Common Factor</span>
+      <span class="hero-tag">Complement Method</span>
+      <span class="hero-tag">Ratio Shortcut</span>
+      <span class="hero-tag">Factor Splitting</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)" autocomplete="off" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Check ▶</button>
+      <button class="btn btn-outline" onclick="resetPage()" style="color:#fff;border-color:#fff">Reset</button>
+    </div>
+    <p id="greeting-msg"></p>
+    <div class="progress-wrap" style="margin-top:1rem">
+      <div id="progress-bar"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       REFERENCE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Strategy Guide ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Why these tricks work</h3>
+      <p>Every technique here is the <strong>distributive law</strong> in action: <em>a × b + a × c = a × (b + c)</em>. The skill is seeing which numbers share a hidden connection.</p>
+      <h3>The 5 strategies</h3>
+      <ul>
+        <li><strong>L1 — Common Factor:</strong> When every term is multiplied by the same number, factor it out and add/subtract the remaining parts first.</li>
+        <li><strong>L2 — Complement to Round Number:</strong> Replace 99 with (100 − 1), or 98 with (100 − 2). Then check if the correction term already appears in the expression.</li>
+        <li><strong>L3 — Two-Level Regrouping:</strong> In three-term expressions, group two terms to find a common factor — then factor again.</li>
+        <li><strong>L4 — Ratio Shortcut:</strong> Two numbers may be secretly related (e.g., 75 = 3 × 25). Factor out the smaller one.</li>
+        <li><strong>L5 — Factor Splitting:</strong> Break one awkward number into two friendly factors (e.g., 24 = 8 × 3 so 125 × 24 = 125 × 8 × 3 = 1000 × 3).</li>
+      </ul>
+      <h3>Key friendly pairs to remember</h3>
+      <ul>
+        <li>125 × 8 = 1000 &nbsp;|&nbsp; 25 × 4 = 100 &nbsp;|&nbsp; 5 × 20 = 100 &nbsp;|&nbsp; 2 × 50 = 100</li>
+      </ul>
+      <h3>Golden rule</h3>
+      <p>Spend a few seconds scanning for a pattern. If you don't see one — just calculate. Never force a trick that isn't there.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 1 — DIAGNOSTIC
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Your Knowledge</h2>
+      <p class="text-muted">Answer each question. This helps us find what to focus on.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Answers ▶</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 2 — RESULTS
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Study the lesson cards for any skills marked "needs work".</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 4 — PRACTICE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Choose a topic and practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 5 — MASTERY TEST
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions across all skills. Score 80% or more to show mastery!</p>
+      <div id="mastery-questions"></div>
+      <button class="btn btn-primary mt-2" id="mastery-submit-btn" onclick="submitMastery()">Submit Test ▶</button>
+      <div id="mastery-results" style="display:none"></div>
+    </div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════════════════════════ */
+const PAGE_KEY          = "uepg_smart_whole_number_g4";
+const NAME_KEY          = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ── Aliases ──────────────────────────────────────────────── */
+const { pick, randInt, shuffle } = {
+  pick:    arr     => math.pick(arr),
+  randInt: (a, b)  => math.randInt(a, b),
+  shuffle: arr     => math.shuffle(arr)
+};
+const mi = s => math.inline(s);
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+const skillLibrary = {
+  common_factor: {
+    name: "Level 1: Common Factor",
+    level: 1,
+    badgeClass: "badge-L1",
+    summary: "When every term in an expression is multiplied by the same number, factor it out. Then add or subtract the smaller remaining numbers first, before multiplying.",
+    steps: [
+      "Look at each term. Is the same number multiplied in every term?",
+      "If yes, write it outside a bracket.",
+      "Inside the bracket, add or subtract the remaining numbers.",
+      "Multiply: base × (simplified sum)."
+    ],
+    example: {
+      problemHTML: `Calculate: ${mi("37 \\times 6 + 37 \\times 4")}`,
+      solutionHTML: `37 appears in both terms. Factor it out: ${mi("37 \\times (6 + 4) = 37 \\times 10 = 370")}`
+    },
+    misconception: "Calculating each term separately first (222 + 148 = 370) — it works but wastes time. Always check for a common factor first.",
+    keyConcepts: [
+      { label: "Distributive Law", prompt: "Explain the distributive law a × b + a × c = a × (b + c) in simple terms for a Grade 4 student. Why does it save time? Give 3 worked examples with whole numbers." },
+      { label: "Spotting the Common Factor", prompt: "How do I quickly spot the common factor in an expression like 48 × 9 − 48 × 4? What should I look for first, and why does factoring out the common number make the calculation easier?" }
+    ]
+  },
+  complement_round: {
+    name: "Level 2: Complement Method",
+    level: 2,
+    badgeClass: "badge-L2",
+    summary: "When a number is close to a round number like 100 or 1000, replace it with (round − gap). The correction term often cancels with another part of the expression.",
+    steps: [
+      "Spot a factor close to a round number: 99 = 100 − 1, 98 = 100 − 2, 101 = 100 + 1.",
+      "Replace it and expand: a × 99 = a × 100 − a × 1.",
+      "Check if the correction term (a × 1, a × 2, etc.) already appears elsewhere in the expression.",
+      "If it does, cancel it. Otherwise simplify using the round number result."
+    ],
+    example: {
+      problemHTML: `Calculate: ${mi("53 \\times 99 + 53")}`,
+      solutionHTML: `Replace 99 = 100 − 1: ${mi("53 \\times 100 - 53 \\times 1 + 53 = 5300 - 53 + 53 = 5300")}`
+    },
+    misconception: "Calculating 53 × 99 directly by long multiplication — always check if 99 or 98 is hiding a round number trick first.",
+    keyConcepts: [
+      { label: "Complement Method", prompt: "What is the complement method for multiplication? Show me how to use it to calculate 99 × 37, 98 × 25, and 101 × 48. Why is this faster than long multiplication?" },
+      { label: "Cancellation in Arithmetic", prompt: "What does it mean when two terms 'cancel' each other in an arithmetic expression? Give me 3 examples where a correction term cancels with another term in the same expression." }
+    ]
+  },
+  two_level_regroup: {
+    name: "Level 3: Two-Level Regrouping",
+    level: 3,
+    badgeClass: "badge-L3",
+    summary: "In a three-term expression, group two terms that share a factor. After factoring, a new common factor often appears — factor again to reach a simple product.",
+    steps: [
+      "Look at all three terms. Which two terms share a common factor?",
+      "Group those two terms and factor out their common factor.",
+      "Look at the resulting two-term expression — does a new common factor appear?",
+      "Factor again. The remaining bracket should add to a round number."
+    ],
+    example: {
+      problemHTML: `Calculate: ${mi("3 \\times 8 + 5 \\times 6 + 2 \\times 8")}`,
+      solutionHTML: `Group the two terms with 8: ${mi("8 \\times (3 + 2) + 5 \\times 6 = 8 \\times 5 + 5 \\times 6 = 5 \\times (8 + 6) = 5 \\times 14 = 70")}`
+    },
+    misconception: "Stopping after the first factoring step (getting 8 × 5 + 5 × 6 = 40 + 30 = 70 by direct calc) — spot that 5 appears twice and factor again!",
+    keyConcepts: [
+      { label: "Two-Step Factoring", prompt: "Explain 'two-level regrouping' with a worked example: how do I factor an expression twice in a row? What should I look for after the first factoring step to know I can factor again?" },
+      { label: "Rearranging Addition", prompt: "Why can I rearrange the order of terms in an addition or subtraction expression? What property of addition makes this valid? Give me an example where rearranging reveals a hidden common factor." }
+    ]
+  },
+  ratio_shortcut: {
+    name: "Level 4: Ratio Shortcut",
+    level: 4,
+    badgeClass: "badge-L4",
+    summary: "Two different numbers may be secretly related by a simple ratio (e.g., 75 = 3 × 25, or 64 = 4 × 16). Spotting this lets you factor out the smaller number from all terms.",
+    steps: [
+      "Look at the two different numbers being multiplied. Divide the larger by the smaller.",
+      "If the answer is a small whole number, you have found the ratio.",
+      "Rewrite the larger number as (ratio × smaller) and factor out the smaller.",
+      "Simplify the remaining numbers inside the bracket — they should combine neatly."
+    ],
+    example: {
+      problemHTML: `Calculate: ${mi("75 \\times 8 - 25 \\times 4")}`,
+      solutionHTML: `75 ÷ 25 = 3, so 75 = 3 × 25. Rewrite: ${mi("25 \\times 3 \\times 8 - 25 \\times 4 = 25 \\times (24 - 4) = 25 \\times 20 = 500")}`
+    },
+    misconception: "Not trying to divide the two numbers — always check 75 ÷ 25, 64 ÷ 16, etc. If the answer is a small whole number, a ratio shortcut is available.",
+    keyConcepts: [
+      { label: "Finding the Ratio", prompt: "How do I spot that two whole numbers like 75 and 25 are related by a ratio? What mental division should I do? Give me 5 examples of common ratio pairs in arithmetic problems for Grade 4." },
+      { label: "Rewriting as a Multiple", prompt: "Once I know 75 = 3 × 25, how do I rewrite 75 × 8 to factor out 25? Walk through the steps clearly. Why does this make the bracket easier to compute?" }
+    ]
+  },
+  factor_splitting: {
+    name: "Level 5: Factor Splitting",
+    level: 5,
+    badgeClass: "badge-L5",
+    summary: "Break one hard number into two friendly factors so that a pair of numbers multiplies to a round number like 100 or 1000. Key pairs: 125 × 8 = 1000, 25 × 4 = 100, 5 × 20 = 100.",
+    steps: [
+      "Look at the numbers being multiplied. Can one of them be split into smaller parts?",
+      "Try splitting to create a friendly pair: 24 = 8 × 3, so pair 125 with the 8.",
+      "Reorder multiplication (order doesn't matter): 125 × 8 first, then × 3.",
+      "Multiply the friendly pair to get a round number, then multiply by the rest."
+    ],
+    example: {
+      problemHTML: `Calculate: ${mi("125 \\times 24")}`,
+      solutionHTML: `Split 24 = 8 × 3. Reorder: ${mi("125 \\times 8 \\times 3 = 1000 \\times 3 = 3000")}`
+    },
+    misconception: "Trying to multiply 125 × 24 directly — always check if one number contains a factor of 8 (to pair with 125) or a factor of 4 (to pair with 25).",
+    keyConcepts: [
+      { label: "Friendly Factor Pairs", prompt: "What are the most useful 'friendly factor pairs' in mental arithmetic for Grade 4? Explain why 125 × 8 = 1000 and 25 × 4 = 100 are so powerful, and how to use them when splitting a number like 24 or 36." },
+      { label: "Commutative & Associative Laws", prompt: "Why can I change the order of multiplication in 125 × 24? What math rules allow me to rewrite 125 × 24 as (125 × 8) × 3? Explain the commutative and associative properties of multiplication in simple terms." }
+    ]
+  },
+  strategy_choice: {
+    name: "Rule: Choose the Right Strategy",
+    level: 0,
+    badgeClass: "badge-rule",
+    summary: "Each of the 5 strategies has a tell-tale signal. Scan for that signal first; if none is present, calculate directly. Forcing a trick where there isn't one wastes more time than it saves.",
+    steps: [
+      "Scan for the same number in every term → Common Factor (L1).",
+      "Scan for a factor close to 100 or 1000 → Complement Method (L2).",
+      "Scan for a number appearing in two of three terms → Two-Level Regroup (L3).",
+      "Divide the two unlike numbers — whole-number ratio? → Ratio Shortcut (L4).",
+      "Scan for 125, 25, 5 or 2 among the factors → Factor Splitting (L5).",
+      "No pattern found? Calculate directly — that is the smart choice."
+    ],
+    example: {
+      problemHTML: `Which strategy is best for ${mi("53 \\times 99 + 53")}?`,
+      solutionHTML: `99 is close to 100 — that's the Complement signal. 99 = 100 − 1, so 53 × 1 = 53, which cancels with the standalone +53. Answer: Level 2 — Complement.`
+    },
+    misconception: "Spending too long hunting for a clever trick on a problem that is just meant to be computed directly. If no pattern jumps out in a few seconds, just calculate.",
+    keyConcepts: [
+      { label: "Signals for Each Strategy", prompt: "For each of these 5 strategies — Common Factor, Complement Method, Two-Level Regroup, Ratio Shortcut, Factor Splitting — give me one short signal phrase that tells me this strategy applies. Make it memorable for a Grade 4 student." },
+      { label: "When to Just Calculate", prompt: "How do I know when it is faster to just multiply directly rather than look for a trick? What do numbers look like when no smart strategy applies? Give me 3 examples of expressions where direct calculation is actually the best approach." }
+    ]
+  }
+};
+
+const ALL_SKILL_IDS = [
+  "common_factor", "complement_round", "two_level_regroup",
+  "ratio_shortcut", "factor_splitting", "strategy_choice"
+];
+
+/* ══════════════════════════════════════════════════════════════
+   CONNECTIONS
+══════════════════════════════════════════════════════════════ */
+const connections = {
+  foundational: [
+    {
+      title: "Fraction Simplification",
+      url:   "../grade_4/fraction_simplification_grade4.html",
+      reason: "Practices the same factoring instinct — finding common factors and the distributive law — that powers all five smart-arithmetic strategies."
+    }
+  ],
+  challenge: [
+    {
+      title: "Smart Decimal Arithmetic",
+      url:   "../grade_5/smart_decimal_arithmetic_grade5.html",
+      reason: "Takes these same strategies into the world of decimals, adding ratio recognition between unusual decimal pairs and algebraic substitution."
+    },
+    {
+      title: "Chicken-Rabbit Problems",
+      url:   "../grade_4/chicken_rabbit_grade4.html",
+      reason: "Applies multiplication and division skills to solve two-unknown logic problems using the assumption method."
+    },
+    {
+      title: "Linear Equation in One Variable",
+      url:   "../grade_4/linear_equation_1var_grade4.html",
+      reason: "Fluent arithmetic is the foundation of equation solving — confident mental calculation makes every step faster."
+    }
+  ]
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills: [],
+  practice: { topic: null, currentQuestion: null, attempts: 0, correct: 0, streak: 0 },
+  mastery:   { questions: [], answers: {}, score: null, bestScore: null }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   LOCALSTORAGE
+══════════════════════════════════════════════════════════════ */
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    studentName: state.studentName,
+    diagnostic:  state.diagnostic,
+    weakSkills:  state.weakSkills,
+    mastery:     { bestScore: state.mastery.bestScore }
+  }));
+}
+
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+/* ── Level 1: Common Factor ───────────────────────────────── */
+function gen_common_factor(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Calculate: ${mi("37 \\times 6 + 37 \\times 4")}`,
+      correct: "370",
+      choices: ["370", "380", "360", "148"],
+      explainSteps: [
+        `37 appears in both terms — factor it out.`,
+        `${mi("37 \\times (6 + 4) = 37 \\times 10 = 370")}.`
+      ],
+      hint: "Both terms contain 37. Put it outside a bracket and add 6 + 4 first."
+    },
+    {
+      promptHTML: `Calculate: ${mi("48 \\times 9 - 48 \\times 4")}`,
+      correct: "240",
+      choices: ["240", "192", "288", "480"],
+      explainSteps: [
+        `48 appears in both terms — factor it out.`,
+        `${mi("48 \\times (9 - 4) = 48 \\times 5 = 240")}.`
+      ],
+      hint: "Both terms contain 48. Write 48 × (9 − 4) and subtract inside first."
+    },
+    {
+      promptHTML: `Calculate: ${mi("56 \\times 7 + 56 \\times 3")}`,
+      correct: "560",
+      choices: ["560", "392", "504", "616"],
+      explainSteps: [
+        `56 appears in both terms — factor it out.`,
+        `${mi("56 \\times (7 + 3) = 56 \\times 10 = 560")}.`
+      ],
+      hint: "56 is in both terms. Add 7 + 3 first — what do you get?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("25 \\times 13 + 25 \\times 7")}`,
+      correct: "500",
+      choices: ["500", "325", "450", "475"],
+      explainSteps: [
+        `25 appears in both terms — factor it out.`,
+        `${mi("25 \\times (13 + 7) = 25 \\times 20 = 500")}.`
+      ],
+      hint: "25 is in both terms. Can 13 + 7 give you a friendly number?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("64 \\times 12 - 64 \\times 2")}`,
+      correct: "640",
+      choices: ["640", "576", "704", "128"],
+      explainSteps: [
+        `64 appears in both terms — factor it out.`,
+        `${mi("64 \\times (12 - 2) = 64 \\times 10 = 640")}.`
+      ],
+      hint: "64 is in both terms. Subtract 12 − 2 first."
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_cf_" + Date.now(),
+    type: "mc", skills: ["common_factor"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+/* ── Level 2: Complement Method ──────────────────────────── */
+function gen_complement_round(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Calculate: ${mi("53 \\times 99 + 53")}`,
+      correct: "5300",
+      choices: ["5300", "5247", "5353", "5200"],
+      explainSteps: [
+        `Replace 99 = 100 − 1.`,
+        `${mi("53 \\times 100 - 53 \\times 1 + 53 = 5300 - 53 + 53 = 5300")}.`,
+        `The −53 and +53 cancel perfectly.`
+      ],
+      hint: "Replace 99 with (100 − 1). Does the correction term 53 × 1 = 53 appear elsewhere?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("99 \\times 37")}`,
+      correct: "3663",
+      choices: ["3663", "3700", "3333", "3600"],
+      explainSteps: [
+        `Replace 99 = 100 − 1.`,
+        `${mi("100 \\times 37 - 1 \\times 37 = 3700 - 37 = 3663")}.`
+      ],
+      hint: "99 = 100 − 1. Multiply by 100 first, then subtract 37 once."
+    },
+    {
+      promptHTML: `Calculate: ${mi("98 \\times 25")}`,
+      correct: "2450",
+      choices: ["2450", "2400", "2500", "2475"],
+      explainSteps: [
+        `Replace 98 = 100 − 2.`,
+        `${mi("100 \\times 25 - 2 \\times 25 = 2500 - 50 = 2450")}.`
+      ],
+      hint: "98 = 100 − 2. Multiply by 100 first, then subtract 2 × 25."
+    },
+    {
+      promptHTML: `Calculate: ${mi("101 \\times 48")}`,
+      correct: "4848",
+      choices: ["4848", "4800", "4900", "4752"],
+      explainSteps: [
+        `Replace 101 = 100 + 1.`,
+        `${mi("100 \\times 48 + 1 \\times 48 = 4800 + 48 = 4848")}.`
+      ],
+      hint: "101 = 100 + 1. Multiply by 100 first, then add 48 once."
+    },
+    {
+      promptHTML: `Calculate: ${mi("28 \\times 99 + 28")}`,
+      correct: "2800",
+      choices: ["2800", "2772", "2828", "2700"],
+      explainSteps: [
+        `Replace 99 = 100 − 1.`,
+        `${mi("28 \\times 100 - 28 + 28 = 2800 - 28 + 28 = 2800")}.`,
+        `The −28 and +28 cancel.`
+      ],
+      hint: "99 = 100 − 1. The correction is 28 × 1 = 28. Does +28 appear in the expression?"
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_comp_" + Date.now(),
+    type: "mc", skills: ["complement_round"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+/* ── Level 3: Two-Level Regrouping ───────────────────────── */
+function gen_two_level_regroup(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Calculate: ${mi("3 \\times 8 + 5 \\times 6 + 2 \\times 8")}`,
+      correct: "70",
+      choices: ["70", "62", "78", "80"],
+      explainSteps: [
+        `Group the two terms with 8: ${mi("8 \\times (3 + 2) + 5 \\times 6")}.`,
+        `${mi("8 \\times 5 + 5 \\times 6")} — now 5 appears in both terms.`,
+        `${mi("5 \\times (8 + 6) = 5 \\times 14 = 70")}.`
+      ],
+      hint: "Which number appears in two of the three terms? Group those first."
+    },
+    {
+      promptHTML: `Calculate: ${mi("4 \\times 7 + 10 \\times 3 + 6 \\times 7")}`,
+      correct: "100",
+      choices: ["100", "88", "112", "70"],
+      explainSteps: [
+        `Group the two terms with 7: ${mi("7 \\times (4 + 6) + 10 \\times 3")}.`,
+        `${mi("7 \\times 10 + 10 \\times 3")} — now 10 appears in both terms.`,
+        `${mi("10 \\times (7 + 3) = 10 \\times 10 = 100")}.`
+      ],
+      hint: "7 appears twice. After grouping, what new number appears in both remaining terms?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("5 \\times 4 + 8 \\times 6 + 3 \\times 4")}`,
+      correct: "80",
+      choices: ["80", "68", "92", "72"],
+      explainSteps: [
+        `Group the two terms with 4: ${mi("4 \\times (5 + 3) + 8 \\times 6")}.`,
+        `${mi("4 \\times 8 + 8 \\times 6")} — now 8 appears in both terms.`,
+        `${mi("8 \\times (4 + 6) = 8 \\times 10 = 80")}.`
+      ],
+      hint: "4 appears in the first and third terms. Group them. Then what new number appears twice?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("6 \\times 9 + 10 \\times 1 + 4 \\times 9")}`,
+      correct: "100",
+      choices: ["100", "90", "110", "99"],
+      explainSteps: [
+        `Group the two terms with 9: ${mi("9 \\times (6 + 4) + 10 \\times 1")}.`,
+        `${mi("9 \\times 10 + 10 \\times 1")} — now 10 appears in both terms.`,
+        `${mi("10 \\times (9 + 1) = 10 \\times 10 = 100")}.`
+      ],
+      hint: "9 appears in two of the three terms. Factor it out. Then look at what's left."
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_tlr_" + Date.now(),
+    type: "mc", skills: ["two_level_regroup"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+/* ── Level 4: Ratio Shortcut ─────────────────────────────── */
+function gen_ratio_shortcut(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Calculate: ${mi("75 \\times 8 - 25 \\times 4")}`,
+      correct: "500",
+      choices: ["500", "400", "600", "200"],
+      explainSteps: [
+        `75 ÷ 25 = 3, so 75 = 3 × 25.`,
+        `Rewrite: ${mi("25 \\times 3 \\times 8 - 25 \\times 4 = 25 \\times (24 - 4)")}.`,
+        `${mi("25 \\times 20 = 500")}.`
+      ],
+      hint: "Divide 75 by 25. The answer is a whole number — that's the ratio."
+    },
+    {
+      promptHTML: `Calculate: ${mi("45 \\times 6 + 15 \\times 8")}`,
+      correct: "390",
+      choices: ["390", "270", "510", "360"],
+      explainSteps: [
+        `45 ÷ 15 = 3, so 45 = 3 × 15.`,
+        `Rewrite: ${mi("15 \\times 3 \\times 6 + 15 \\times 8 = 15 \\times (18 + 8)")}.`,
+        `${mi("15 \\times 26 = 390")}.`
+      ],
+      hint: "45 ÷ 15 = 3. Rewrite 45 × 6 as 15 × 18 and then factor out 15."
+    },
+    {
+      promptHTML: `Calculate: ${mi("64 \\times 5 - 16 \\times 12")}`,
+      correct: "128",
+      choices: ["128", "64", "192", "160"],
+      explainSteps: [
+        `64 ÷ 16 = 4, so 64 = 4 × 16.`,
+        `Rewrite: ${mi("16 \\times 4 \\times 5 - 16 \\times 12 = 16 \\times (20 - 12)")}.`,
+        `${mi("16 \\times 8 = 128")}.`
+      ],
+      hint: "64 ÷ 16 = 4. Rewrite 64 × 5 as 16 × 20, then factor out 16."
+    },
+    {
+      promptHTML: `Calculate: ${mi("36 \\times 7 - 12 \\times 9")}`,
+      correct: "144",
+      choices: ["144", "108", "180", "252"],
+      explainSteps: [
+        `36 ÷ 12 = 3, so 36 = 3 × 12.`,
+        `Rewrite: ${mi("12 \\times 3 \\times 7 - 12 \\times 9 = 12 \\times (21 - 9)")}.`,
+        `${mi("12 \\times 12 = 144")}.`
+      ],
+      hint: "36 ÷ 12 = 3. Rewrite 36 × 7 as 12 × 21, then factor out 12."
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_rat_" + Date.now(),
+    type: "mc", skills: ["ratio_shortcut"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+/* ── Level 5: Factor Splitting ───────────────────────────── */
+function gen_factor_splitting(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Calculate: ${mi("125 \\times 24")}`,
+      correct: "3000",
+      choices: ["3000", "2500", "3125", "2400"],
+      explainSteps: [
+        `Split 24 = 8 × 3 (to pair 125 with 8).`,
+        `${mi("125 \\times 8 \\times 3 = 1000 \\times 3 = 3000")}.`
+      ],
+      hint: "Does 24 contain a factor of 8? (24 = 8 × 3). Then 125 × 8 = 1000."
+    },
+    {
+      promptHTML: `Calculate: ${mi("25 \\times 36")}`,
+      correct: "900",
+      choices: ["900", "800", "1000", "750"],
+      explainSteps: [
+        `Split 36 = 4 × 9 (to pair 25 with 4).`,
+        `${mi("25 \\times 4 \\times 9 = 100 \\times 9 = 900")}.`
+      ],
+      hint: "Does 36 contain a factor of 4? (36 = 4 × 9). Then 25 × 4 = 100."
+    },
+    {
+      promptHTML: `Calculate: ${mi("4 \\times 13 \\times 25")}`,
+      correct: "1300",
+      choices: ["1300", "1200", "1400", "1000"],
+      explainSteps: [
+        `Pair 4 and 25 first: ${mi("(4 \\times 25) \\times 13 = 100 \\times 13 = 1300")}.`
+      ],
+      hint: "The order of multiplication doesn't matter. Which two numbers make a round number?"
+    },
+    {
+      promptHTML: `Calculate: ${mi("8 \\times 125 \\times 7")}`,
+      correct: "7000",
+      choices: ["7000", "6000", "8000", "5000"],
+      explainSteps: [
+        `Pair 8 and 125 first: ${mi("(8 \\times 125) \\times 7 = 1000 \\times 7 = 7000")}.`
+      ],
+      hint: "8 × 125 = 1000. Multiply those two first, then × 7."
+    },
+    {
+      promptHTML: `Calculate: ${mi("125 \\times 32")}`,
+      correct: "4000",
+      choices: ["4000", "3250", "4500", "3000"],
+      explainSteps: [
+        `Split 32 = 8 × 4 (to pair 125 with 8).`,
+        `${mi("125 \\times 8 \\times 4 = 1000 \\times 4 = 4000")}.`
+      ],
+      hint: "32 = 8 × 4. Group 125 × 8 first."
+    },
+    {
+      promptHTML: `Calculate: ${mi("5 \\times 17 \\times 20")}`,
+      correct: "1700",
+      choices: ["1700", "1600", "1800", "1000"],
+      explainSteps: [
+        `Pair 5 and 20 first: ${mi("(5 \\times 20) \\times 17 = 100 \\times 17 = 1700")}.`
+      ],
+      hint: "5 × 20 = 100. Group those two numbers first."
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_fs_" + Date.now(),
+    type: "mc", skills: ["factor_splitting"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+/* ── Rule: Strategy Choice ────────────────────────────────── */
+function gen_strategy_choice(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Which strategy is most useful for ${mi("53 \\times 99 + 53")}?`,
+      correct: "Level 2 — Complement: 99 = 100 − 1, and 53 × 1 = 53 cancels",
+      choices: [
+        "Level 2 — Complement: 99 = 100 − 1, and 53 × 1 = 53 cancels",
+        "Level 1 — Common Factor: 53 and 99 share a common factor",
+        "Level 5 — Factor Splitting: split 53 into smaller parts",
+        "No trick — just calculate directly"
+      ],
+      explainSteps: [
+        "99 is 1 away from 100 — that is the Complement signal.",
+        "53 × 99 = 53 × 100 − 53. The standalone +53 cancels the −53.",
+        "Result: 53 × 100 = 5300."
+      ],
+      hint: "Is 99 close to a round number? What is 100 − 99?"
+    },
+    {
+      promptHTML: `Which strategy is most useful for ${mi("125 \\times 24")}?`,
+      correct: "Level 5 — Factor Splitting: 24 = 8 × 3, so 125 × 8 = 1000",
+      choices: [
+        "Level 5 — Factor Splitting: 24 = 8 × 3, so 125 × 8 = 1000",
+        "Level 2 — Complement: 24 is close to 25",
+        "Level 4 — Ratio Shortcut: 125 and 24 have a ratio",
+        "No trick — just calculate directly"
+      ],
+      explainSteps: [
+        "125 is the tell-tale signal for Factor Splitting (since 125 × 8 = 1000).",
+        "Check if 24 contains a factor of 8: 24 = 8 × 3. Yes!",
+        "125 × 8 × 3 = 1000 × 3 = 3000."
+      ],
+      hint: "125 is one of the key Factor Splitting numbers. Does 24 contain a factor of 8?"
+    },
+    {
+      promptHTML: `Which of these expressions does NOT need any smart strategy?`,
+      correct: mi("17 \\times 23 + 41 \\times 9") + " — no shared factor, no complement, no friendly pair",
+      choices: [
+        mi("17 \\times 23 + 41 \\times 9") + " — no shared factor, no complement, no friendly pair",
+        mi("36 \\times 7 - 12 \\times 9") + " — 36 = 3 × 12, ratio shortcut applies",
+        mi("48 \\times 9 - 48 \\times 4") + " — 48 is the common factor",
+        mi("99 \\times 37") + " — complement: 99 = 100 − 1"
+      ],
+      explainSteps: [
+        "17 × 23 + 41 × 9: 17, 23, 41, 9 share no useful relationship.",
+        "For the others: 36 = 3×12 (ratio); 48 appears twice (common factor); 99 = 100−1 (complement).",
+        "When no pattern appears, direct calculation is the right choice."
+      ],
+      hint: "Check each option: shared factor? close to 100? ratio? friendly pair?"
+    },
+    {
+      promptHTML: `A student rewrites ${mi("3 \\times 8 + 5 \\times 6 + 2 \\times 8")} as ${mi("5 \\times (8 + 6)")}. What two observations made this possible?`,
+      correct: "8 appeared in two terms → factored out first; then 5 appeared in two terms → factored again",
+      choices: [
+        "8 appeared in two terms → factored out first; then 5 appeared in two terms → factored again",
+        "All three terms share a common factor of 2",
+        "99 = 100 − 1 was used to simplify",
+        "6 and 8 were split into smaller factors"
+      ],
+      explainSteps: [
+        "Step 1: 8 appears in the 1st and 3rd terms → 8 × (3 + 2) + 5 × 6 = 8 × 5 + 5 × 6.",
+        "Step 2: 5 now appears in both terms → 5 × (8 + 6) = 5 × 14 = 70.",
+        "This is Level 3 — Two-Level Regrouping."
+      ],
+      hint: "Look at the original expression carefully. Which number appears more than once?"
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_strat_" + Date.now(),
+    type: "mc", skills: ["strategy_choice"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+const questionGenerators = {
+  common_factor:      gen_common_factor,
+  complement_round:   gen_complement_round,
+  two_level_regroup:  gen_two_level_regroup,
+  ratio_shortcut:     gen_ratio_shortcut,
+  factor_splitting:   gen_factor_splitting,
+  strategy_choice:    gen_strategy_choice
+};
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER QUESTION
+══════════════════════════════════════════════════════════════ */
+function renderQuestion(q, context) {
+  const badges = q.skills.map(s =>
+    `<span class="badge ${skillLibrary[s]?.badgeClass || ''}">${skillLibrary[s]?.name || s}</span>`
+  ).join(' ');
+
+  const choicesHTML = `<ul class="mc-choices">${q.choices.map((c, i) =>
+    `<li><label><input type="radio" name="${q.id}" value="${i}" /> ${c}</label></li>`
+  ).join('')}</ul>`;
+
+  const actions = context === 'practice'
+    ? `<button class="btn btn-primary btn-sm" onclick="checkPracticeAnswer('${q.id}')">Check Answer</button>
+       <button class="btn btn-secondary btn-sm" onclick="showHint('${q.id}', ${JSON.stringify(q.hint)})">Hint</button>
+       <button class="btn btn-outline btn-sm" onclick="newPracticeQuestion()">New Question</button>`
+    : '';
+
+  return `
+    <div class="question-card" id="qcard-${q.id}">
+      <div style="margin-bottom:.4rem">${badges}</div>
+      <div class="question-prompt">${q.promptHTML}</div>
+      ${choicesHTML}
+      <div class="question-actions">${actions}</div>
+      <div id="feedback-${q.id}" class="feedback-msg" style="display:none"></div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANSWER VALIDATION
+══════════════════════════════════════════════════════════════ */
+function checkAnswer(q, selectedIdxStr) {
+  const idx = parseInt(selectedIdxStr, 10);
+  if (isNaN(idx)) return "wrong";
+  return idx === q.answer.correctIdx ? "correct" : "wrong";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD DIAGNOSTIC & MASTERY QUESTIONS
+══════════════════════════════════════════════════════════════ */
+function buildDiagnosticQuestions() {
+  return ALL_SKILL_IDS.map(sid => questionGenerators[sid]("diag"));
+}
+
+function buildMasteryQuestions() {
+  const pool = [];
+  ALL_SKILL_IDS.forEach(sid => {
+    const count = state.weakSkills.includes(sid) ? 2 : 1;
+    for (let i = 0; i < count; i++) pool.push(questionGenerators[sid]("mast"));
+  });
+  return shuffle(pool).slice(0, 10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+function showSection(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideSection(id) { document.getElementById(id).classList.add('hidden'); }
+
+function setProgress(pct, label) {
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = pct + '%';
+  bar.setAttribute('aria-label', label || pct + '%');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STUDENT NAME
+══════════════════════════════════════════════════════════════ */
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById('name-input').value = saved;
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${saved}! Ready to learn some smart calculation tricks?`;
+  }
+}
+
+function saveSiteName(name) {
+  state.studentName = name.trim();
+  if (state.studentName) localStorage.setItem(NAME_KEY, state.studentName);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — START CHECKUP
+══════════════════════════════════════════════════════════════ */
+function startCheckup() {
+  const nameVal = document.getElementById('name-input').value.trim();
+  saveSiteName(nameVal);
+  if (state.studentName) {
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${state.studentName}! Let's see what strategies you already know.`;
+  }
+
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  state.diagnostic.answers   = {};
+  state.diagnostic.results   = {};
+
+  document.getElementById('diagnostic-questions').innerHTML =
+    state.diagnostic.questions.map(q => renderQuestion(q, 'diagnostic')).join('');
+
+  showSection('section-diagnostic');
+  setProgress(20, 'Check Knowledge');
+  document.getElementById('section-diagnostic').scrollIntoView({ behavior: 'smooth' });
+  saveProgress();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — SUBMIT DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+function submitDiagnostic() {
+  const qs = state.diagnostic.questions;
+  let unanswered = 0;
+
+  qs.forEach(q => {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (!sel) { unanswered++; return; }
+    state.diagnostic.answers[q.id] = sel.value;
+  });
+
+  if (unanswered > 0) {
+    alert(`Please answer all questions (${unanswered} remaining).`);
+    return;
+  }
+
+  const skillTally = {};
+  ALL_SKILL_IDS.forEach(sid => { skillTally[sid] = { correct: 0, total: 0 }; });
+
+  qs.forEach(q => {
+    const result = checkAnswer(q, state.diagnostic.answers[q.id]);
+    q.skills.forEach(sid => {
+      skillTally[sid].total++;
+      if (result === "correct") skillTally[sid].correct++;
+    });
+  });
+
+  state.diagnostic.results = skillTally;
+  state.weakSkills = ALL_SKILL_IDS.filter(sid => {
+    const t = skillTally[sid];
+    return t.total > 0 && (t.correct / t.total) * 100 < WEAK_THRESHOLD;
+  });
+
+  saveProgress();
+  renderResults();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RENDER RESULTS
+══════════════════════════════════════════════════════════════ */
+function renderResults() {
+  const rows = ALL_SKILL_IDS.map(sid => {
+    const sk = skillLibrary[sid];
+    const t  = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct = Math.round((t.correct / t.total) * 100);
+    const isWeak = state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:6rem;text-align:center">${sk.name}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span style="min-width:3rem;text-align:right">${t.correct}/${t.total}</span>
+      <span class="${isWeak ? 'result-weak' : 'result-pass'}">${isWeak ? '✗ needs work' : '✓ good'}</span>
+    </div>`;
+  }).join('');
+
+  const intro = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">Great work! You know all the strategies. Review the lessons below or go straight to practice.</p>`
+    : `<p style="margin-bottom:.8rem">Skills to work on: <strong>${state.weakSkills.map(s => skillLibrary[s].name).join(', ')}</strong>. Study the lesson cards below.</p>`;
+
+  document.getElementById('results-summary').innerHTML = intro + rows;
+
+  buildLessonCards();
+  showSection('section-results');
+  setProgress(55, 'Reviewing Results');
+  document.getElementById('section-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ASK AI
+══════════════════════════════════════════════════════════════ */
+function askAI(skillId) {
+  const sk = skillLibrary[skillId];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+
+  const prompt = [
+    `${name}I am a Grade 4 math student learning about smart whole number arithmetic — calculation strategies that use the distributive law to avoid slow written computation.`,
+    ``,
+    `I need extra help understanding: ${sk.name}.`,
+    ``,
+    `What this skill is about: ${sk.summary}`,
+    ``,
+    `Steps involved:`,
+    steps,
+    ``,
+    `Common mistake to avoid: ${sk.misconception}`,
+    ``,
+    `Please explain this strategy clearly with a step-by-step worked example, then give me 3 practice problems with full solutions.`
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+
+  const prompt = [
+    `${name}I am a Grade 4 math student learning about smart whole number arithmetic.`,
+    ``,
+    `I have a specific question about: ${concept.label}.`,
+    ``,
+    concept.prompt
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD LESSON CARDS
+══════════════════════════════════════════════════════════════ */
+function buildLessonCards() {
+  const targets = state.weakSkills.length > 0 ? state.weakSkills : ALL_SKILL_IDS;
+  document.getElementById('lesson-cards').innerHTML = targets.map(sid => {
+    const sk = skillLibrary[sid];
+    return `<div class="lesson-card">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.name}</span></div>
+      <p style="font-size:.92rem;margin-bottom:.5rem">${sk.summary}</p>
+      <ol>${sk.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="lesson-example"><strong>Example:</strong> ${sk.example.problemHTML}<br/>
+        <strong>Solution:</strong> ${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn btn-outline btn-sm"
+          onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-ai btn-sm"
+          onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${(sk.keyConcepts || []).map((c, i) =>
+          `<button class="btn btn-ai-concept btn-sm"
+            onclick="askAIConcept('${sid}', ${i})">Ask about ${c.label}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+function openPractice(topicId) {
+  const topics = [
+    { id: 'mixed', label: 'Mixed (all levels)' },
+    ...ALL_SKILL_IDS.map(sid => ({ id: sid, label: skillLibrary[sid].name }))
+  ];
+  document.getElementById('topic-buttons').innerHTML = topics.map(t =>
+    `<button class="btn btn-secondary btn-sm btn-topic" id="topic-btn-${t.id}"
+      onclick="selectTopic('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  showSection('section-practice');
+  setProgress(80, 'Practicing');
+  selectTopic(topicId || state.weakSkills[0] || 'mixed');
+  document.getElementById('section-practice').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectTopic(topicId) {
+  state.practice.topic = topicId;
+  document.querySelectorAll('.btn-topic').forEach(b => b.classList.remove('btn-primary'));
+  const activeBtn = document.getElementById('topic-btn-' + topicId);
+  if (activeBtn) activeBtn.classList.add('btn-primary');
+  state.practice.currentQuestion = null;
+  newPracticeQuestion();
+}
+
+function newPracticeQuestion() {
+  const topicId = state.practice.topic;
+  let q;
+  if (topicId === 'mixed') {
+    const sid = pick(state.weakSkills.length > 0 ? state.weakSkills : ALL_SKILL_IDS);
+    q = questionGenerators[sid]("prac");
+  } else {
+    q = questionGenerators[topicId]("prac");
+  }
+  state.practice.currentQuestion = q;
+
+  const streakMsg = state.practice.streak >= 3
+    ? `<p style="color:#2e7d32;font-weight:700">🔥 ${state.practice.streak} in a row!</p>` : '';
+
+  document.getElementById('practice-area').innerHTML =
+    streakMsg +
+    renderQuestion(q, 'practice') +
+    `<button class="btn btn-success mt-2" onclick="openMastery()">Take Mastery Test ▶</button>`;
+}
+
+function showHint(qid, hint) {
+  const fb = document.getElementById('feedback-' + qid);
+  fb.style.display = 'block';
+  fb.className = 'feedback-msg';
+  fb.style.background = '#e8eaf6';
+  fb.style.borderColor = '#7986cb';
+  fb.innerHTML = `💡 Hint: ${hint}`;
+}
+
+function checkPracticeAnswer(qid) {
+  const q = state.practice.currentQuestion;
+  if (!q) return;
+  const sel = document.querySelector(`input[name="${qid}"]:checked`);
+  if (!sel) { alert("Please select an answer first."); return; }
+
+  const result = checkAnswer(q, sel.value);
+  state.practice.attempts++;
+  if (result === "correct") {
+    state.practice.correct++;
+    state.practice.streak++;
+  } else {
+    state.practice.streak = 0;
+  }
+
+  showFeedback(qid, result, q);
+  saveProgress();
+}
+
+function showFeedback(qid, result, q) {
+  const fb = document.getElementById('feedback-' + qid);
+  fb.style.display = 'block';
+
+  document.querySelectorAll(`input[name="${qid}"]`).forEach(r => r.disabled = true);
+
+  const correctLabel = document.querySelectorAll(`input[name="${qid}"]`)[q.answer.correctIdx]?.parentElement;
+  if (correctLabel) correctLabel.style.background = '#d4edda';
+
+  const stepsHTML = q.explainSteps.length
+    ? `<ul class="explain-steps">${q.explainSteps.map(s => `<li>${s}</li>`).join('')}</ul>` : '';
+
+  if (result === "correct") {
+    fb.className = 'feedback-msg feedback-correct';
+    fb.innerHTML = `✓ Correct! ${stepsHTML}`;
+  } else {
+    fb.className = 'feedback-msg feedback-wrong';
+    fb.innerHTML = `✗ Not quite. ${stepsHTML}`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+
+  document.getElementById('mastery-questions').innerHTML =
+    state.mastery.questions.map(q => renderQuestion(q, 'mastery')).join('');
+  document.getElementById('mastery-results').style.display = 'none';
+  document.getElementById('mastery-submit-btn').style.display = 'inline-block';
+
+  showSection('section-mastery');
+  setProgress(90, 'Mastery Test');
+  document.getElementById('section-mastery').scrollIntoView({ behavior: 'smooth' });
+}
+
+function submitMastery() {
+  const qs = state.mastery.questions;
+  let unanswered = 0;
+
+  qs.forEach(q => {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (!sel) { unanswered++; return; }
+    state.mastery.answers[q.id] = sel.value;
+  });
+
+  if (unanswered > 0) {
+    alert(`Please answer all questions (${unanswered} remaining).`);
+    return;
+  }
+
+  let correct = 0;
+  qs.forEach(q => {
+    if (checkAnswer(q, state.mastery.answers[q.id]) === "correct") correct++;
+  });
+
+  state.mastery.score = Math.round((correct / qs.length) * 100);
+  if (!state.mastery.bestScore || state.mastery.score > state.mastery.bestScore) {
+    state.mastery.bestScore = state.mastery.score;
+  }
+
+  document.getElementById('mastery-submit-btn').style.display = 'none';
+  qs.forEach(q => {
+    document.querySelectorAll(`input[name="${q.id}"]`).forEach(r => r.disabled = true);
+    showFeedback(q.id, checkAnswer(q, state.mastery.answers[q.id]), q);
+  });
+
+  renderMasteryResults();
+  setProgress(100, 'Complete');
+  saveProgress();
+}
+
+function renderMasteryResults() {
+  const passed = state.mastery.score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? '#2e7d32' : '#c62828';
+  const name = state.studentName ? `, ${state.studentName}` : '';
+
+  let html = `
+    <div style="margin-top:1.2rem;padding:1rem;border-radius:10px;border:2px solid ${scoreColor};background:${passed ? '#f1f8e9' : '#fff3e0'}">
+      <div style="font-size:1.4rem;font-weight:800;color:${scoreColor}">
+        ${passed ? '🎉' : '📚'} Score: ${state.mastery.score}%
+        ${state.mastery.bestScore > state.mastery.score ? ` (best: ${state.mastery.bestScore}%)` : ''}
+      </div>
+      <div style="font-size:1rem;margin-top:.4rem">
+        ${passed
+          ? `Excellent work${name}! You have mastered smart whole number arithmetic.`
+          : `Good effort${name}! Review the lesson cards and try again.`}
+      </div>
+    </div>`;
+
+  const links = passed ? connections.challenge : connections.foundational;
+  if (links.length > 0) {
+    html += `<div style="margin-top:1rem"><strong>${passed ? '🚀 Ready for a challenge?' : '📖 Want to review something foundational?'}</strong></div>`;
+    html += links.map(c => `
+      <div class="connection-card">
+        <a href="${c.url}">${c.title}</a>
+        <span class="connection-reason">${c.reason}</span>
+      </div>`).join('');
+  }
+
+  const resultsDiv = document.getElementById('mastery-results');
+  resultsDiv.innerHTML = html;
+  resultsDiv.style.display = 'block';
+  resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════════════════════ */
+function resetPage() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  location.reload();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved?.mastery?.bestScore) {
+    state.mastery.bestScore = saved.mastery.bestScore;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

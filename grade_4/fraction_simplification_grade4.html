@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fraction Simplification — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    /* ── Free-form answer input ───────────────────────────────── */
+    .question-prompt { font-size: 1rem; }  /* slightly smaller than default 1.05rem */
+    .explain-block { font-size: .88rem; margin-top: .6rem; padding: .6rem .9rem;
+                     background: #f8f9ff; border-radius: 6px; display: none; }
+    .explain-block.visible { display: block; }
+    .explain-block ol { margin-left: 1.2rem; }
+    .action-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+
+    /* ── Practice stats bar ───────────────────────────────────── */
+    .stats-bar { display: flex; gap: 1.5rem; font-size: .9rem; color: #555;
+                 background: #f5f5f5; border-radius: 8px; padding: .5rem 1rem; margin-bottom: .8rem; }
+    .stats-bar strong { color: #1a237e; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Fraction Simplification</h1>
+    <p class="subtitle">Grade 4 &nbsp;·&nbsp; Arithmetic &nbsp;·&nbsp; Reduce fractions to lowest terms using the GCD.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Reduce by GCD</span>
+      <span class="hero-tag">Fraction Division</span>
+      <span class="hero-tag">Parentheses First</span>
+      <span class="hero-tag">Variable Factors</span>
+      <span class="hero-tag">Nested Fractions</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)" autocomplete="off" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup ▶</button>
+      <button class="btn btn-outline" onclick="resetProgress()" style="color:#fff;border-color:#fff">Reset</button>
+    </div>
+    <p id="greeting-msg"></p>
+    <div class="progress-wrap" style="margin-top:1rem">
+      <div id="progress-bar"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       REFERENCE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Tips ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Core rules</h3>
+      <ul>
+        <li>Divide top &amp; bottom by their GCD to simplify</li>
+        <li>Evaluate parentheses before simplifying</li>
+        <li>For division: flip the second fraction, then simplify</li>
+        <li>Only cancel <strong>factors</strong>, never terms in a sum</li>
+        <li>Nested fractions: treat inner ÷ as multiply-by-reciprocal</li>
+      </ul>
+      <h3>How to use this page</h3>
+      <p>Start with the Checkup to see which skill levels need work. Read the lesson cards for flagged weak spots. Practice each level until your streak reaches 3. Then try the Mastery Test — aim for 80% or higher.</p>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 1 — DIAGNOSTIC
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 2+3 — RESULTS & LESSONS
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Study the lesson cards for any skills marked "needs work".</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 4 — PRACTICE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Choose a topic and practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 5 — MASTERY TEST
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥ 80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button class="btn btn-primary mt-2" id="mastery-submit-btn" onclick="submitMastery()">Submit Mastery Test</button>
+      <div id="mastery-results" style="display:none"></div>
+    </div>
+  </section>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+// Convenience aliases — all rendering and utilities come from math_helper.js
+const { frac, gcd, reduce, pick, randInt, shuffle } = {
+  frac:    (n, d) => math.frac(n, d),
+  gcd:     (a, b) => math.gcd(a, b),
+  reduce:  (n, d) => math.reduce(n, d),
+  pick:    (arr)  => math.pick(arr),
+  randInt: (a, b) => math.randInt(a, b),
+  shuffle: (arr)  => math.shuffle(arr)
+};
+
+const PAGE_KEY          = "uepg_fraction_simplification_g4";
+const NAME_KEY          = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   CONNECTIONS  (wired to other built UEPGs)
+══════════════════════════════════════════════════════════════ */
+const connections = {
+  foundational: [
+    {
+      title: "Fraction Basics",
+      url:   "../grade_3/fraction_basics_grade3.html",
+      reason: "Reviews what fractions mean, how to read and write them, and how to compare them — the foundation for simplification."
+    }
+  ],
+  challenge: []
+};
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+const skillLibrary = {
+  basic_reduce: {
+    name: "Level 1: Basic Reduction",
+    level: 1,
+    badgeClass: "badge-L1",
+    summary: "Simplify a single fraction to lowest terms by dividing top and bottom by their GCD.",
+    steps: [
+      "Find the GCD (greatest common divisor) of the numerator and denominator.",
+      "Divide both the numerator and the denominator by the GCD.",
+      "Check that the new fraction cannot be simplified further (GCD of new top and bottom is 1)."
+    ],
+    example: {
+      problemHTML:  `Simplify ${frac(12,18)}`,
+      solutionHTML: `GCD(12, 18) = 6. &nbsp; ${math.inline('\\frac{12 \\div 6}{18 \\div 6}')} = ${frac(2,3)}`
+    },
+    misconception: "Dividing only the numerator or only the denominator — you must divide both by the same number.",
+    keyConcepts: [
+      { label: "GCD", prompt: "What is the GCD (Greatest Common Divisor)? How do I find the GCD of two numbers step by step? Show me 3 worked examples with number pairs like 12 & 18, 8 & 12, and 15 & 25." }
+    ]
+  },
+  div_simplify: {
+    name: "Level 2: Division &amp; Simplify",
+    level: 2,
+    badgeClass: "badge-L2",
+    summary: "Divide one fraction by another, then simplify the result.",
+    steps: [
+      "Flip the second fraction (take its reciprocal).",
+      "Multiply the two fractions: multiply numerators together and denominators together.",
+      "Simplify the resulting fraction using the GCD."
+    ],
+    example: {
+      problemHTML:  `Simplify ${math.inline('\\frac{3}{4} \\div \\frac{9}{8}')}`,
+      solutionHTML: `${math.inline('\\frac{3}{4} \\times \\frac{8}{9} = \\frac{3 \\times 8}{4 \\times 9} = \\frac{24}{36}')} → GCD = 12 → ${frac(2,3)}`
+    },
+    misconception: "Forgetting to flip the second fraction before multiplying.",
+    keyConcepts: [
+      { label: "Reciprocal", prompt: "What is the reciprocal of a fraction? How do I find it, and why do we flip the second fraction when dividing? Explain with simple examples." },
+      { label: "Keep-Change-Flip", prompt: "Explain the Keep-Change-Flip rule for dividing fractions. Walk me through each step with a clear example, and explain WHY this rule works." }
+    ]
+  },
+  paren_first: {
+    name: "Level 3: Parentheses First",
+    level: 3,
+    badgeClass: "badge-L3",
+    summary: "Evaluate the arithmetic inside parentheses before simplifying the fraction.",
+    steps: [
+      "Evaluate the expression in the numerator.",
+      "Evaluate the expression in the denominator.",
+      "Simplify the resulting fraction using the GCD."
+    ],
+    example: {
+      problemHTML:  `Simplify ${math.inline('\\frac{(2+4)}{(3+6)}')}`,
+      solutionHTML: `Numerator: 2+4 = 6. Denominator: 3+6 = 9. &nbsp; ${frac(6,9)} → GCD = 3 → ${frac(2,3)}`
+    },
+    misconception: "Simplifying before evaluating parentheses — always compute inside the brackets first.",
+    keyConcepts: [
+      { label: "Order of Operations", prompt: "What is the order of operations, and why must I evaluate what is inside parentheses before simplifying a fraction? Show me an example where skipping this step gives a wrong answer." }
+    ]
+  },
+  var_cancel: {
+    name: "Level 4: Variable Cancellation",
+    level: 4,
+    badgeClass: "badge-L4",
+    summary: "Cancel common variable factors in a fraction expression.",
+    steps: [
+      "Factor the numerator and denominator completely.",
+      "Cancel any factor that appears in both the numerator and the denominator.",
+      "Write the simplified expression."
+    ],
+    example: {
+      problemHTML:  `Simplify ${math.inline('\\frac{6x^2}{9x}')}`,
+      solutionHTML: `${math.inline('\\frac{6x^2}{9x} = \\frac{6}{9} \\times \\frac{x^2}{x} = \\frac{2}{3} \\times x = \\frac{2x}{3}')}`
+    },
+    misconception: "Cancelling terms that are added or subtracted, not multiplied — only factors can be cancelled.",
+    keyConcepts: [
+      { label: "Factors vs Terms", prompt: "What is the difference between a factor and a term in math? Why can I only cancel factors, not terms, when simplifying a fraction? Give me examples of each." },
+      { label: "Variable Exponents", prompt: "How do I simplify a fraction where the numerator and denominator have the same variable with different exponents, like x³ divided by x? What is the rule for dividing powers with the same base?" }
+    ]
+  },
+  nested: {
+    name: "Level 5: Nested Fractions",
+    level: 5,
+    badgeClass: "badge-L5",
+    summary: "Simplify a fraction whose numerator or denominator is itself a fraction.",
+    steps: [
+      "Rewrite the nested fraction as a division problem.",
+      "Apply the division rule: flip the bottom fraction and multiply.",
+      "Simplify the resulting fraction."
+    ],
+    example: {
+      problemHTML:  `Simplify ${math.inline('\\dfrac{\\frac{2}{3}}{\\frac{4}{9}}')}`,
+      solutionHTML: `${math.inline('\\frac{2}{3} \\div \\frac{4}{9} = \\frac{2}{3} \\times \\frac{9}{4} = \\frac{18}{12}')} → GCD = 6 → ${frac(3,2)}`
+    },
+    misconception: "Flipping the top fraction instead of the bottom fraction when rewriting as division.",
+    keyConcepts: [
+      { label: "Dividing Fractions", prompt: "How and why does a fraction inside a fraction mean division? Walk me through the full process of simplifying a nested fraction, and explain why we flip the bottom fraction." }
+    ]
+  },
+  rule_check: {
+    name: "Rule Check: Factors Only",
+    level: 0,
+    badgeClass: "badge-rule",
+    summary: "Understand why you can only cancel factors, never terms in a sum or difference.",
+    steps: [
+      "A factor is something multiplied. A term is something added or subtracted.",
+      "You can only cancel a value that multiplies the entire numerator AND the entire denominator.",
+      "If a value is only part of a sum, it cannot be cancelled."
+    ],
+    example: {
+      problemHTML:  `Is ${math.inline('\\frac{x+2}{x+5}')} = ${frac(2,5)}?`,
+      solutionHTML: `<strong>No!</strong> x is a term (added), not a factor. You cannot cancel it. Try x=3: ${frac(5,8)} ≠ ${frac(2,5)}.`
+    },
+    misconception: "Cancelling 'x' out of (x+2)/(x+5) — x is added, not multiplied, so it is not a factor of the whole expression.",
+    keyConcepts: [
+      { label: "Factors vs Terms", prompt: "What is the difference between a factor and a term? Why can I only cancel something that multiplies the entire numerator and denominator — not something that is just added or subtracted? Give me a counter-example to prove it." },
+      { label: "Substitution Test", prompt: "How can I use substitution — plugging in a specific number for x — to check whether a fraction simplification is correct? Show me how this works step by step with the example (x+3)/(x+7)." }
+    ]
+  }
+};
+
+const ALL_SKILL_IDS = ["basic_reduce","div_simplify","paren_first","var_cancel","nested","rule_check"];
+
+/* Math utilities and frac() alias declared above, provided by shared/math_helper.js */
+function showSection(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideSection(id) { document.getElementById(id).classList.add('hidden'); }
+function setProgress(pct, label) {
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = pct + '%';
+  bar.setAttribute('aria-label', label || pct + '%');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], results: {} },
+  weakSkills: [],
+  practice: { topic: null, currentQuestion: null, attempts: 0, correct: 0, streak: 0 },
+  mastery: { questions: [], score: null, bestScore: null }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   LOCAL STORAGE
+══════════════════════════════════════════════════════════════ */
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    studentName:    state.studentName,
+    weakSkills:     state.weakSkills,
+    practiceCorrect: state.practice.correct,
+    bestScore:      state.mastery.bestScore
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+function resetProgress() { localStorage.removeItem(PAGE_KEY); location.reload(); }
+
+/* ══════════════════════════════════════════════════════════════
+   ANSWER PARSING & VALIDATION
+══════════════════════════════════════════════════════════════ */
+function parseAnswer(raw) {
+  const s = raw.trim();
+  if (!s) return null;
+  if (/^-?\d+$/.test(s)) return { n: parseInt(s,10), d: 1 };
+  const m = s.match(/^(-?\d+)\s*\/\s*(-?\d+)$/);
+  if (!m) return null;
+  const n = parseInt(m[1],10), d = parseInt(m[2],10);
+  if (d === 0) return null;
+  return { n, d };
+}
+
+function checkAnswer(parsed, expected) {
+  // Reduce both
+  const pr = reduce(parsed.n, parsed.d);
+  const er = reduce(expected.n, expected.d);
+  if (pr.n === er.n && pr.d === er.d) {
+    // Correct value — check if student's answer was already reduced
+    const pg = gcd(Math.abs(parsed.n), Math.abs(parsed.d));
+    if (pg === 1) {
+      return { status: "correct", message: "Correct! Well simplified." };
+    } else {
+      return { status: "almost", message: `Almost! ${parsed.n}/${parsed.d} equals the right value but isn't fully simplified. The answer is ${er.n}/${er.d}.` };
+    }
+  }
+  return { status: "wrong", message: `Not quite. The correct answer is ${er.n === 1 && er.d === 1 ? '1' : er.d === 1 ? er.n : er.n + "/" + er.d}.` };
+}
+
+// selectedIdxStr: the radio value (index as string), q: the full question object
+function checkMC(selectedIdxStr, q) {
+  const ok = selectedIdxStr === String(q.answer.correctIdx);
+  return ok
+    ? { status: "correct", message: "Correct!" }
+    : { status: "wrong", message: `Not quite. The correct answer is: ${q.choices[q.answer.correctIdx]}` };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+function gen_basic_reduce(prefix = "q") {
+  // Build a reduced fraction, then scale it up
+  const primes = [[2,3],[2,5],[3,5],[2,7],[3,7],[1,2],[1,3],[1,4],[2,9],[3,4],[4,5],[3,8],[5,6]];
+  const [rn, rd] = pick(primes);
+  const factor = randInt(2, 6);
+  const n = rn * factor, d = rd * factor;
+  return {
+    id: prefix + "_basic_" + Date.now(),
+    type: "input",
+    skills: ["basic_reduce"],
+    promptHTML: `Simplify: &nbsp; ${frac(n, d)} &nbsp; (enter as <em>n/d</em>)`,
+    answer: { n: rn, d: rd },
+    explainSteps: [
+      `Find GCD(${n}, ${d}) = ${gcd(n,d)}.`,
+      `Divide both top and bottom by ${gcd(n,d)}: ${frac(n,d)} = ${frac(n/gcd(n,d), d/gcd(n,d))}.`
+    ],
+    hint: "Find the largest number that divides evenly into both the top and the bottom.",
+    choices: []
+  };
+}
+
+function gen_div_simplify(prefix = "q") {
+  // (a/b) ÷ (c/d) where the result reduces nicely
+  const pairs = [[1,2],[1,3],[2,3],[3,4],[1,4],[3,5],[2,5]];
+  const [a,b] = pick(pairs);
+  const [c,d] = pick(pairs);
+  // result numerator = a*d, denominator = b*c
+  const rn = a*d, rd = b*c;
+  const g = gcd(rn,rd);
+  const en = rn/g, ed = rd/g;
+  return {
+    id: prefix + "_div_" + Date.now(),
+    type: "input",
+    skills: ["div_simplify"],
+    promptHTML: `Simplify: &nbsp; ${frac(a,b)} ÷ ${frac(c,d)} &nbsp; (enter as <em>n/d</em>)`,
+    answer: { n: en, d: ed },
+    explainSteps: [
+      `Flip the second fraction: ${math.inline(`\\frac{${a}}{${b}} \\times \\frac{${d}}{${c}}`)}`,
+      `Multiply: ${math.inline(`\\frac{${a} \\times ${d}}{${b} \\times ${c}} = \\frac{${rn}}{${rd}}`)}`,
+      `GCD(${rn}, ${rd}) = ${g}. Simplify: ${frac(en,ed)}`
+    ],
+    hint: "Flip the second fraction and multiply. Then simplify the result.",
+    choices: []
+  };
+}
+
+function gen_paren_first(prefix = "q") {
+  // Numerator and denominator each have two addends; result is reducible
+  let tries = 0;
+  while (tries++ < 50) {
+    const a = randInt(1,8), b = randInt(1,8);
+    const c = randInt(1,8), d = randInt(1,8);
+    const num = a+b, den = c+d;
+    if (den === 0) continue;
+    const g = gcd(num, den);
+    if (g === 1) continue; // not reducible, try again
+    const en = num/g, ed = den/g;
+    const op = pick(["+", "−"]);
+    const realB = op === "+" ? b : -b;
+    const finalNum = a + realB;
+    if (finalNum <= 0) continue;
+    return {
+      id: prefix + "_paren_" + Date.now(),
+      type: "input",
+      skills: ["paren_first"],
+      promptHTML: `Simplify: &nbsp; ${math.inline(`\\frac{(${a} ${op} ${Math.abs(b)})}{(${c} + ${d})}`)} &nbsp; (enter as <em>n/d</em>)`,
+      answer: { n: finalNum / gcd(finalNum,den), d: den / gcd(finalNum,den) },
+      explainSteps: [
+        `Evaluate the numerator: ${a} ${op} ${Math.abs(b)} = ${finalNum}.`,
+        `Evaluate the denominator: ${c} + ${d} = ${den}.`,
+        `Simplify ${frac(finalNum,den)}: GCD = ${gcd(finalNum,den)}. Answer: ${frac(finalNum/gcd(finalNum,den), den/gcd(finalNum,den))}.`
+      ],
+      hint: "Add (or subtract) the numbers in the numerator and denominator first, then simplify.",
+      choices: []
+    };
+  }
+  return gen_basic_reduce(prefix); // fallback
+}
+
+function gen_var_cancel(prefix = "q") {
+  // Multiple-choice: axⁿ / bxᵐ style questions
+  const coeffPairs = [[2,4],[3,6],[4,8],[2,6],[3,9],[4,6],[6,9],[2,8],[3,12],[5,10]];
+  const [a, b] = pick(coeffPairs);
+  const g = gcd(a,b);
+  const cn = a/g, cd = b/g;
+  // x^m / x^n where m > n: result is x^(m-n)
+  const expN = randInt(2,4), expD = randInt(1, expN-1);
+  const expResult = expN - expD;
+
+  // Helper: render a variable expression using KaTeX
+  // Uses math.latexPow so exponent 1 never renders as a visible superscript.
+  const xpow = e => math.latexPow('x', e);
+  const varExpr = (coeff, denom, exp) => {
+    const numLatex = coeff === 1 && exp > 0 ? xpow(exp) : `${coeff}${xpow(exp)}`;
+    return denom === 1 ? math.inline(numLatex) : math.frac(numLatex, denom);
+  };
+
+  const resultStr = varExpr(cn, cd, expResult);
+
+  const promptHTML = `Simplify: &nbsp; ${math.frac(`${a}${math.latexPow('x', expN)}`, `${b}${math.latexPow('x', expD)}`)}`;
+
+  // Generate wrong choices using the same varExpr helper for consistent display
+  const decoys = [
+    varExpr(a,  b,  1),
+    varExpr(cn, cd, 0),
+    varExpr(cn, cd, expN),
+    varExpr(cn, cd, expResult + 1),
+    varExpr(cn + 1, cd, expResult)
+  ].filter(w => w !== resultStr);
+
+  const choices = shuffle([resultStr, ...[...new Set(decoys)].slice(0, 3)]);
+  const correctIdx = choices.indexOf(resultStr);
+
+  return {
+    id: prefix + "_var_" + Date.now(),
+    type: "mc",
+    skills: ["var_cancel"],
+    promptHTML,
+    answer: { correctIdx },
+    explainSteps: [
+      `Simplify the coefficients: ${math.frac(a, b)} = ${math.frac(cn, cd)}.`,
+      `Simplify the variable: ${math.frac(math.latexPow('x', expN), math.latexPow('x', expD))} = ${math.inline(`x^{${expN}-${expD}}`)} = ${math.inline(math.latexPow('x', expResult))}.`,
+      `Combine: ${resultStr}.`
+    ],
+    hint: "Simplify the numbers and the variable parts separately, then combine.",
+    choices
+  };
+}
+
+function gen_nested(prefix = "q") {
+  // (a/b) / (c/d) = (a*d)/(b*c), simplified
+  const pairs = [[1,2],[1,3],[2,3],[3,4],[1,4],[2,5],[3,5]];
+  const [a,b] = pick(pairs);
+  const [c,d] = pick(pairs);
+  const rn = a*d, rd = b*c;
+  const g = gcd(rn,rd);
+  const en = rn/g, ed = rd/g;
+  return {
+    id: prefix + "_nested_" + Date.now(),
+    type: "input",
+    skills: ["nested"],
+    promptHTML: `Simplify the nested fraction: &nbsp; ${math.inline(`\\dfrac{\\frac{${a}}{${b}}}{\\frac{${c}}{${d}}}`)} &nbsp; (enter as <em>n/d</em>)`,
+    answer: { n: en, d: ed },
+    explainSteps: [
+      `Rewrite as division: ${math.frac(a, b)} ÷ ${math.frac(c, d)}.`,
+      `Flip the bottom fraction: ${math.frac(a, b)} × ${math.frac(d, c)}.`,
+      `Multiply: ${math.frac(rn, rd)}. Simplify with GCD ${g}: ${math.frac(en, ed)}.`
+    ],
+    hint: "The big fraction bar means division. Rewrite as (top fraction) ÷ (bottom fraction), then flip and multiply.",
+    choices: []
+  };
+}
+
+function gen_rule_check(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `Can you simplify ${math.frac("x + 3", "x + 7")} by cancelling x to get ${math.frac(3, 7)}?`,
+      answer: { correct: "No — x is a term (added), not a factor" },
+      choices: [
+        "No — x is a term (added), not a factor",
+        "Yes — cancel x from numerator and denominator",
+        "Yes — but only when x > 0",
+        "No — you should cancel 3 and 7 instead"
+      ],
+      explainSteps: [
+        "x is added in both numerator and denominator, making it a term, not a factor.",
+        "You can only cancel something that multiplies the entire expression.",
+        "Try x = 1: (1+3)/(1+7) = 4/8 = 1/2 ≠ 3/7. So cancelling x is wrong."
+      ],
+      hint: "Try substituting a number for x and check if both sides are equal."
+    },
+    {
+      promptHTML: `Can you simplify ${math.frac("3x", "9")} by cancelling 3 to get ${math.frac("x", "3")}?`,
+      answer: { correct: "Yes — 3 is a factor of both top and bottom" },
+      choices: [
+        "Yes — 3 is a factor of both top and bottom",
+        "No — you can only cancel variables, not numbers",
+        "No — you must cancel x first",
+        "Yes — but only if x is an integer"
+      ],
+      explainSteps: [
+        "3 multiplies x in the numerator, and 3 is the full denominator — so 3 is a common factor.",
+        "Divide both top and bottom by 3: (3x)/9 = x/3."
+      ],
+      hint: "Ask: does this number multiply the whole numerator AND the whole denominator?"
+    },
+    {
+      promptHTML: `Can you simplify ${math.frac("2(x+1)", "4(x+1)")} by cancelling (x+1) to get ${math.frac(2, 4)} = ${math.frac(1, 2)}?`,
+      answer: { correct: "Yes — (x+1) is a factor of both numerator and denominator" },
+      choices: [
+        "Yes — (x+1) is a factor of both numerator and denominator",
+        "No — you cannot cancel expressions with addition inside",
+        "No — cancel the 2 and 4 first",
+        "Yes — but only if x ≠ −1"
+      ],
+      explainSteps: [
+        "(x+1) multiplies the entire numerator (2) and the entire denominator (4), so it is a factor of both.",
+        "Cancel (x+1): 2(x+1)/4(x+1) = 2/4 = 1/2.",
+        "Note: technically x ≠ −1 to avoid division by zero, but the simplification is valid."
+      ],
+      hint: "(x+1) is grouped by parentheses — it acts as a single factor multiplying 2 and 4."
+    }
+  ];
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_rule_" + Date.now(),
+    type: "mc",
+    skills: ["rule_check"],
+    promptHTML: c.promptHTML,
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled,
+    answer: { correctIdx: shuffled.indexOf(c.answer.correct) }
+  };
+}
+
+const questionGenerators = {
+  basic_reduce:  gen_basic_reduce,
+  div_simplify:  gen_div_simplify,
+  paren_first:   gen_paren_first,
+  var_cancel:    gen_var_cancel,
+  nested:        gen_nested,
+  rule_check:    gen_rule_check
+};
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER QUESTION
+══════════════════════════════════════════════════════════════ */
+function renderQuestion(q, context) {
+  const badges = q.skills.map(s =>
+    `<span class="badge ${skillLibrary[s]?.badgeClass||''}">${skillLibrary[s]?.name||s}</span>`
+  ).join('');
+
+  const inputHTML = q.type === 'mc'
+    ? `<ul class="mc-choices">${q.choices.map((c, i) =>
+        `<li><label><input type="radio" name="${q.id}" value="${i}" /> ${c}</label></li>`
+      ).join('')}</ul>`
+    : `<input class="question-input" id="input-${q.id}" type="text" placeholder="e.g. 2/3" autocomplete="off" />`;
+
+  const actions = context === 'practice' ? `
+    <button class="btn btn-primary btn-sm" onclick="checkPracticeAnswer('${q.id}')">Check Answer</button>
+    <button class="btn btn-secondary btn-sm" onclick="showHint('${q.id}')">Show Hint</button>
+    <button class="btn btn-outline btn-sm" onclick="newPracticeQuestion()">New Question</button>
+  ` : '';
+
+  return `<div class="question-card" id="card-${q.id}">
+    <div>${badges}</div>
+    <div class="question-prompt mt-1">${q.promptHTML}</div>
+    ${inputHTML}
+    <div class="action-row">${actions}</div>
+    <div id="feedback-${q.id}" class="feedback-msg" style="display:none"></div>
+    <div id="explain-${q.id}" class="explain-block"></div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD DIAGNOSTIC  (1–2 questions per skill)
+══════════════════════════════════════════════════════════════ */
+function buildDiagnosticQuestions() {
+  return shuffle(ALL_SKILL_IDS.map(sid => questionGenerators[sid]("diag")));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD MASTERY TEST  (10 questions, weak-skill weighted)
+══════════════════════════════════════════════════════════════ */
+function buildMasteryQuestions() {
+  const qs = [];
+  ALL_SKILL_IDS.forEach(sid => {
+    qs.push(questionGenerators[sid]("mastery"));
+    qs.push(questionGenerators[sid]("mastery"));
+  });
+  state.weakSkills.forEach(sid => qs.push(questionGenerators[sid]("mastery_weak")));
+  return shuffle(qs).slice(0, 10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — START CHECKUP
+══════════════════════════════════════════════════════════════ */
+function startCheckup() {
+  const inputName = document.getElementById('name-input').value.trim();
+  if (inputName) {
+    saveSiteName(inputName);
+    state.studentName = inputName;
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${inputName}! Let's see what you already know.`;
+  }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  document.getElementById('diagnostic-questions').innerHTML =
+    state.diagnostic.questions.map(q => renderQuestion(q, 'diagnostic')).join('');
+  showSection('section-diagnostic');
+  setProgress(20, 'Checkup in progress');
+  document.getElementById('section-diagnostic').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — SUBMIT DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+function submitDiagnostic() {
+  const results = {};
+  ALL_SKILL_IDS.forEach(sid => { results[sid] = { correct: 0, total: 0 }; });
+
+  state.diagnostic.questions.forEach(q => {
+    let correct = false;
+    if (q.type === 'mc') {
+      const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+      correct = sel ? checkMC(sel.value, q).status === 'correct' : false;
+    } else {
+      const raw = document.getElementById('input-' + q.id)?.value || '';
+      const parsed = parseAnswer(raw);
+      correct = parsed && checkAnswer(parsed, q.answer).status === 'correct';
+    }
+    q.skills.forEach(sid => {
+      results[sid].total++;
+      if (correct) results[sid].correct++;
+    });
+  });
+
+  state.diagnostic.results = results;
+  state.weakSkills = ALL_SKILL_IDS.filter(sid => {
+    const r = results[sid];
+    return r.total > 0 && (r.correct / r.total * 100) < WEAK_THRESHOLD;
+  });
+
+  renderResults();
+  buildLessonCards();
+  showSection('section-results');
+  setProgress(55, 'Reviewing results');
+  saveProgress();
+  document.getElementById('section-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ── Render Results ─────────────────────────────────────── */
+function renderResults() {
+  const r = state.diagnostic.results;
+  const intro = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">Great work! You got everything right. Review the lessons below or go straight to practice.</p>`
+    : `<p style="margin-bottom:.8rem">Skills to work on: <strong>${state.weakSkills.map(s => skillLibrary[s].name).join(', ')}</strong>. Study the lesson cards below.</p>`;
+  const rows = ALL_SKILL_IDS.map(sid => {
+    const res = r[sid];
+    if (!res || res.total === 0) return '';
+    const pct = Math.round(res.correct / res.total * 100);
+    const isWeak = state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${skillLibrary[sid].badgeClass}" style="min-width:6rem;text-align:center">${skillLibrary[sid].name}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span style="min-width:3rem;text-align:right">${res.correct}/${res.total}</span>
+      <span class="${isWeak ? 'result-weak' : 'result-pass'}">${isWeak ? '✗ needs work' : '✓ good'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('results-summary').innerHTML = intro + rows;
+}
+
+/* ── Ask AI ─────────────────────────────────────────────── */
+function askAI(skillId) {
+  const sk = skillLibrary[skillId];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+
+  const prompt = [
+    `${name}I am a Grade 4 math student practicing fraction simplification.`,
+    ``,
+    `I need extra help understanding: ${sk.name}.`,
+    ``,
+    `What this skill is about: ${sk.summary}`,
+    ``,
+    `Steps involved:`,
+    steps,
+    ``,
+    `Common mistake to avoid: ${sk.misconception}`,
+    ``,
+    `Please explain this concept clearly in a way a Grade 4 student can understand, then give me 3 practice problems with full step-by-step solutions.`
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+
+  const prompt = [
+    `${name}I am a Grade 4 math student practicing fraction simplification.`,
+    ``,
+    `I have a specific question about: ${concept.label}.`,
+    ``,
+    concept.prompt
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ── Build Lesson Cards ─────────────────────────────────── */
+function buildLessonCards() {
+  const targets = state.weakSkills.length > 0 ? state.weakSkills : ALL_SKILL_IDS;
+  document.getElementById('lesson-cards').innerHTML = targets.map(sid => {
+    const sk = skillLibrary[sid];
+    return `<div class="lesson-card">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.name}</span></div>
+      <p style="font-size:.92rem;margin-bottom:.5rem">${sk.summary}</p>
+      <ol>${sk.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="lesson-example"><strong>Example:</strong> ${sk.example.problemHTML}<br/>
+        <strong>Solution:</strong> ${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn btn-outline btn-sm"
+          onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-ai btn-sm"
+          onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${(sk.keyConcepts || []).map((c, i) =>
+          `<button class="btn btn-ai-concept btn-sm"
+            onclick="askAIConcept('${sid}', ${i})">Ask about ${c.label}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+function openPractice(topicId) {
+  const topics = [
+    { id: 'mixed', label: 'Mixed' },
+    ...ALL_SKILL_IDS.map(sid => ({ id: sid, label: skillLibrary[sid].name }))
+  ];
+  document.getElementById('topic-buttons').innerHTML = topics.map(t =>
+    `<button class="btn btn-secondary btn-sm btn-topic" id="topic-btn-${t.id}"
+      onclick="selectTopic('${t.id}')">${t.label}</button>`
+  ).join('');
+  showSection('section-practice');
+  setProgress(80, 'Practicing');
+  selectTopic(topicId || state.weakSkills[0] || 'mixed');
+  document.getElementById('section-practice').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectTopic(topicId) {
+  state.practice.topic = topicId;
+  document.querySelectorAll('.btn-topic').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('topic-btn-' + topicId);
+  if (btn) btn.classList.add('active');
+  state.practice.attempts = 0;
+  state.practice.correct  = 0;
+  state.practice.streak   = 0;
+  newPracticeQuestion();
+}
+
+function newPracticeQuestion() {
+  const sid = state.practice.topic === 'mixed'
+    ? pick(ALL_SKILL_IDS)
+    : state.practice.topic;
+  const q = questionGenerators[sid]("prac");
+  state.practice.currentQuestion = q;
+  const statsHTML = `<div class="stats-bar">
+    <span>Attempts: <strong>${state.practice.attempts}</strong></span>
+    <span>Correct: <strong>${state.practice.correct}</strong></span>
+    <span>Streak: <strong>${state.practice.streak}</strong></span>
+  </div>`;
+  document.getElementById('practice-area').innerHTML = statsHTML + renderQuestion(q, 'practice');
+}
+
+function checkPracticeAnswer(qId) {
+  const q = state.practice.currentQuestion;
+  if (!q || q.id !== qId) return;
+  let result;
+  if (q.type === 'mc') {
+    const sel = document.querySelector(`input[name="${qId}"]:checked`);
+    result = checkMC(sel ? sel.value : '', q);
+  } else {
+    const raw = document.getElementById('input-' + qId)?.value || '';
+    const parsed = parseAnswer(raw);
+    result = parsed ? checkAnswer(parsed, q.answer) : { status: 'wrong', message: 'Please enter an answer.' };
+  }
+  state.practice.attempts++;
+  if (result.status === 'correct') { state.practice.correct++; state.practice.streak++; }
+  else state.practice.streak = 0;
+
+  const card = document.getElementById('card-' + qId);
+  card.classList.remove('feedback-correct','feedback-almost','feedback-wrong');
+  card.classList.add('feedback-' + result.status);
+
+  const fb = document.getElementById('feedback-' + qId);
+  fb.style.display = 'block';
+  fb.className = 'feedback-msg ' + result.status;
+  fb.textContent = result.message;
+
+  if (result.status !== 'correct') {
+    const ex = document.getElementById('explain-' + qId);
+    ex.innerHTML = '<strong>How to solve:</strong><ol>' +
+      q.explainSteps.map(s => `<li>${s}</li>`).join('') + '</ol>';
+    ex.classList.add('visible');
+  }
+  saveProgress();
+  // Refresh stats display
+  const sb = document.querySelector('.stats-bar');
+  if (sb) sb.innerHTML = `
+    <span>Attempts: <strong>${state.practice.attempts}</strong></span>
+    <span>Correct: <strong>${state.practice.correct}</strong></span>
+    <span>Streak: <strong>${state.practice.streak}</strong></span>`;
+}
+
+function showHint(qId) {
+  const q = state.practice.currentQuestion;
+  if (!q) return;
+  const fb = document.getElementById('feedback-' + qId);
+  fb.style.display = 'block';
+  fb.style.background = '#e8eaf6';
+  fb.style.color = '#1a237e';
+  fb.textContent = '💡 Hint: ' + q.hint;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  document.getElementById('mastery-questions').innerHTML =
+    state.mastery.questions.map(q => renderQuestion(q, 'mastery')).join('');
+  showSection('section-mastery');
+  hideSection('mastery-results');
+  document.getElementById('section-mastery').scrollIntoView({ behavior: 'smooth' });
+}
+
+function submitMastery() {
+  let correct = 0;
+
+  state.mastery.questions.forEach(q => {
+    let ok = false;
+    if (q.type === 'mc') {
+      const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+      ok = sel ? checkMC(sel.value, q).status === 'correct' : false;
+    } else {
+      const raw = document.getElementById('input-' + q.id)?.value || '';
+      const parsed = parseAnswer(raw);
+      ok = parsed && checkAnswer(parsed, q.answer).status === 'correct';
+    }
+    if (ok) correct++;
+  });
+
+  const score = Math.round(correct / state.mastery.questions.length * 100);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore)
+    state.mastery.bestScore = score;
+
+  const passed = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? '#2e7d32' : '#c62828';
+  const name = state.studentName ? `, ${state.studentName}` : '';
+
+  document.getElementById('mastery-submit-btn').style.display = 'none';
+
+  const resultsDiv = document.getElementById('mastery-results');
+  resultsDiv.innerHTML = `
+    <div style="margin-top:1.2rem;padding:1rem;border-radius:10px;border:2px solid ${scoreColor};background:${passed ? '#f1f8e9' : '#fff3e0'}">
+      <div style="font-size:1.4rem;font-weight:800;color:${scoreColor}">
+        ${passed ? '🎉' : '📚'} Score: ${score}%
+        ${state.mastery.bestScore > score ? ` (best: ${state.mastery.bestScore}%)` : ''}
+      </div>
+      <div style="font-size:1rem;margin-top:.4rem">
+        ${passed
+          ? `Excellent work${name}! You have mastered fraction simplification.`
+          : `Good effort${name}! Review the lesson cards and try again.`}
+      </div>
+    </div>
+    <button class="btn btn-outline mt-2" onclick="openMastery()">Retake with new questions</button>
+    ${renderConnections(passed)}`;
+  resultsDiv.style.display = 'block';
+  setProgress(100, 'Complete');
+  resultsDiv.scrollIntoView({ behavior: 'smooth' });
+  saveProgress();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 6 — CONNECTIONS
+══════════════════════════════════════════════════════════════ */
+function renderConnections(passed) {
+  const list = passed ? connections.challenge : connections.foundational;
+  if (!list || list.length === 0) return '';
+  const heading = passed ? '🚀 Ready for a challenge?' : '📖 Want to review something foundational?';
+  return `<div style="margin-top:1rem"><strong>${heading}</strong></div>
+    ${list.map(c => `<div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join('')}`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME & GREETING  (site-wide, shared across all UEPGs)
+══════════════════════════════════════════════════════════════ */
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById('name-input').value = saved;
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${saved}! Ready to practise fraction simplification?`;
+  }
+}
+
+function saveSiteName(name) {
+  state.studentName = name.trim();
+  if (state.studentName) localStorage.setItem(NAME_KEY, state.studentName);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+(function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved?.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mean, Median &amp; Mode — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#4527a0,#6a1b9a); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Mean, Median &amp; Mode</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Mode, Median, Mean vs Median, Outlier Effects, Work Backwards, and Choosing the Right Measure</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Mode</span>
+      <span class="badge badge-L2">Median</span>
+      <span class="badge badge-L3">Compare</span>
+      <span class="badge badge-L4">Outliers</span>
+      <span class="badge badge-L5">Backwards</span>
+      <span class="badge badge-rule">Choose</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Mode:</strong> most frequent value. Two values tie → both are modes (bimodal). All values different → no mode.</li>
+        <li><strong>Median:</strong> sort values first. Odd count → middle value. Even count → (lower middle + upper middle) ÷ 2.</li>
+        <li><strong>Mean:</strong> Sum ÷ Count.</li>
+        <li><strong>Outlier effect:</strong> extreme values pull the mean far from the middle but barely move the median. Median is more robust.</li>
+        <li><strong>Work backwards (mean):</strong> missing = target × N − sum of known values.</li>
+        <li><strong>Work backwards (even-count median):</strong> missing = 2 × target median − its sorted neighbour.</li>
+        <li><strong>Choose:</strong> mean for balanced data, median for skewed/outliers, mode for categories.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_mmm_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return {
+    id, type: "mc", skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: cidx },
+    choices: rendered,
+    explainSteps,
+    hint,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  mode: {
+    name: "Level 1: Mode", level: 1, badgeClass: "badge-L1",
+    summary: "The mode is the value that appears most often. If two values tie, both are modes. If all values appear once, there is no mode.",
+    steps: [
+      "List all values and count how many times each appears.",
+      "The value with the highest count is the mode.",
+      "If two or more values share the highest count, all of them are modes (bimodal, trimodal…).",
+      "If every value appears exactly once, there is no mode.",
+    ],
+    example: {
+      problemHTML: `Quiz scores: <strong>7, 9, 8, 9, 6, 7, 9</strong>. Which equation correctly identifies the mode?`,
+      solutionHTML: `Count each value: 6→1, 7→2, 8→1, 9→3.<br>
+        9 appears most often (3 times).<br>
+        Correct: ${mi('\\text{Mode} = 9')}.`,
+    },
+    misconception: "Don't confuse mode with mean or median. Mode only counts frequency — it is the value that appears most, not the middle value or the average.",
+    keyConcepts: [
+      { label: "Why Mode Matters for Categories", prompt: "A shop records customers' favourite colours: Red, Blue, Blue, Green, Red, Blue, Yellow. Which measure (mean, median, or mode) can you use here, and why can't you use the others?" },
+      { label: "Bimodal Data Sets", prompt: "Data: 3, 5, 5, 7, 7, 9. Explain why this set has two modes. Can a data set have three modes? Give an example." },
+    ],
+  },
+
+  median: {
+    name: "Level 2: Median", level: 2, badgeClass: "badge-L2",
+    summary: "Sort the values first. For odd count, the median is the middle value. For even count, median = (lower middle + upper middle) ÷ 2.",
+    steps: [
+      "Sort all values from smallest to largest.",
+      "Count the total number of values (n).",
+      "If n is odd: median = value at position (n+1)÷2.",
+      "If n is even: median = (value at position n÷2 + value at position n÷2 + 1) ÷ 2.",
+    ],
+    example: {
+      problemHTML: `Four test scores: <strong>85, 68, 91, 72</strong>. Which equation gives the median?`,
+      solutionHTML: `Sort: 68, 72, 85, 91. Count = 4 (even).<br>
+        Two middle values are 72 and 85.<br>
+        Correct: ${mi('\\text{Median} = (72 + 85) \\div 2 = 78.5')}.`,
+    },
+    misconception: "Always sort first — the median is the middle position, not the value in the middle of the original list. For even count, don't forget to average the two middle values.",
+    keyConcepts: [
+      { label: "Sorting Before Finding the Median", prompt: "Data: 9, 3, 7, 1, 5. Without sorting, someone picks 7 (the middle position in the original list). Show why that is wrong and find the correct median." },
+      { label: "Even vs Odd Count", prompt: "Explain in your own words why finding the median of 5 numbers is simpler than finding the median of 6 numbers. Give one example of each." },
+    ],
+  },
+
+  mean_vs_median: {
+    name: "Level 3: Mean vs Median", level: 3, badgeClass: "badge-L3",
+    summary: "Outliers pull the mean toward them but barely move the median. When data is symmetric, mean ≈ median. When data is skewed, they differ.",
+    steps: [
+      "Compute the mean: Sum ÷ Count.",
+      "Sort and find the median (middle value for odd, average of two middles for even).",
+      "Compare: if there is a large outlier, mean > median (right-skewed). If there is a small outlier, mean < median (left-skewed). If symmetric, mean ≈ median.",
+    ],
+    example: {
+      problemHTML: `Data: <strong>3, 5, 6, 7, 19</strong>. Which statement is correct about the mean and median?`,
+      solutionHTML: `Sum = 3+5+6+7+19 = 40. Mean = 40÷5 = 8.<br>
+        Sorted: 3, 5, 6, 7, 19. Median = 6 (middle value).<br>
+        Correct: ${mi('\\text{Mean} > \\text{Median}')} because the outlier 19 pulls the mean up to 8, far above the median 6.`,
+    },
+    misconception: "The mean and median are not always equal. Whenever a data set has extreme values (outliers), the mean is dragged toward them while the median stays near the centre of the main group.",
+    keyConcepts: [
+      { label: "Why Outliers Affect Mean More than Median", prompt: "Data: 2, 3, 4, 5, 16. Remove 16. How do mean and median each change? Why does removing the outlier affect the mean much more than the median?" },
+      { label: "Symmetric Data", prompt: "Show that the data set 1, 3, 5, 7, 9 has equal mean and median. What property of this data set guarantees this? What would you have to change to make the mean larger than the median?" },
+    ],
+  },
+
+  outlier_effect: {
+    name: "Level 4: Effect of Outliers", level: 4, badgeClass: "badge-L4",
+    summary: "Adding an extreme value (outlier) to a data set changes the mean dramatically but moves the median very little. Use the formula: New Mean = (Old Mean × N + Outlier) ÷ (N + 1).",
+    steps: [
+      "Compute the old sum: Old Sum = Old Mean × N.",
+      "Add the outlier to the sum: New Sum = Old Sum + Outlier.",
+      "New count = N + 1.",
+      "New Mean = New Sum ÷ (N + 1).",
+      "Note: the median shifts by at most one position — much less dramatic.",
+    ],
+    example: {
+      problemHTML: `A class of <strong>4 students</strong> has a mean score of <strong>70</strong>. A fifth student scores <strong>100</strong> (an outlier). Let x = the new mean. Which equation is correct?`,
+      solutionHTML: `Old sum = 70 × 4 = 280. New sum = 280 + 100 = 380. New count = 5.<br>
+        Correct: ${mi('x = (70 \\times 4 + 100) \\div 5')}.<br>
+        x = 380 ÷ 5 = 76. The mean jumped from 70 to 76 due to the outlier 100.`,
+    },
+    misconception: "Don't average the old mean and the outlier: (70+100)÷2 = 85 ≠ 76. The group already has 4 members, not 1, so the old sum is 70×4 = 280, not just 70.",
+    keyConcepts: [
+      { label: "How Much Does the Outlier Shift the Mean?", prompt: "Old mean of 5 numbers is 60. Add an outlier of 120. Calculate the new mean. How many points did the mean increase? Now add an outlier of 10 instead. How does the mean change this time?" },
+      { label: "Outlier Effect on Median", prompt: "Data: 3, 5, 7, 9, 11 (mean=7, median=7). Add outlier 51. What is the new mean? What is the new median? By how much did each change? What does this tell you about robustness?" },
+    ],
+  },
+
+  work_backwards: {
+    name: "Level 5: Work Backwards", level: 5, badgeClass: "badge-L5",
+    summary: "Find a missing value to achieve a target mean or median. For mean: missing = target × N − sum of known values. For even-count median: missing = 2 × target median − sorted neighbour.",
+    steps: [
+      "For target mean: compute required total = target × N. Subtract sum of known values.",
+      "For even-count median: the two middle values must average to the target. If one middle value is known (call it b), missing x = 2 × target − b.",
+      "Verify: plug x back in and check the mean or median equals the target.",
+    ],
+    example: {
+      problemHTML: `Sam scored <strong>72, 80, 68, 84</strong> on four tests. He wants an average of <strong>78</strong> for all five tests. Let x = the required fifth score. Which equation finds x?`,
+      solutionHTML: `Required total = 78 × 5 = 390.<br>
+        Known sum = 72 + 80 + 68 + 84 = 304.<br>
+        Correct: ${mi('x = 78 \\times 5 - (72 + 80 + 68 + 84)')}.<br>
+        x = 390 − 304 = 86.`,
+    },
+    misconception: "For work-backwards-median (even count), the formula x = 2 × target − b applies because the two middle values must sum to 2 × target. Don't confuse this with the work-backwards-mean formula.",
+    keyConcepts: [
+      { label: "Work Backwards for Mean vs Median", prompt: "Four scores: 60, 70, 80, 90. Target mean = 75 for five scores. Find the missing score. Now suppose the 5 sorted scores are [60, 70, x, 80, 90] and the target median is 72. Find x. Compare the two methods." },
+      { label: "Is the Target Achievable?", prompt: "Six scores, five known: 50, 55, 60, 65, 70. If the target mean is 100, what would the sixth score need to be? Is this a realistic score? What does this tell you about setting targets?" },
+    ],
+  },
+
+  choose_measure: {
+    name: "Rule: Choose the Right Measure", level: 0, badgeClass: "badge-rule",
+    summary: "Mean for balanced numerical data. Median for skewed data or data with outliers. Mode for categorical data or when you need the most common value.",
+    steps: [
+      "Ask: is the data categorical (colours, names, types)? If yes → Mode.",
+      "Ask: does the data have extreme outliers or obvious skew? If yes → Median.",
+      "Ask: is the data roughly symmetric with no outliers? If yes → Mean.",
+      "Quick check: salaries and house prices → Median; shoe sizes and favourite items → Mode; balanced test scores → Mean.",
+    ],
+    example: {
+      problemHTML: `Monthly salaries at a company: <strong>$2000, $2500, $3000, $3500, $85000</strong>. Which measure best represents a typical salary?`,
+      solutionHTML: `Mean = (2000+2500+3000+3500+85000)÷5 = 96000÷5 = $19200 — far above most salaries!<br>
+        Median = $3000 (middle value) — far more representative.<br>
+        Correct: ${mi('\\text{Median}')}. The outlier $85000 inflates the mean but does not affect the median.`,
+    },
+    misconception: "The mean is not always the best 'average'. When even one extreme value is present, it can pull the mean far from where most values lie — making the median a far better descriptor.",
+    keyConcepts: [
+      { label: "Salary vs Test Score", prompt: "Why do news reports use median household income rather than mean? Give a concrete example with numbers showing how a few billionaires make the mean useless for describing a typical household." },
+      { label: "When Mode is the Only Option", prompt: "A survey asks students their favourite subject: Maths, English, Science, Art, PE. Why can't you compute a mean or median for this data? What can you compute, and what does it tell you?" },
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Mode ───────────────────────────────────────────────── */
+const L1_SINGLE = [
+  { data:[3,5,5,7,9],   mode:5 },
+  { data:[2,4,6,6,8],   mode:6 },
+  { data:[1,3,3,5,9],   mode:3 },
+  { data:[4,7,7,9,11],  mode:7 },
+  { data:[2,2,5,8,10],  mode:2 },
+  { data:[6,8,8,11,13], mode:8 },
+];
+const L1_BIMODAL = [
+  { data:[2,3,3,5,5,7],  modes:[3,5]  },
+  { data:[1,4,4,6,6,9],  modes:[4,6]  },
+  { data:[3,5,5,8,8,10], modes:[5,8]  },
+  { data:[2,6,6,7,7,11], modes:[6,7]  },
+];
+const L1_NO_MODE = [
+  [2,4,6,8,10],
+  [1,3,5,7,9],
+  [3,6,9,12,15],
+  [4,7,10,13,16],
+];
+// mode ≠ mean ≠ median in each set
+const L1_TRAP = [
+  { data:[3,3,5,7,12], mode:3, mean:6, median:5 },
+  { data:[4,4,6,8,18], mode:4, mean:8, median:6 },
+  { data:[5,5,7,9,14], mode:5, mean:8, median:7 },
+  { data:[1,1,5,7,16], mode:1, mean:6, median:5 },
+];
+
+/* ── L2: Median ─────────────────────────────────────────────── */
+// odd count (5), unsorted
+const L2_ODD5 = [
+  { unsorted:[7,3,9,1,5],    sorted:[1,3,5,7,9],    median:5  },
+  { unsorted:[12,4,8,16,6],  sorted:[4,6,8,12,16],  median:8  },
+  { unsorted:[15,5,25,10,20],sorted:[5,10,15,20,25], median:15 },
+  { unsorted:[9,3,13,6,17],  sorted:[3,6,9,13,17],  median:9  },
+];
+// even count (4), sorted
+const L2_EVEN4 = [
+  { sorted:[3,7,11,15],  m1:7,  m2:11, median:9  },
+  { sorted:[4,8,12,16],  m1:8,  m2:12, median:10 },
+  { sorted:[2,6,10,14],  m1:6,  m2:10, median:8  },
+  { sorted:[5,9,13,17],  m1:9,  m2:13, median:11 },
+];
+// odd count (7), unsorted
+const L2_ODD7 = [
+  { unsorted:[4,8,2,10,6,12,1], sorted:[1,2,4,6,8,10,12], median:6  },
+  { unsorted:[9,3,15,7,1,11,5], sorted:[1,3,5,7,9,11,15], median:7  },
+  { unsorted:[6,14,2,10,4,12,8],sorted:[2,4,6,8,10,12,14],median:8  },
+  { unsorted:[3,11,7,15,5,13,9],sorted:[3,5,7,9,11,13,15],median:9  },
+];
+
+/* ── L3: Mean vs Median (5 elements, integer mean and median) ── */
+const L3_COMPARE = [
+  { data:[2,3,4,5,16],   mean:6, median:4 },  // right-skew
+  { data:[1,4,7,8,10],   mean:6, median:7 },  // left-skew
+  { data:[2,4,6,8,10],   mean:6, median:6 },  // symmetric
+  { data:[4,5,7,9,15],   mean:8, median:7 },  // right-skew
+  { data:[1,6,8,10,15],  mean:8, median:8 },  // symmetric
+  { data:[3,6,9,10,12],  mean:8, median:9 },  // left-skew
+  { data:[1,2,4,8,15],   mean:6, median:4 },  // right-skew
+  { data:[3,5,5,7,10],   mean:6, median:5 },  // right-skew
+];
+
+/* ── L4: Outlier Effect ─────────────────────────────────────── */
+// [N, oldMean, outlier, newMean] — verified: (N*oldMean+outlier)%(N+1)===0
+const L4_OUTLIER = [
+  [4, 6,  16, 8],
+  [4, 8,  18, 10],
+  [5, 7,  19, 9],
+  [5, 9,  15, 10],
+  [4, 10, 20, 12],
+  [4, 5,  15, 7],
+  [5, 6,  18, 8],
+  [4, 7,  22, 10],
+];
+
+/* ── L5: Work Backwards ─────────────────────────────────────── */
+// Mean backwards, 5 numbers: [target_mean, [known4], x]
+const L5_MEAN5 = [
+  [80, [75,82,68,90], 85],
+  [75, [70,78,65,82], 80],
+  [78, [72,80,68,84], 86],
+  [82, [78,85,72,88], 87],
+];
+// Mean backwards, 4 numbers: [target_mean, [known3], x]
+const L5_MEAN4 = [
+  [20, [15,22,18], 25],
+  [15, [12,17,14], 17],
+  [25, [20,28,22], 30],
+  [30, [25,33,28], 34],
+];
+// Median backwards, even count 4: [a_low, b (upper-middle), c_high, M, x]
+// sorted list: [a_low, x, b, c_high]; median=(x+b)/2=M; x=2M-b
+const L5_MED_EVEN = [
+  [3,  9,  15, 7, 5],
+  [2,  11, 16, 8, 5],
+  [4,  10, 18, 8, 6],
+  [1,  12, 20, 9, 6],
+  [5,  11, 17, 9, 7],
+  [2,  9,  14, 8, 7],
+];
+// Median backwards, odd count 5: [a, b, c, d, M]
+// sorted list: [a, b, M, c, d]; x = M
+const L5_MED_ODD = [
+  [3,  6,  12, 15, 9],
+  [4,  7,  13, 17, 10],
+  [2,  5,  9,  14, 7],
+  [1,  4,  10, 16, 8],
+  [5,  8,  14, 18, 11],
+  [3,  7,  11, 15, 9],
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── POOL_L1: Mode ──────────────────────────────────────────── */
+const POOL_L1 = [
+  // Single mode
+  () => {
+    const { data, mode } = math.pick(L1_SINGLE);
+    const shuffledData = math.shuffle([...data]);
+    const nonModes = data.filter(v => v !== mode);
+    const d1 = nonModes[0], d2 = nonModes[nonModes.length - 1];
+    const correctLatex = `\\text{Mode} = ${mode}`;
+    return {
+      promptHTML: `Data: <strong>${shuffledData.join(", ")}</strong>. Which correctly identifies the mode?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mode} = ${d1}`,      error: `${d1} does not appear more than once — ${mode} is the most frequent value` },
+        { eq: `\\text{Mode} = ${d2}`,      error: `${d2} appears only once — the mode is the value that appears most often` },
+        { eq: `\\text{No mode}`,            error: `${mode} appears twice (more than any other) — the mode exists` },
+      ],
+      hint: `Count how many times each value appears. The mode is the one that appears most.`,
+    };
+  },
+  // Bimodal
+  () => {
+    const { data, modes } = math.pick(L1_BIMODAL);
+    const [m1, m2] = modes;
+    const nonModes = data.filter(v => !modes.includes(v));
+    const correctLatex = `\\text{Mode} = ${m1} \\text{ and } ${m2}`;
+    return {
+      promptHTML: `Data: <strong>${data.join(", ")}</strong>. Which correctly identifies the mode(s)?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mode} = ${m1}`,               error: `Both ${m1} and ${m2} appear equally often — report both modes` },
+        { eq: `\\text{Mode} = ${m2}`,               error: `Both ${m1} and ${m2} appear equally often — report both modes` },
+        { eq: `\\text{No mode}`,                    error: `${m1} and ${m2} both appear more than once — this is bimodal data` },
+      ],
+      hint: `Two values appear equally often. Report both — this is a bimodal data set.`,
+    };
+  },
+  // No mode
+  () => {
+    const data = math.pick(L1_NO_MODE);
+    const correctLatex = `\\text{No mode}`;
+    return {
+      promptHTML: `Data: <strong>${data.join(", ")}</strong>. Which correctly identifies the mode?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mode} = ${data[0]}`,           error: `${data[0]} appears only once — every value appears exactly once, so there is no mode` },
+        { eq: `\\text{Mode} = ${data[Math.floor(data.length/2)]}`, error: `That is the median, not the mode — the mode requires a value that appears more than once` },
+        { eq: `\\text{Mode} = ${data[data.length-1]}`, error: `${data[data.length-1]} appears only once — no value repeats, so there is no mode` },
+      ],
+      hint: `Every value in this set appears exactly once. When no value repeats, there is no mode.`,
+    };
+  },
+  // Mode vs mean trap
+  () => {
+    const { data, mode, mean, median } = math.pick(L1_TRAP);
+    const shuffledData = math.shuffle([...data]);
+    const correctLatex = `\\text{Mode} = ${mode}`;
+    return {
+      promptHTML: `Data: <strong>${shuffledData.join(", ")}</strong>. The mode, mean, and median are all different. Which correctly identifies the mode?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mode} = ${mean}`,   error: `${mean} is the mean (sum÷count), not the mode — the mode is the most frequent value` },
+        { eq: `\\text{Mode} = ${median}`, error: `${median} is the median (sorted middle), not the mode — the mode is the value that appears most often` },
+        { eq: `\\text{No mode}`,          error: `${mode} appears more than once — there is a mode` },
+      ],
+      hint: `Count each value's frequency. The one that appears more than once is the mode.`,
+    };
+  },
+];
+
+/* ── POOL_L2: Median ────────────────────────────────────────── */
+const POOL_L2 = [
+  // Odd count 5, unsorted
+  () => {
+    const { unsorted, sorted, median } = math.pick(L2_ODD5);
+    const wrongMiddle = unsorted[Math.floor(unsorted.length / 2)];
+    const correctLatex = `\\text{Median} = ${median}`;
+    return {
+      promptHTML: `Data (unsorted): <strong>${unsorted.join(", ")}</strong>. Which gives the correct median?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Median} = ${wrongMiddle}`,             error: `Sort first! ${wrongMiddle} is the middle of the original unsorted list, not the median` },
+        { eq: `\\text{Median} = ${sorted[0]}`,               error: `${sorted[0]} is the smallest value after sorting, not the middle one` },
+        { eq: `\\text{Median} = (${sorted[1]} + ${sorted[3]}) \\div 2`, error: `For odd count, no averaging needed — just take the single middle value after sorting` },
+      ],
+      hint: `Sort: ${sorted.join(", ")}. Count = 5 (odd). Middle position = 3rd = ${median}.`,
+    };
+  },
+  // Even count 4, sorted — equation form
+  () => {
+    const { sorted, m1, m2, median } = math.pick(L2_EVEN4);
+    const correctLatex = `\\text{Median} = (${m1} + ${m2}) \\div 2`;
+    return {
+      promptHTML: `Data (already sorted): <strong>${sorted.join(", ")}</strong>. Which equation gives the median?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Median} = (${sorted[0]} + ${sorted[3]}) \\div 2`, error: `Average the two MIDDLE values, not the smallest and largest` },
+        { eq: `\\text{Median} = ${m1}`,                                 error: `For even count, the median is the average of the two middle values, not just the lower one` },
+        { eq: `\\text{Median} = (${m1} + ${m2} + ${sorted[0]}) \\div 3`, error: `Only the two middle values (${m1} and ${m2}) are averaged — do not include a third value` },
+      ],
+      hint: `Count = 4 (even). Two middle values are ${m1} and ${m2}. Median = (${m1}+${m2})÷2 = ${median}.`,
+    };
+  },
+  // Odd count 7, unsorted
+  () => {
+    const { unsorted, sorted, median } = math.pick(L2_ODD7);
+    const wrongMiddle = unsorted[3];
+    const correctLatex = `\\text{Median} = ${median}`;
+    return {
+      promptHTML: `Data (unsorted): <strong>${unsorted.join(", ")}</strong>. Which gives the correct median?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Median} = ${wrongMiddle}`,                     error: `Sort first! ${wrongMiddle} is in the 4th position of the unsorted list, not the median` },
+        { eq: `\\text{Median} = (${sorted[2]} + ${sorted[4]}) \\div 2`, error: `For odd count (7), there is one middle value (position 4), not an average of two` },
+        { eq: `\\text{Median} = ${sorted[0]}`,                       error: `${sorted[0]} is the smallest after sorting, not the middle` },
+      ],
+      hint: `Sort: ${sorted.join(", ")}. Count = 7 (odd). Middle position = 4th = ${median}.`,
+    };
+  },
+  // Even count 4, unsorted presentation
+  () => {
+    const { sorted, m1, m2, median } = math.pick(L2_EVEN4);
+    const unsorted = math.shuffle([...sorted]);
+    const correctLatex = `\\text{Median} = (${m1} + ${m2}) \\div 2`;
+    return {
+      promptHTML: `Data: <strong>${unsorted.join(", ")}</strong>. Sort them, then identify the equation for the median.`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Median} = (${sorted[0]} + ${sorted[3]}) \\div 2`, error: `Average the two middle values (${m1} and ${m2}), not the extreme values` },
+        { eq: `\\text{Median} = ${median}`,                             error: `While ${median} is the correct answer, the equation showing (${m1}+${m2})÷2 explains the method` },
+        { eq: `\\text{Median} = (${sorted[0]} + ${sorted[1]}) \\div 2`, error: `${sorted[0]} and ${sorted[1]} are the two smallest — average the two MIDDLE values after sorting` },
+      ],
+      hint: `Sort: ${sorted.join(", ")}. Count = 4 (even). Middle two = ${m1}, ${m2}. Average them.`,
+    };
+  },
+];
+
+/* ── POOL_L3: Mean vs Median ────────────────────────────────── */
+const POOL_L3 = [
+  () => {
+    const { data, mean, median } = math.pick(L3_COMPARE);
+    const rel = mean > median ? ">" : mean < median ? "<" : "=";
+    const correctLatex = `\\text{Mean} ${rel} \\text{Median}`;
+    const hint_mean = `Mean = (${data.join("+")})÷${data.length} = ${mean}. Sort: ${[...data].sort((a,b)=>a-b).join(", ")}. Median = ${median}.`;
+    let decoyDefs;
+    if (rel === ">") {
+      decoyDefs = [
+        { eq: `\\text{Mean} < \\text{Median}`, error: `The large outlier pulls the mean UP above the median — Mean > Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `They are not equal — compute mean = sum÷${data.length} = ${mean}, median = sorted middle = ${median}` },
+        { eq: `\\text{Mode} > \\text{Median}`, error: `This compares mode and median, not mean and median` },
+      ];
+    } else if (rel === "<") {
+      decoyDefs = [
+        { eq: `\\text{Mean} > \\text{Median}`, error: `The cluster of small values pulls the mean DOWN below the median — Mean < Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `They are not equal — mean = ${mean}, median = ${median}` },
+        { eq: `\\text{Mode} < \\text{Median}`, error: `This compares mode and median, not mean and median` },
+      ];
+    } else {
+      decoyDefs = [
+        { eq: `\\text{Mean} > \\text{Median}`, error: `This data is symmetric — mean and median are both ${mean}` },
+        { eq: `\\text{Mean} < \\text{Median}`, error: `This data is symmetric — mean and median are both ${median}` },
+        { eq: `\\text{Mode} = \\text{Median}`, error: `This compares mode and median, not mean and median` },
+      ];
+    }
+    return {
+      promptHTML: `Data: <strong>${data.join(", ")}</strong>. Which statement correctly compares the mean and median?`,
+      correctLatex,
+      decoyDefs,
+      hint: hint_mean,
+    };
+  },
+  () => {
+    const { data, mean, median } = math.pick(L3_COMPARE);
+    const rel = mean > median ? ">" : mean < median ? "<" : "=";
+    const correctLatex = `\\text{Mean} ${rel} \\text{Median}`;
+    const sorted = [...data].sort((a,b)=>a-b);
+    let decoyDefs;
+    if (rel === ">") {
+      decoyDefs = [
+        { eq: `\\text{Mean} < \\text{Median}`, error: `The large outlier ${sorted[sorted.length-1]} pulls the mean up, so Mean > Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `Mean = ${mean} and Median = ${median} — they differ` },
+        { eq: `\\text{Median} > \\text{Mode}`, error: `This compares median and mode, not mean and median` },
+      ];
+    } else if (rel === "<") {
+      decoyDefs = [
+        { eq: `\\text{Mean} > \\text{Median}`, error: `The small outlier ${sorted[0]} pulls the mean down, so Mean < Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `Mean = ${mean} and Median = ${median} — they differ` },
+        { eq: `\\text{Median} < \\text{Mode}`, error: `This compares median and mode, not mean and median` },
+      ];
+    } else {
+      decoyDefs = [
+        { eq: `\\text{Mean} > \\text{Median}`, error: `Both equal ${mean} in this symmetric data set` },
+        { eq: `\\text{Mean} < \\text{Median}`, error: `Both equal ${median} in this symmetric data set` },
+        { eq: `\\text{Mode} = \\text{Mean}`,   error: `This compares mode and mean, not mean and median` },
+      ];
+    }
+    return {
+      promptHTML: `Sorted data: <strong>${sorted.join(", ")}</strong>. Which statement correctly compares the mean and median?`,
+      correctLatex,
+      decoyDefs,
+      hint: `Mean = ${data.join("+")} all ÷${data.length} = ${mean}. Median = middle value of sorted list = ${median}.`,
+    };
+  },
+  () => {
+    const entry = math.pick(L3_COMPARE.filter(e => e.mean > e.median));
+    const { data, mean, median } = entry;
+    const correctLatex = `\\text{Mean} > \\text{Median}`;
+    const outlier = Math.max(...data);
+    return {
+      promptHTML: `Data: <strong>${data.join(", ")}</strong>. Notice the large value <strong>${outlier}</strong>. Which statement is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mean} < \\text{Median}`, error: `${outlier} is an outlier that pulls the mean UP — Mean > Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `Mean = ${mean} and Median = ${median} — the outlier ${outlier} makes them different` },
+        { eq: `\\text{Median} > \\text{Mean}`, error: `The outlier ${outlier} inflates the mean above the median — Mean > Median` },
+      ],
+      hint: `Outlier ${outlier} inflates the mean to ${mean}. Median (sorted middle) = ${median}. Mean > Median.`,
+    };
+  },
+  () => {
+    const entry = math.pick(L3_COMPARE.filter(e => e.mean < e.median));
+    const { data, mean, median } = entry;
+    const correctLatex = `\\text{Mean} < \\text{Median}`;
+    const smallVal = Math.min(...data);
+    return {
+      promptHTML: `Data: <strong>${data.join(", ")}</strong>. Notice the small value <strong>${smallVal}</strong>. Which statement is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mean} > \\text{Median}`, error: `${smallVal} is a low outlier that pulls the mean DOWN — Mean < Median` },
+        { eq: `\\text{Mean} = \\text{Median}`, error: `Mean = ${mean} and Median = ${median} — the low value ${smallVal} drags the mean below the median` },
+        { eq: `\\text{Median} < \\text{Mean}`, error: `The low outlier ${smallVal} pulls the mean below the median — Mean < Median` },
+      ],
+      hint: `Low value ${smallVal} drags the mean down to ${mean}. Median (sorted middle) = ${median}. Mean < Median.`,
+    };
+  },
+];
+
+/* ── POOL_L4: Outlier Effect ────────────────────────────────── */
+const POOL_L4 = [
+  () => {
+    const [N, oldMean, outlier, newMean] = math.pick(L4_OUTLIER);
+    const context = math.pick(["test score","donation amount","distance run","points scored"]);
+    const correctLatex = `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N+1}`;
+    return {
+      promptHTML: `A group of <strong>${N}</strong> students has a mean ${context} of <strong>${oldMean}</strong>. An outlier of <strong>${outlier}</strong> is added. Let x = the new mean. Which equation is correct?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldMean} + ${outlier}) \\div 2`,        error: `You can't average the old mean and outlier — the group has ${N} members, so old sum = ${oldMean}×${N} = ${oldMean*N}` },
+        { eq: `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N}`, error: `After adding the outlier, count becomes ${N+1}, not ${N}` },
+        { eq: `x = (${oldMean} \\times ${N+1} + ${outlier}) \\div ${N+1}`, error: `The original group has ${N} members — old sum = ${oldMean}×${N}, not ×${N+1}` },
+      ],
+      hint: `Old sum = ${oldMean}×${N} = ${oldMean*N}. New sum = ${oldMean*N}+${outlier} = ${oldMean*N+outlier}. New count = ${N+1}. x = ${newMean}.`,
+    };
+  },
+  () => {
+    const [N, oldMean, outlier, newMean] = math.pick(L4_OUTLIER);
+    const topic = math.pick(["salary (in thousands)","house price (in ten-thousands)","daily step count (in hundreds)"]);
+    const correctLatex = `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N+1}`;
+    return {
+      promptHTML: `${N} data values have mean <strong>${oldMean}</strong> (${topic}). An extreme value of <strong>${outlier}</strong> is added to the data set. Let x = the new mean. Which equation gives x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldMean} + ${outlier}) \\div 2`,               error: `Simple averaging of old mean and outlier is wrong — old sum = ${oldMean}×${N} = ${oldMean*N}` },
+        { eq: `x = (${oldMean} \\times ${N} - ${outlier}) \\div ${N+1}`, error: `The outlier is ADDED to the data, so add it to the sum, not subtract` },
+        { eq: `x = ${outlier} \\div ${N+1}`,                         error: `Use the full new sum (old sum + outlier), not just the outlier alone` },
+      ],
+      hint: `Old sum = ${oldMean*N}. Add outlier: new sum = ${oldMean*N+outlier}. Count = ${N+1}. New mean = ${newMean}.`,
+    };
+  },
+  () => {
+    const [N, oldMean, outlier, newMean] = math.pick(L4_OUTLIER);
+    const wrongMean = Math.round((oldMean + outlier) / 2);
+    const correctLatex = `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N+1}`;
+    return {
+      promptHTML: `A data set of <strong>${N}</strong> values has mean <strong>${oldMean}</strong>. A student incorrectly says the new mean after adding <strong>${outlier}</strong> is (${oldMean}+${outlier})÷2 = <strong>${wrongMean}</strong>. Which equation gives the CORRECT new mean?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldMean} + ${outlier}) \\div 2`,               error: `This is the student's mistake — treats the old mean as a single data point, ignoring the ${N} members behind it` },
+        { eq: `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N}`, error: `After adding one value, the count is ${N+1}, not ${N}` },
+        { eq: `x = ${outlier} \\times ${N} \\div ${N+1}`,             error: `The sum is old sum + outlier = ${oldMean*N+outlier}, not outlier × N` },
+      ],
+      hint: `Old sum = ${oldMean}×${N} = ${oldMean*N}. Correct new mean = ${oldMean*N+outlier}÷${N+1} = ${newMean}. Student's ${wrongMean} is wrong.`,
+    };
+  },
+  () => {
+    const [N, oldMean, outlier, newMean] = math.pick(L4_OUTLIER);
+    const subject = math.pick(["test scores","lap times","quiz marks","heights (cm)"]);
+    const correctLatex = `x = (${oldMean} \\times ${N} + ${outlier}) \\div ${N+1}`;
+    return {
+      promptHTML: `A class records ${N} ${subject} with mean <strong>${oldMean}</strong>. One more value, <strong>${outlier}</strong>, is recorded. Let x = the updated mean. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = (${oldMean} + ${outlier}) \\div 2`,                     error: `Averaging two averages only works for equal-size groups — the old mean represents ${N} values` },
+        { eq: `x = (${oldMean} \\times ${N} + ${outlier}) \\div (${N} \\times 2)`, error: `Divide by the new count (${N+1}), not by ${N}×2` },
+        { eq: `x = ${newMean + 1}`,                                         error: `That value is off — compute (${oldMean*N}+${outlier})÷${N+1} carefully` },
+      ],
+      hint: `Sum = ${oldMean}×${N}+${outlier} = ${oldMean*N+outlier}. Count = ${N+1}. x = ${newMean}.`,
+    };
+  },
+];
+
+/* ── POOL_L5: Work Backwards ────────────────────────────────── */
+const POOL_L5 = [
+  // Work backwards for mean, 5 numbers
+  () => {
+    const [tgt, known, x] = math.pick(L5_MEAN5);
+    const knownSum = known.reduce((s,v)=>s+v,0);
+    const ctx = math.pick(["test","quiz","round","match"]);
+    const correctLatex = `x = ${tgt} \\times 5 - (${known.join(' + ')})`;
+    return {
+      promptHTML: `Sam scored <strong>${known.join(", ")}</strong> on four ${ctx}s. He wants a mean of <strong>${tgt}</strong> after five ${ctx}s. Let x = the required fifth score. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${tgt} \\times 4 - (${known.join(' + ')})`,  error: `There are 5 ${ctx}s in total — required sum = ${tgt}×5, not ×4` },
+        { eq: `x = ${tgt} \\times 5 + (${known.join(' + ')})`,  error: `x = required total − known sum; subtract, don't add` },
+        { eq: `x = (${known.join(' + ')}) \\div 4`,              error: `This finds the mean of the 4 known scores — it does not find the required fifth score` },
+      ],
+      hint: `Required total = ${tgt}×5 = ${tgt*5}. Known sum = ${knownSum}. x = ${tgt*5}−${knownSum} = ${x}.`,
+    };
+  },
+  // Work backwards for mean, 4 numbers
+  () => {
+    const [tgt, known, x] = math.pick(L5_MEAN4);
+    const knownSum = known.reduce((s,v)=>s+v,0);
+    const ctx = math.pick(["measurement","reading","attempt","observation"]);
+    const correctLatex = `x = ${tgt} \\times 4 - (${known.join(' + ')})`;
+    return {
+      promptHTML: `Three ${ctx}s are recorded: <strong>${known.join(", ")}</strong>. The target mean for all four ${ctx}s is <strong>${tgt}</strong>. Let x = the fourth ${ctx}. Which equation finds x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${tgt} \\times 3 - (${known.join(' + ')})`,   error: `4 measurements total — required sum = ${tgt}×4, not ×3` },
+        { eq: `x = ${tgt} \\times 4 + (${known.join(' + ')})`,   error: `x = required total − known sum; use subtraction` },
+        { eq: `x = (${known.join(' + ')}) \\div 3`,               error: `This finds the mean of the 3 known values — it does not give the required fourth value` },
+      ],
+      hint: `Required total = ${tgt}×4 = ${tgt*4}. Known sum = ${knownSum}. x = ${tgt*4}−${knownSum} = ${x}.`,
+    };
+  },
+  // Work backwards for median, even count
+  () => {
+    const [aLow, b, cHigh, M, x] = math.pick(L5_MED_EVEN);
+    const correctLatex = `x = 2 \\times ${M} - ${b}`;
+    return {
+      promptHTML: `Four values will be sorted as: <strong>${aLow}, x, ${b}, ${cHigh}</strong>. The target median is <strong>${M}</strong>. Which equation finds x (the lower-middle value)?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${M} \\times 4 - (${aLow} + ${b} + ${cHigh})`, error: `This finds missing for target MEAN, not median — median of even count uses the two middle values only` },
+        { eq: `x = (${b} + ${cHigh}) \\div 2`,                     error: `This averages the upper two values — the median formula here is (x+${b})÷2 = ${M}, so x = 2×${M}−${b}` },
+        { eq: `x = ${M}`,                                           error: `x is one of the two middle values; the median is (x+${b})÷2 = ${M}, so x = 2×${M}−${b} = ${x}` },
+      ],
+      hint: `Median = (x + ${b}) ÷ 2 = ${M}. Multiply both sides by 2: x + ${b} = ${2*M}. So x = ${2*M} − ${b} = ${x}.`,
+    };
+  },
+  // Work backwards for median, odd count — x IS the middle
+  () => {
+    const [a, b, c, d, M] = math.pick(L5_MED_ODD);
+    const correctLatex = `x = ${M}`;
+    return {
+      promptHTML: `Five values will be sorted as: <strong>${a}, ${b}, x, ${c}, ${d}</strong>. The target median is <strong>${M}</strong>. Which equation gives x?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `x = ${M} \\times 5 - (${a} + ${b} + ${c} + ${d})`, error: `This finds missing for target MEAN — for ODD-count median, x is simply the middle value itself` },
+        { eq: `x = (${b} + ${c}) \\div 2`,                          error: `Averaging neighbours gives (${b}+${c})÷2 = ${(b+c)/2} ≠ ${M} — for odd count, x is the single middle value` },
+        { eq: `x = (${a} + ${d}) \\div 2`,                          error: `Averaging the extremes is not the median — x is the 3rd position (middle of 5), which must equal ${M}` },
+      ],
+      hint: `x is in the 3rd position (middle of 5 sorted values). For odd count, median = that value. x = ${M}.`,
+    };
+  },
+];
+
+/* ── POOL_RULE: Choose the Right Measure ───────────────────── */
+const POOL_RULE = [
+  // Salaries → median
+  () => {
+    const correctLatex = `\\text{Median}`;
+    return {
+      promptHTML: `Monthly salaries at a small company are: <strong>$2,000, $2,400, $3,100, $3,600, $78,000</strong>. A new employee asks for the "typical" salary. Which measure should they look at?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mean}`, error: `The $78,000 outlier inflates the mean far above what most employees earn — median is more representative` },
+        { eq: `\\text{Mode}`, error: `All salaries appear once, so there is no meaningful mode; median is the right choice for skewed data` },
+        { eq: `\\text{Mean} + \\text{Mode}`, error: `Adding two measures is meaningless; use median for skewed salary data` },
+      ],
+      hint: `Salary data has outliers (top earners). Median is resistant to outliers and gives the "typical" value.`,
+    };
+  },
+  // Favourite colour → mode
+  () => {
+    const correctLatex = `\\text{Mode}`;
+    return {
+      promptHTML: `A class voted for their favourite colour: Red, Blue, Green, Blue, Red, Blue, Yellow, Red, Blue, Green. Which measure identifies the most popular colour?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mean}`,   error: `Colours are categorical — you cannot add them up or compute a mean` },
+        { eq: `\\text{Median}`, error: `Categorical data has no natural ordering, so a median is not meaningful here` },
+        { eq: `\\text{Range}`,  error: `Range is for numerical data; for categories, the mode identifies the most frequent value` },
+      ],
+      hint: `Categorical data (like colours) has no numerical value. The mode — most frequent — is the only sensible measure.`,
+    };
+  },
+  // Balanced test scores → mean
+  () => {
+    const correctLatex = `\\text{Mean}`;
+    return {
+      promptHTML: `A student scored <strong>78, 82, 79, 81, 80</strong> on five tests (no extreme values). A teacher wants a single number to represent overall performance. Which measure is best?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Median}`, error: `Median works well but gives up information when data is balanced — mean uses all values equally here` },
+        { eq: `\\text{Mode}`,   error: `All scores appear once, so there is no mode; mean best summarises balanced numerical data` },
+        { eq: `\\text{Range}`,  error: `Range measures spread, not centre — it does not represent a typical score` },
+      ],
+      hint: `Scores are tightly clustered with no outliers. Mean = (78+82+79+81+80)÷5 = 80, using every data point equally.`,
+    };
+  },
+  // House prices → median
+  () => {
+    const correctLatex = `\\text{Median}`;
+    return {
+      promptHTML: `House prices on one street: <strong>$180k, $195k, $210k, $205k, $620k</strong>. A buyer wants to know the "typical" house price on the street. Which measure should they use?`,
+      correctLatex,
+      decoyDefs: [
+        { eq: `\\text{Mean}`,  error: `The $620k luxury home is an outlier that pulls the mean up — median better represents the typical house price` },
+        { eq: `\\text{Mode}`,  error: `All prices are different, so there is no mode; for skewed price data, median is appropriate` },
+        { eq: `\\text{Mean} \\div 2`, error: `Halving the mean gives a meaningless number — use the median to resist outlier distortion` },
+      ],
+      hint: `Property prices are skewed by luxury homes. Median = $205k (sorted middle) is far more representative than the inflated mean.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_mode(id)          { const t = math.pick(POOL_L1)();    return buildEqQ(id,"mode",          t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_median(id)        { const t = math.pick(POOL_L2)();    return buildEqQ(id,"median",        t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_mean_vs_median(id){ const t = math.pick(POOL_L3)();    return buildEqQ(id,"mean_vs_median",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_outlier(id)       { const t = math.pick(POOL_L4)();    return buildEqQ(id,"outlier_effect",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_backwards(id)     { const t = math.pick(POOL_L5)();    return buildEqQ(id,"work_backwards",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_choose(id)        { const t = math.pick(POOL_RULE)();  return buildEqQ(id,"choose_measure",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  mode:           gen_mode,
+  median:         gen_median,
+  mean_vs_median: gen_mean_vs_median,
+  outlier_effect: gen_outlier,
+  work_backwards: gen_backwards,
+  choose_measure: gen_choose,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:    state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore:  state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i + 1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk     = skillLibrary[sid];
+    const r      = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct    = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /, "")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L" + sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /, "")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L" + sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /, "")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i + 1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0, allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You have a strong command of mean, median, and mode." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [
+      { title: "Averages",
+        url:   "../grade_4/averages_grade4.html",
+        reason: "Mean is just another word for average — mastering mean, median, and mode builds directly on the average skills from Grade 4." },
+    ],
+    challenge: [],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  if (list.length === 0) {
+    return passed
+      ? `<p class="text-muted">You've mastered this topic! Look for upcoming Grade 6 statistics modules.</p>`
+      : ``;
+  }
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 5 student learning about mean, median, and mode.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 5 student learning about mean, median, and mode.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

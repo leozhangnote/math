@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>From Words to Multiple Equations — Grade 4</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#1a237e,#283593); }
+    .sys-display {
+      display: inline-block;
+      background: #e8eaf6;
+      border-left: 3px solid #3949ab;
+      padding: .3rem .7rem;
+      margin: .15rem 0;
+      border-radius: 0 4px 4px 0;
+      text-align: left;
+    }
+    .eq-num {
+      color: #283593;
+      font-weight: 700;
+      margin-right: .35rem;
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>From Words to Multiple Equations</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 4 &nbsp;·&nbsp; Set up a system of equations from a word description</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Sum &amp; Diff</span>
+      <span class="badge badge-L2">Count + Qty</span>
+      <span class="badge badge-L3">Two Prices</span>
+      <span class="badge badge-L4">Ratio + Total</span>
+      <span class="badge badge-L5">Three Vars</span>
+      <span class="badge badge-rule">Build &amp; Verify</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      Quick Reference ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>Building a System — Key Principle</h3>
+      <ul>
+        <li><strong>One constraint = one equation.</strong> Count the constraints in the story — you need exactly that many equations.</li>
+        <li><strong>One equation per unknown.</strong> Two unknowns need two equations; three unknowns need three equations.</li>
+      </ul>
+      <h3>Common System Forms</h3>
+      <ul>
+        <li><strong>Sum &amp; Difference:</strong> ① x + y = total &nbsp; ② x − y = difference</li>
+        <li><strong>Count + Quantity:</strong> ① x + y = heads &nbsp; ② ax + by = total quantity</li>
+        <li><strong>Two Prices:</strong> ① a₁x + b₁y = cost₁ &nbsp; ② a₂x + b₂y = cost₂</li>
+        <li><strong>Ratio + Total:</strong> ① x = ry (or rx = y) &nbsp; ② x + y = total</li>
+        <li><strong>Three Variables:</strong> need exactly 3 equations for 3 unknowns</li>
+      </ul>
+      <h3>Direction Checks</h3>
+      <ul>
+        <li>"x subtracted FROM a" → a − x (not x − a)</li>
+        <li>"r times as many as y" → x = ry (not y = rx)</li>
+        <li>Coefficient of x = quantity/rate that belongs to the thing you called x</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_words_to_eq_system_g4";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+const mi = s => math.inline(s);
+
+/** Render a system of equations as a labelled block for MC choices. */
+function renderSys(eqs) {
+  const nums = ['①', '②', '③'];
+  return `<div class="sys-display">${
+    eqs.map((e, i) => `<div><span class="eq-num">${nums[i]}</span>${mi(e)}</div>`).join('')
+  }</div>`;
+}
+
+/**
+ * Build an MC question where each choice is a full system of equations.
+ * correctSys  — array of LaTeX strings (the correct equations)
+ * decoyDefs   — [{sys: [...LaTeX...], error: 'why wrong'}]
+ */
+function buildSysQ(id, skillId, promptHTML, correctSys, decoyDefs, hint) {
+  const allItems = [
+    { sys: correctSys, isCorrect: true },
+    ...decoyDefs.map(d => ({ sys: d.sys, isCorrect: false, error: d.error })),
+  ];
+  const shuffled = math.shuffle([...allItems]);
+  const cidx     = shuffled.findIndex(item => item.isCorrect);
+  const rendered = shuffled.map(item => renderSys(item.sys));
+  const explainSteps = [
+    `Correct system: ${renderSys(correctSys)}`,
+    ...decoyDefs.map(d => `${renderSys(d.sys)} ✗ ${d.error}`),
+  ];
+  return {
+    id, type: 'mc', skills: [skillId],
+    promptHTML,
+    answer: { correctIdx: cidx },
+    choices: rendered,
+    explainSteps,
+    hint,
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  sum_diff: {
+    name: "Level 1: Sum & Difference", level: 1, badgeClass: "badge-L1",
+    summary: "Two constraints → two equations. A total gives x + y = a; a difference gives x − y = b. Watch which is bigger!",
+    steps: [
+      "Identify the two unknowns and write: Let x = ..., y = ...",
+      "Find the sum constraint → write x + y = total.",
+      "Find the difference constraint → write x − y = difference (larger minus smaller).",
+      "Watch direction: 'x is d more than y' → x − y = d, not y − x = d.",
+      "Check: does each sentence in the story match exactly one equation?",
+    ],
+    example: {
+      problemHTML: `Two numbers have a <strong>sum of 20</strong> and a <strong>difference of 4</strong>. Let x = larger, y = smaller. Which system is correct?`,
+      solutionHTML:
+        `Sum → ${mi('x + y = 20')}<br>
+         Difference (larger − smaller) → ${mi('x - y = 4')}<br>
+         System: ${renderSys(['x + y = 20', 'x - y = 4'])}`,
+    },
+    misconception: "Don't swap the two equations. The sum (larger number) always goes with +; the difference goes with −.",
+    keyConcepts: [
+      { label: "One Equation per Constraint", prompt: "Why does a problem with two unknowns need exactly two equations? Explain with an example: 'Two numbers sum to 15.' Why is this one equation not enough to find both numbers?" },
+      { label: "Sum vs Difference Direction", prompt: "In 'x is 6 more than y', why is the equation x − y = 6 and not y − x = 6? Use a concrete example with numbers to show the difference." },
+    ],
+  },
+
+  count_qty: {
+    name: "Level 2: Count + Quantity", level: 2, badgeClass: "badge-L2",
+    summary: "Two constraints: a count of items (x + y = total heads) and a total quantity (ax + by = total legs/cost/weight).",
+    steps: [
+      "Identify the two unknowns (two types of items) and define x and y.",
+      "Count constraint: x + y = number of items (heads, vehicles, people…).",
+      "Quantity constraint: ax + by = total (legs, wheels, cost, weight…).",
+      "Coefficient check: a is the quantity per x-item, b is the quantity per y-item.",
+      "Common mistake: swapping the coefficients a and b (assigning legs to the wrong animal).",
+    ],
+    example: {
+      problemHTML: `There are <strong>10 animals</strong> (chickens and rabbits). Chickens have 2 legs, rabbits have 4. Total legs: <strong>28</strong>. Let x = chickens, y = rabbits.`,
+      solutionHTML:
+        `Count: ${mi('x + y = 10')}<br>
+         Legs: ${mi('2x + 4y = 28')} (2 per chicken, 4 per rabbit)<br>
+         System: ${renderSys(['x + y = 10', '2x + 4y = 28'])}`,
+    },
+    misconception: "4x + 2y = 28 would mean chickens have 4 legs and rabbits have 2. Always assign coefficients to match what you named x and y.",
+    keyConcepts: [
+      { label: "Which Number is the Coefficient?", prompt: "In 'chickens have 2 legs, rabbits have 4 legs', I let x = chickens and y = rabbits. Why is the leg equation 2x + 4y = total (not 4x + 2y)? What does each coefficient represent?" },
+      { label: "Two Equations from One Story", prompt: "Show me how to extract two equations from: '12 bicycles and tricycles in total, 29 wheels altogether. Let x = bicycles, y = tricycles.' Walk through each sentence step by step." },
+    ],
+  },
+
+  two_price: {
+    name: "Level 3: Two Price Scenarios", level: 3, badgeClass: "badge-L3",
+    summary: "Two different purchases of the same two items give two equations: a₁x + b₁y = cost₁ and a₂x + b₂y = cost₂.",
+    steps: [
+      "Define x = price of item A, y = price of item B.",
+      "Each purchase scenario gives one equation: quantity × price for each item = total cost.",
+      "First scenario: a₁x + b₁y = cost₁.",
+      "Second scenario: a₂x + b₂y = cost₂.",
+      "Check: is a₁ the number of item A in the first purchase? (Not item B!)",
+    ],
+    example: {
+      problemHTML: `Xiao Ming bought <strong>2 apples and 1 banana</strong> and paid <strong>$7</strong>. Xiao Hua bought <strong>1 apple and 3 bananas</strong> and paid <strong>$9</strong>. Let x = price of one apple, y = price of one banana.`,
+      solutionHTML:
+        `First purchase: ${mi('2x + y = 7')}<br>
+         Second purchase: ${mi('x + 3y = 9')}<br>
+         System: ${renderSys(['2x + y = 7', 'x + 3y = 9'])}`,
+    },
+    misconception: "Swapping coefficients within one equation (e.g., writing y + 2x with y being apples) mixes up which item is x and which is y.",
+    keyConcepts: [
+      { label: "Each Purchase = One Equation", prompt: "Why does each separate purchase scenario give exactly one equation? Show how to translate '3 pens and 2 notebooks cost $18' into an equation if x = pen price and y = notebook price." },
+      { label: "Matching Coefficients to Items", prompt: "In '2 apples + 1 banana = $7' with x = apple price and y = banana price, why is the equation 2x + y = 7 (not 2y + x = 7)? What would 2y + x = 7 mean instead?" },
+    ],
+  },
+
+  ratio_total: {
+    name: "Level 4: Ratio + Total", level: 4, badgeClass: "badge-L4",
+    summary: "Two constraints: a multiplicative ratio (x = ry or rx = y) and a sum total (x + y = total).",
+    steps: [
+      "Define x and y for the two quantities.",
+      "Ratio constraint: 'x is r times y' → write x = ry.",
+      "Total constraint: 'x and y together equal T' → write x + y = T.",
+      "Direction check: 'Tom has 3 times Ben's count' → Tom = 3 × Ben, so if x = Tom: x = 3y.",
+      "Mistake: 'r times' means × not +. x = ry, NOT x = r + y.",
+    ],
+    example: {
+      problemHTML: `Tom has <strong>3 times</strong> as many cards as Ben. Together they have <strong>48</strong> cards. Let x = Tom's count, y = Ben's count.`,
+      solutionHTML:
+        `Ratio: ${mi('x = 3y')} (Tom has 3× Ben's)<br>
+         Total: ${mi('x + y = 48')}<br>
+         System: ${renderSys(['x = 3y', 'x + y = 48'])}`,
+    },
+    misconception: "'3 times as many' means ×3 (multiplication). Writing x = 3 + y is a very common mistake — that means '3 more than', not '3 times as many'.",
+    keyConcepts: [
+      { label: "'Times as Many' Direction", prompt: "Tom has 3 times as many cards as Ben. I let x = Tom's count and y = Ben's count. Why is the ratio equation x = 3y (not y = 3x or x = 3 + y)? Show with numbers." },
+      { label: "Ratio vs Sum Equation", prompt: "For 'Tom has 3 times Ben's count and together they have 48', why do we need TWO equations and not just one? Why can't x = 3y alone tell us the answer?" },
+    ],
+  },
+
+  three_vars: {
+    name: "Level 5: Three Variables", level: 5, badgeClass: "badge-L5",
+    summary: "Three unknowns need three equations — one per constraint. Read carefully: each sentence gives exactly one relationship.",
+    steps: [
+      "Identify all three unknowns and define x, y, z.",
+      "Each constraint in the story becomes one equation.",
+      "Three unknowns → exactly three equations needed.",
+      "Check each equation: does it involve the right variables with the right relationships?",
+      "Verify: no equation is accidentally repeated, and no constraint is missed.",
+    ],
+    example: {
+      problemHTML: `Three numbers x, y, z: <strong>x + y = 15</strong>, <strong>y + z = 18</strong>, <strong>x + z = 13</strong>. Which system is correct?`,
+      solutionHTML:
+        `Each sentence gives one equation directly:<br>
+         ${renderSys(['x + y = 15', 'y + z = 18', 'x + z = 13'])}<br>
+         Three unknowns → three equations ✓`,
+    },
+    misconception: "With 3 unknowns you need 3 equations. Writing only 2 equations leaves the system under-determined — you can't find unique values for all three.",
+    keyConcepts: [
+      { label: "Why Three Equations for Three Unknowns?", prompt: "If I have three unknowns x, y, z but only two equations, can I find unique values for all three? Show with an example why three unknowns require exactly three equations." },
+      { label: "Matching Each Sentence to an Equation", prompt: "In a problem: 'A and B together have 20. B and C together have 25. A and C together have 17.' Show me how to turn each sentence into exactly one equation, step by step." },
+    ],
+  },
+
+  build_verify: {
+    name: "Rule: Build & Verify", level: 0, badgeClass: "badge-rule",
+    summary: "Given a multi-constraint story, select the complete and correct system — right operations, right coefficients, right number of equations.",
+    steps: [
+      "Count the unknowns — that's how many equations you need.",
+      "Map each story sentence to exactly one equation.",
+      "Check coefficients: does each coefficient match the rate/quantity for the correct variable?",
+      "Check direction: 'a times as many' → multiplication; 'subtracted from a' → a − x.",
+      "Verify by substituting: does a trial answer satisfy every equation in the system?",
+    ],
+    example: {
+      problemHTML: `"15 students went on a trip. Child tickets cost $3, adult tickets cost $8. Total ticket cost: $72." Let x = children, y = adults. Which system is correct?`,
+      solutionHTML:
+        `Count: x + y = 15. Cost: 3x + 8y = 72.<br>
+         Correct: ${renderSys(['x + y = 15', '3x + 8y = 72'])}<br>
+         Check: if x=12, y=3 → 12+3=15 ✓ and 3×12+8×3=36+24=60 ✗. So x=9,y=6 → 9+6=15 ✓ and 27+48=75 ✗. Try x=8,y=7 → 8+7=15 ✓ and 24+56=80 ✗. x=6,y=9 → 27+72=99 ✗. Actually let me just verify the equation setup is right, not solve it here.`,
+    },
+    misconception: "The most common errors: (1) swapping which animal/item gets which coefficient, (2) using + when × is needed for ratios, (3) writing only one equation for two unknowns.",
+    keyConcepts: [
+      { label: "Checking a System", prompt: "How do I verify that my system of equations correctly models a word problem? Show me how to check the system {x + y = 15, 3x + 8y = 72} against the story '15 students, child tickets $3, adult tickets $8, total $72'." },
+      { label: "Spotting the Wrong System", prompt: "A student wrote {x + y = 15, 8x + 3y = 72} for 'x = children ($3 tickets), y = adults ($8 tickets)'. What is wrong? How should the ticket costs be assigned to coefficients?" },
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Sum & Difference ───────────────────────────────────── */
+const POOL_L1 = [
+  // Abstract two numbers
+  () => {
+    const y = math.randInt(4, 15), d = math.randInt(2, 8), x = y + d, s = x + y;
+    const correctSys = [`x + y = ${s}`, `x - y = ${d}`];
+    return {
+      promptHTML: `Two whole numbers have a <strong>sum of ${s}</strong> and a <strong>difference of ${d}</strong>. Let x = the larger number, y = the smaller. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${s}`, `x + y = ${d}`],   error: `② should express the difference (x − y = ${d}), not another sum` },
+        { sys: [`x - y = ${s}`, `x + y = ${d}`],   error: `The sum (${s}) and difference (${d}) are placed in the wrong equations` },
+        { sys: [`x + y = ${d}`, `x - y = ${s}`],   error: `${s} is the sum (goes in ①), ${d} is the difference (goes in ②) — they are swapped` },
+      ],
+      hint: `Sum → x + y = ${s}. Larger − smaller → x − y = ${d}.`,
+    };
+  },
+  // Boys and girls
+  () => {
+    const y = math.randInt(8, 20), d = math.randInt(2, 8), x = y + d, s = x + y;
+    const correctSys = [`x + y = ${s}`, `x - y = ${d}`];
+    return {
+      promptHTML: `A class has <strong>${s} students</strong>. There are <strong>${d} more boys than girls</strong>. Let x = boys, y = girls. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${s}`, `y - x = ${d}`],   error: `Boys outnumber girls → boys − girls = ${d} → x − y = ${d}, not y − x = ${d}` },
+        { sys: [`x - y = ${s}`, `x + y = ${d}`],   error: `${s} is the total count (use + in ①), ${d} is the gap (use − in ②) — they are swapped` },
+        { sys: [`x + y = ${s}`, `x - y = ${d + 1}`], error: `The difference is ${d}, not ${d + 1}` },
+      ],
+      hint: `Total: x + y = ${s}. More boys: x − y = ${d}.`,
+    };
+  },
+  // Two boxes by weight
+  () => {
+    const y = math.randInt(4, 14), d = math.randInt(1, 6), x = y + d, s = x + y;
+    const correctSys = [`x + y = ${s}`, `x - y = ${d}`];
+    return {
+      promptHTML: `Two boxes together weigh <strong>${s} kg</strong>. The heavier box is <strong>${d} kg more</strong> than the lighter. Let x = heavier weight (kg), y = lighter weight (kg). Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${s}`, `x + y = ${d}`],   error: `② should be the weight difference (x − y = ${d}), not another sum` },
+        { sys: [`x + y = ${s}`, `x - y = ${s - d}`], error: `The difference is ${d} kg, not ${s - d} kg` },
+        { sys: [`x - y = ${s}`, `x + y = ${d}`],   error: `${s} is the combined weight (sum, use +), ${d} is the difference (use −) — they are swapped` },
+      ],
+      hint: `Combined: x + y = ${s}. Heavier − lighter: x − y = ${d}.`,
+    };
+  },
+  // Two ages
+  () => {
+    const y = math.randInt(6, 18), d = math.randInt(2, 10), x = y + d, s = x + y;
+    const [n1, n2] = math.pick([["Xiao Ming","Xiao Hua"],["Tom","Ben"],["Lily","Sara"],["Ada","Max"]]);
+    const correctSys = [`x + y = ${s}`, `x - y = ${d}`];
+    return {
+      promptHTML: `<strong>${n1}</strong> is <strong>${d} years older</strong> than <strong>${n2}</strong>. Their ages add up to <strong>${s}</strong>. Let x = ${n1}'s age, y = ${n2}'s age. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${s}`, `y - x = ${d}`],   error: `${n1} is older, so ${n1} − ${n2} = ${d} → x − y = ${d}, not y − x = ${d}` },
+        { sys: [`x + y = ${d}`, `x - y = ${s}`],   error: `${s} is the age sum (goes in ①), ${d} is the age gap (goes in ②)` },
+        { sys: [`x - y = ${s}`, `x + y = ${d}`],   error: `The two equations are swapped — ${s} is the total, ${d} is the difference` },
+      ],
+      hint: `Age sum: x + y = ${s}. ${n1} − ${n2} = ${d}: x − y = ${d}.`,
+    };
+  },
+];
+
+/* ── L2: Count + Quantity ───────────────────────────────────── */
+const POOL_L2 = [
+  // Chickens and rabbits
+  () => {
+    const nx = math.randInt(3, 12), ny = math.randInt(3, 10);
+    const H = nx + ny, L = 2 * nx + 4 * ny;
+    const correctSys = [`x + y = ${H}`, `2x + 4y = ${L}`];
+    return {
+      promptHTML: `There are <strong>${H} animals</strong> (chickens and rabbits) in a cage. Chickens have <strong>2 legs</strong>, rabbits have <strong>4 legs</strong>. Total legs: <strong>${L}</strong>. Let x = chickens, y = rabbits. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${H}`, `4x + 2y = ${L}`], error: `Leg counts are swapped — chickens have 2 legs (x's coefficient), rabbits have 4 (y's coefficient)` },
+        { sys: [`x + y = ${L}`, `2x + 4y = ${H}`], error: `${H} is the animal count (goes in ①), ${L} is the leg count (goes in ②) — they are swapped` },
+        { sys: [`x - y = ${H}`, `2x + 4y = ${L}`], error: `Animals are counted together (sum +), not as a difference — ① should be x + y = ${H}` },
+      ],
+      hint: `Heads: x + y = ${H}. Legs: 2×chickens + 4×rabbits = ${L} → 2x + 4y = ${L}.`,
+    };
+  },
+  // Bicycles and tricycles
+  () => {
+    const nx = math.randInt(3, 12), ny = math.randInt(3, 10);
+    const H = nx + ny, W = 2 * nx + 3 * ny;
+    const correctSys = [`x + y = ${H}`, `2x + 3y = ${W}`];
+    return {
+      promptHTML: `There are <strong>${H} vehicles</strong> (bicycles and tricycles). Bicycles have <strong>2 wheels</strong>, tricycles have <strong>3 wheels</strong>. Total wheels: <strong>${W}</strong>. Let x = bicycles, y = tricycles. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${H}`, `3x + 2y = ${W}`], error: `Wheel counts are swapped — bicycles have 2 wheels (x's coefficient), tricycles have 3 (y's coefficient)` },
+        { sys: [`x + y = ${W}`, `2x + 3y = ${H}`], error: `${H} is the vehicle count (goes in ①), ${W} is the wheel total (goes in ②) — they are swapped` },
+        { sys: [`x + y = ${H}`, `2x + 3y = ${W + 1}`], error: `The total wheel count is ${W}, not ${W + 1}` },
+      ],
+      hint: `Vehicle count: x + y = ${H}. Wheels: 2x (bicycles) + 3y (tricycles) = ${W}.`,
+    };
+  },
+  // Children and adult tickets
+  () => {
+    const nc = math.randInt(5, 15), na = math.randInt(3, 10);
+    const H = nc + na, T = 2 * nc + 5 * na;
+    const correctSys = [`x + y = ${H}`, `2x + 5y = ${T}`];
+    return {
+      promptHTML: `<strong>${H} visitors</strong> enter a park. Children's tickets cost $<strong>2</strong>, adult tickets cost $<strong>5</strong>. Total cost: $<strong>${T}</strong>. Let x = children, y = adults. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${H}`, `5x + 2y = ${T}`], error: `Ticket prices are swapped — children pay $2 (x's coefficient), adults pay $5 (y's coefficient)` },
+        { sys: [`x + y = ${T}`, `2x + 5y = ${H}`], error: `${H} is the visitor count (goes in ①), ${T} is the total cost (goes in ②) — they are swapped` },
+        { sys: [`x + y = ${H}`, `2x + 5y = ${T + 5}`], error: `The total cost is $${T}, not $${T + 5}` },
+      ],
+      hint: `Visitors: x + y = ${H}. Cost: $2 × children + $5 × adults = $${T} → 2x + 5y = ${T}.`,
+    };
+  },
+  // Small and large trucks
+  () => {
+    const nx = math.randInt(3, 10), ny = math.randInt(2, 8);
+    const H = nx + ny, C = 3 * nx + 5 * ny;
+    const correctSys = [`x + y = ${H}`, `3x + 5y = ${C}`];
+    return {
+      promptHTML: `<strong>${H} trucks</strong> carry cargo. Small trucks carry <strong>3 tonnes</strong> each, large trucks carry <strong>5 tonnes</strong> each. Total cargo: <strong>${C} tonnes</strong>. Let x = small trucks, y = large trucks. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${H}`, `5x + 3y = ${C}`], error: `Cargo amounts are swapped — small trucks carry 3 t (x's coefficient), large trucks carry 5 t (y's coefficient)` },
+        { sys: [`x + y = ${C}`, `3x + 5y = ${H}`], error: `${H} is the truck count (goes in ①), ${C} is the total cargo (goes in ②) — they are swapped` },
+        { sys: [`x - y = ${H}`, `3x + 5y = ${C}`], error: `① should count all trucks together (x + y = ${H}), not their difference` },
+      ],
+      hint: `Truck count: x + y = ${H}. Cargo: 3x (small) + 5y (large) = ${C}.`,
+    };
+  },
+];
+
+/* ── L3: Two Price Scenarios ────────────────────────────────── */
+
+// Non-singular coefficient pairs [[a1,b1],[a2,b2]]
+const L3_COEFS = [
+  [[2, 1], [1, 3]],
+  [[3, 1], [1, 2]],
+  [[2, 3], [3, 1]],
+  [[1, 2], [3, 2]],
+];
+
+const POOL_L3 = [
+  // Fruit: apples (x) and bananas (y)
+  () => {
+    const [[a1,b1],[a2,b2]] = math.pick(L3_COEFS);
+    const px = math.randInt(2, 6), py = math.randInt(2, 6);
+    const c1 = a1*px + b1*py, c2 = a2*px + b2*py;
+    const correctSys = [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`];
+    return {
+      promptHTML: `Xiao Ming bought <strong>${a1} apple${a1>1?'s':''}</strong> and <strong>${b1} banana${b1>1?'s':''}</strong> for $<strong>${c1}</strong>. Xiao Hua bought <strong>${a2} apple${a2>1?'s':''}</strong> and <strong>${b2} banana${b2>1?'s':''}</strong> for $<strong>${c2}</strong>. Let x = price of one apple, y = price of one banana. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`], error: `In ①, apple and banana quantities are swapped — ${a1} apples use x's coefficient, ${b1} bananas use y's` },
+        { sys: [`${a1}x + ${b1}y = ${c1}`, `${b2}x + ${a2}y = ${c2}`], error: `In ②, apple and banana quantities are swapped — ${a2} apples use x's coefficient, ${b2} bananas use y's` },
+        { sys: [`${a1}x + ${b1}y = ${c2}`, `${a2}x + ${b2}y = ${c1}`], error: `The totals $${c1} and $${c2} are assigned to the wrong purchases` },
+      ],
+      hint: `Each purchase → one equation. First: ${a1}×(apple price) + ${b1}×(banana price) = ${c1} → ${a1}x + ${b1}y = ${c1}.`,
+    };
+  },
+  // Stationery: pens (x) and notebooks (y)
+  () => {
+    const [[a1,b1],[a2,b2]] = math.pick(L3_COEFS);
+    const px = math.randInt(2, 5), py = math.randInt(4, 9);
+    const c1 = a1*px + b1*py, c2 = a2*px + b2*py;
+    const correctSys = [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`];
+    return {
+      promptHTML: `In the first trip, Xiao Hua bought <strong>${a1} pen${a1>1?'s':''}</strong> and <strong>${b1} notebook${b1>1?'s':''}</strong> for $<strong>${c1}</strong>. In the second trip she bought <strong>${a2} pen${a2>1?'s':''}</strong> and <strong>${b2} notebook${b2>1?'s':''}</strong> for $<strong>${c2}</strong>. Let x = price of one pen, y = price of one notebook. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`], error: `In ①, pen and notebook counts are swapped — ${a1} pens use x's coefficient, ${b1} notebooks use y's` },
+        { sys: [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c1}`], error: `Both equations cannot have the same total — the second purchase cost $${c2}, not $${c1}` },
+        { sys: [`${a1}x + ${b1}y = ${c2}`, `${a2}x + ${b2}y = ${c1}`], error: `The totals $${c1} and $${c2} are swapped between the two purchases` },
+      ],
+      hint: `Let x = pen price, y = notebook price. Each purchase record → one equation.`,
+    };
+  },
+  // Tickets: student (x) and adult (y) prices
+  () => {
+    const [[a1,b1],[a2,b2]] = math.pick(L3_COEFS);
+    const ps = math.randInt(2, 5), pa = math.randInt(5, 10);
+    const c1 = a1*ps + b1*pa, c2 = a2*ps + b2*pa;
+    const correctSys = [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`];
+    return {
+      promptHTML: `Group A bought <strong>${a1} student ticket${a1>1?'s':''}</strong> and <strong>${b1} adult ticket${b1>1?'s':''}</strong> and paid $<strong>${c1}</strong>. Group B bought <strong>${a2} student ticket${a2>1?'s':''}</strong> and <strong>${b2} adult ticket${b2>1?'s':''}</strong> and paid $<strong>${c2}</strong>. Let x = price of one student ticket, y = price of one adult ticket. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`], error: `In ①, student and adult counts are swapped — ${a1} students use x, ${b1} adults use y` },
+        { sys: [`${a1}x + ${b1}y = ${c1}`, `${b2}x + ${a2}y = ${c2}`], error: `In ②, student and adult counts are swapped — ${a2} students use x, ${b2} adults use y` },
+        { sys: [`${a1}x + ${b1}y = ${c2}`, `${a2}x + ${b2}y = ${c1}`], error: `The purchase totals $${c1} and $${c2} belong to the wrong equations` },
+      ],
+      hint: `Each group's payment → one equation. x = student price, y = adult price.`,
+    };
+  },
+  // Food: sandwiches (x) and drinks (y)
+  () => {
+    const [[a1,b1],[a2,b2]] = math.pick(L3_COEFS);
+    const px = math.randInt(3, 7), py = math.randInt(2, 5);
+    const c1 = a1*px + b1*py, c2 = a2*px + b2*py;
+    const correctSys = [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`];
+    return {
+      promptHTML: `Lily ordered <strong>${a1} sandwich${a1>1?'es':''}</strong> and <strong>${b1} drink${b1>1?'s':''}</strong> and spent $<strong>${c1}</strong>. Ben ordered <strong>${a2} sandwich${a2>1?'es':''}</strong> and <strong>${b2} drink${b2>1?'s':''}</strong> and spent $<strong>${c2}</strong>. Let x = price of one sandwich, y = price of one drink. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`], error: `In ①, sandwich and drink quantities are swapped` },
+        { sys: [`${a1}x + ${b1}y = ${c1}`, `${b2}x + ${a2}y = ${c2}`], error: `In ②, sandwich and drink quantities are swapped` },
+        { sys: [`${a1}x + ${b1}y = ${c2}`, `${a2}x + ${b2}y = ${c1}`], error: `The totals $${c1} and $${c2} are swapped between the two orders` },
+      ],
+      hint: `Each food order → one equation. x = sandwich price, y = drink price.`,
+    };
+  },
+];
+
+/* ── L4: Ratio + Total ──────────────────────────────────────── */
+const POOL_L4 = [
+  // Cards: Tom (x) has r times Ben (y)
+  () => {
+    const r = math.randInt(2, 4), y = math.randInt(5, 15), x = r * y, total = x + y;
+    const [n1, n2] = math.pick([["Tom","Ben"],["Lily","Sara"],["Xiao Ming","Xiao Hua"],["Ada","Max"]]);
+    const item = math.pick(["cards","stickers","marbles","stamps"]);
+    const correctSys = [`x = ${r}y`, `x + y = ${total}`];
+    return {
+      promptHTML: `<strong>${n1}</strong> has <strong>${r} times</strong> as many ${item} as <strong>${n2}</strong>. Together they have <strong>${total}</strong> ${item}. Let x = ${n1}'s count, y = ${n2}'s count. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`y = ${r}x`, `x + y = ${total}`],    error: `${n1} has ${r} times ${n2}'s count → x = ${r}y (not y = ${r}x, which means ${n2} has ${r} times ${n1}'s)` },
+        { sys: [`x = ${r}y`, `x - y = ${total}`],    error: `${total} is their combined total — use + (sum), not − (difference)` },
+        { sys: [`x = ${r} + y`, `x + y = ${total}`], error: `"${r} times as many" means × (multiply), not + (add): x = ${r}y, not x = ${r} + y` },
+      ],
+      hint: `${n1} has ${r}× ${n2}'s count: x = ${r}y. Together: x + y = ${total}.`,
+    };
+  },
+  // Scores: Xiao Ming (x) has r times Xiao Hua (y)
+  () => {
+    const r = math.randInt(2, 4), y = math.randInt(8, 20), x = r * y, total = x + y;
+    const correctSys = [`x = ${r}y`, `x + y = ${total}`];
+    return {
+      promptHTML: `Xiao Ming's score is <strong>${r} times</strong> Xiao Hua's score. Their total score is <strong>${total}</strong>. Let x = Xiao Ming's score, y = Xiao Hua's score. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`y = ${r}x`, `x + y = ${total}`],    error: `Xiao Ming has ${r}× Xiao Hua's score → x = ${r}y (not y = ${r}x)` },
+        { sys: [`x = ${r}y`, `x + y = ${total - r}`], error: `The total is ${total}, not ${total - r}` },
+        { sys: [`x = ${r} + y`, `x + y = ${total}`], error: `"${r} times" means ×${r}: x = ${r}y, not x = ${r} + y` },
+      ],
+      hint: `Xiao Ming = ${r} × Xiao Hua: x = ${r}y. Total scores: x + y = ${total}.`,
+    };
+  },
+  // Savings: sister (x) has r times brother (y)
+  () => {
+    const r = math.randInt(2, 4), y = math.randInt(10, 25), x = r * y, total = x + y;
+    const correctSys = [`x = ${r}y`, `x + y = ${total}`];
+    return {
+      promptHTML: `A sister has <strong>${r} times</strong> as much savings as her brother. Together they saved $<strong>${total}</strong>. Let x = sister's savings ($), y = brother's savings ($). Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`y = ${r}x`, `x + y = ${total}`],    error: `The sister has ${r}× the brother's savings → x = ${r}y (not y = ${r}x)` },
+        { sys: [`x = ${r}y`, `x - y = ${total}`],    error: `$${total} is the combined savings — use + in ②, not −` },
+        { sys: [`x = ${r} + y`, `x + y = ${total}`], error: `"${r} times as much" means ×${r}: x = ${r}y, not x = ${r} + y (which means ${r} more, not ${r} times)` },
+      ],
+      hint: `Sister = ${r} × brother: x = ${r}y. Together: x + y = ${total}.`,
+    };
+  },
+  // Distance: fast runner (x) runs r times as far as slow runner (y)
+  () => {
+    const r = math.randInt(2, 3), y = math.randInt(3, 12), x = r * y, total = x + y;
+    const correctSys = [`x = ${r}y`, `x + y = ${total}`];
+    return {
+      promptHTML: `In a relay, the faster runner covers <strong>${r} times</strong> the distance of the slower runner. Together they cover <strong>${total} km</strong>. Let x = faster runner's distance (km), y = slower runner's distance (km). Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`y = ${r}x`, `x + y = ${total}`],    error: `The faster runner covers ${r}× the slower's distance → x = ${r}y (not y = ${r}x)` },
+        { sys: [`x = ${r}y`, `x + y = ${total + r}`], error: `The combined distance is ${total} km, not ${total + r} km` },
+        { sys: [`x + ${r} = y`, `x + y = ${total}`], error: `"${r} times as far" means ×${r}: x = ${r}y, not x + ${r} = y` },
+      ],
+      hint: `Faster = ${r}× slower: x = ${r}y. Combined distance: x + y = ${total}.`,
+    };
+  },
+];
+
+/* ── L5: Three Variables ────────────────────────────────────── */
+const POOL_L5 = [
+  // Weighing animals in pairs (x+y, y+z, x+z)
+  () => {
+    const a = math.randInt(5, 14), b = math.randInt(5, 14), c = math.randInt(5, 12);
+    const ab = a + b, bc = b + c, ac = a + c;
+    const [an1, an2, an3] = math.pick([
+      ['cat','dog','rabbit'],
+      ['puppy','kitten','hamster'],
+      ['hen','duck','goose'],
+    ]);
+    const correctSys = [`x + y = ${ab}`, `y + z = ${bc}`, `x + z = ${ac}`];
+    return {
+      promptHTML: `A ${an1}, a ${an2}, and a ${an3} are weighed two at a time. The ${an1} and ${an2} together weigh <strong>${ab} kg</strong>. The ${an2} and ${an3} together weigh <strong>${bc} kg</strong>. The ${an1} and ${an3} together weigh <strong>${ac} kg</strong>. Let x = the ${an1}'s weight, y = the ${an2}'s weight, z = the ${an3}'s weight. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${ab}`, `y + z = ${bc}`, `x + y = ${ac}`], error: `③ repeats x + y — it should pair the ${an1} (x) with the ${an3} (z): x + z = ${ac}` },
+        { sys: [`x + y = ${ab}`, `y + z = ${ac}`, `x + z = ${bc}`], error: `② and ③ totals are swapped: ${bc} kg is ${an2}+${an3}, ${ac} kg is ${an1}+${an3}` },
+        { sys: [`x + y = ${ab}`, `y + z = ${bc}`, `x + z = ${bc}`], error: `③ has the wrong total — ${an1}+${an3} weigh ${ac} kg, not ${bc} kg` },
+      ],
+      hint: `One equation per weighing: x+y=${ab}, y+z=${bc}, x+z=${ac}.`,
+    };
+  },
+  // Three prices: pair purchases (x+y, y+z, x+z)
+  () => {
+    const px = math.randInt(2, 6), py = math.randInt(2, 6), pz = math.randInt(2, 6);
+    const c1 = px + py, c2 = py + pz, c3 = px + pz;
+    const [ia, ib, ic] = math.pick([
+      ['apple','banana','cherry'],
+      ['pen','ruler','eraser'],
+      ['orange','mango','grape'],
+      ['bread','milk','egg'],
+    ]);
+    const correctSys = [`x + y = ${c1}`, `y + z = ${c2}`, `x + z = ${c3}`];
+    return {
+      promptHTML: `Ada bought 1 ${ia} and 1 ${ib} for $<strong>${c1}</strong>. Ben bought 1 ${ib} and 1 ${ic} for $<strong>${c2}</strong>. Cara bought 1 ${ia} and 1 ${ic} for $<strong>${c3}</strong>. Let x = price of one ${ia}, y = one ${ib}, z = one ${ic}. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${c1}`, `y + z = ${c2}`, `y + z = ${c3}`], error: `③ should combine the ${ia} (x) and ${ic} (z): x + z = ${c3}` },
+        { sys: [`x + y = ${c1}`, `y + z = ${c3}`, `x + z = ${c2}`], error: `② and ③ totals are swapped: $${c2} is for ${ib}+${ic}, $${c3} is for ${ia}+${ic}` },
+        { sys: [`x + y = ${c1}`, `y + z = ${c2}`, `x + z = ${c2}`], error: `③ has the wrong total — x + z = ${c3}, not ${c2}` },
+      ],
+      hint: `Each purchase of two items → one equation: x+y=${c1}, y+z=${c2}, x+z=${c3}.`,
+    };
+  },
+  // Three friends collecting on a trip: total + two pairwise sums
+  () => {
+    const a = math.randInt(5, 12), b = math.randInt(5, 12), c = math.randInt(5, 12);
+    const total = a + b + c, ab = a + b, bc = b + c;
+    const item = math.pick(["seashells","stickers","bottle caps","trading cards"]);
+    const [n1, n2, n3] = math.pick([["Ada","Ben","Cara"],["Tom","Sam","Lily"],["Xiao Ming","Xiao Hua","Xiao Fang"]]);
+    const correctSys = [`x + y + z = ${total}`, `x + y = ${ab}`, `y + z = ${bc}`];
+    return {
+      promptHTML: `${n1}, ${n2}, and ${n3} went on a trip and collected ${item}. When they counted everything together, all three had <strong>${total} ${item}</strong> in total. ${n1} and ${n2} compared their collections and found they had <strong>${ab}</strong> together. ${n2} and ${n3} compared theirs and counted <strong>${bc}</strong> together. Let x = ${n1}'s count, y = ${n2}'s count, z = ${n3}'s count. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y + z = ${total}`, `x + y = ${bc}`, `y + z = ${ab}`], error: `② and ③ totals are swapped: ${ab} is ${n1}+${n2}'s count, ${bc} is ${n2}+${n3}'s count` },
+        { sys: [`x + y + z = ${total}`, `x + y = ${ab}`, `x + z = ${bc}`], error: `③ should pair ${n2} (y) with ${n3} (z): y + z = ${bc}, not x + z = ${bc}` },
+        { sys: [`x + y + z = ${total + 1}`, `x + y = ${ab}`, `y + z = ${bc}`], error: `The grand total is ${total}, not ${total + 1}` },
+      ],
+      hint: `Three facts → three equations: all together (${total}), ${n1}+${n2} (${ab}), ${n2}+${n3} (${bc}).`,
+    };
+  },
+  // Quiz tournament: total and two differences
+  () => {
+    const z = math.randInt(4, 10), d1 = math.randInt(2, 6), d2 = math.randInt(2, 6);
+    const y = z + d2, x = y + d1, total = x + y + z;
+    const [tA, tB, tC] = math.pick([
+      ["Team A","Team B","Team C"],
+      ["the Red team","the Blue team","the Green team"],
+      ["Grade 4A","Grade 4B","Grade 4C"],
+    ]);
+    const correctSys = [`x + y + z = ${total}`, `x - y = ${d1}`, `y - z = ${d2}`];
+    return {
+      promptHTML: `Three teams competed in a quiz tournament. ${tA} scored x points, ${tB} scored y points, and ${tC} scored z points. Together all three teams scored <strong>${total} points</strong> in total. ${tA} scored <strong>${d1} more points</strong> than ${tB}. ${tB} scored <strong>${d2} more points</strong> than ${tC}. Which system is correct?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y + z = ${total}`, `y - x = ${d1}`, `y - z = ${d2}`], error: `${tA} scored more — "${tA} is ${d1} more than ${tB}" → x − y = ${d1}, not y − x = ${d1}` },
+        { sys: [`x + y + z = ${total}`, `x - y = ${d1}`, `z - y = ${d2}`], error: `${tB} scored more than ${tC} — "${tB} is ${d2} more than ${tC}" → y − z = ${d2}, not z − y = ${d2}` },
+        { sys: [`x + y + z = ${total}`, `x - y = ${d2}`, `y - z = ${d1}`], error: `The two gaps are swapped: ${d1} is the ${tA}−${tB} gap, ${d2} is the ${tB}−${tC} gap` },
+      ],
+      hint: `Total: x+y+z=${total}. ${tA} leads by ${d1}: x−y=${d1}. ${tB} leads by ${d2}: y−z=${d2}.`,
+    };
+  },
+];
+
+/* ── Rule: Build & Verify ───────────────────────────────────── */
+const POOL_RULE = [
+  // Variable assignment matters: let x = rabbits (4 legs), y = chickens (2 legs)
+  () => {
+    const nx = math.randInt(3, 10), ny = math.randInt(3, 10);
+    const H = nx + ny, L = 4 * nx + 2 * ny;
+    // Note: x = RABBITS here (reversed from L2 template 0)
+    const correctSys = [`x + y = ${H}`, `4x + 2y = ${L}`];
+    return {
+      promptHTML: `There are <strong>${H} animals</strong> (rabbits and chickens), with <strong>${L} legs</strong> total. <em>Let x = rabbits (4 legs), y = chickens (2 legs).</em> Which system correctly uses this definition?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`x + y = ${H}`, `2x + 4y = ${L}`], error: `With x = rabbits: rabbits have 4 legs (coefficient of x = 4), chickens have 2 (coefficient of y = 2). This has them swapped` },
+        { sys: [`x + y = ${L}`, `4x + 2y = ${H}`], error: `${H} is the animal count (goes in ①), ${L} is the leg count (goes in ②)` },
+        { sys: [`x - y = ${H}`, `4x + 2y = ${L}`], error: `All animals are counted together — ① should be x + y = ${H}, not x − y = ${H}` },
+      ],
+      hint: `x = rabbits (4 legs) → rabbit coefficient is 4. y = chickens (2 legs) → chicken coefficient is 2.`,
+    };
+  },
+  // Two-price story where student might swap x and y roles
+  () => {
+    const [[a1,b1],[a2,b2]] = math.pick(L3_COEFS);
+    const px = math.randInt(3, 7), py = math.randInt(2, 5);
+    const c1 = a1*px + b1*py, c2 = a2*px + b2*py;
+    const correctSys = [`${a1}x + ${b1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`];
+    return {
+      promptHTML: `Group A bought <strong>${a1} ticket${a1>1?'s':''}</strong> and <strong>${b1} program book${b1>1?'s':''}</strong> and paid $<strong>${c1}</strong>. Group B bought <strong>${a2} ticket${a2>1?'s':''}</strong> and <strong>${b2} program book${b2>1?'s':''}</strong> and paid $<strong>${c2}</strong>. Let x = ticket price, y = program book price.<br>
+        A student wrote: ${renderSys([`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`])}
+        What is the <strong>correct</strong> system?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`${b1}x + ${a1}y = ${c1}`, `${a2}x + ${b2}y = ${c2}`], error: `This is the student's system — in ①, ticket and book quantities are swapped (${a1} tickets use x, ${b1} books use y)` },
+        { sys: [`${a1}x + ${b1}y = ${c1}`, `${b2}x + ${a2}y = ${c2}`], error: `In ②, ticket and book quantities are swapped` },
+        { sys: [`${a1}x + ${b1}y = ${c2}`, `${a2}x + ${b2}y = ${c1}`], error: `The totals $${c1} and $${c2} are assigned to the wrong purchases` },
+      ],
+      hint: `x = ticket price → tickets always get coefficient of x. ${a1} tickets in purchase ① → coefficient ${a1}.`,
+    };
+  },
+  // Ratio + total with reversed ratio direction
+  () => {
+    const r = math.randInt(2, 4), y = math.randInt(5, 15), x = r * y, total = x + y;
+    const [n1, n2] = math.pick([["Xiao Ming","Xiao Hua"],["Tom","Ben"],["Lily","Sara"]]);
+    const item = math.pick(["books","stickers","cards"]);
+    const correctSys = [`x = ${r}y`, `x + y = ${total}`];
+    return {
+      promptHTML: `"<strong>${n1}</strong> has <strong>${r} times</strong> as many ${item} as <strong>${n2}</strong>. Together: <strong>${total}</strong>." Let x = ${n1}'s count, y = ${n2}'s count.<br>
+        A student wrote: ${renderSys([`y = ${r}x`, `x + y = ${total}`])}
+        What is the <strong>correct</strong> system?`,
+      correctSys,
+      decoyDefs: [
+        { sys: [`y = ${r}x`, `x + y = ${total}`],    error: `This is the student's system — y = ${r}x means ${n2} has ${r}× ${n1}'s count, which is backwards. ${n1} (x) has ${r}× ${n2} (y): x = ${r}y` },
+        { sys: [`x = ${r}y`, `x - y = ${total}`],    error: `${total} is their combined total (use +), not their difference` },
+        { sys: [`x = ${r} + y`, `x + y = ${total}`], error: `"${r} times as many" means ×${r}: x = ${r}y, not x = ${r} + y` },
+      ],
+      hint: `${n1} (x) has ${r}× ${n2} (y) → x = ${r}y. Together: x + y = ${total}.`,
+    };
+  },
+  // Three-variable: student accidentally repeated an equation
+  () => {
+    const a = math.randInt(5, 12), b = math.randInt(5, 12), c = math.randInt(5, 12);
+    const ab = a + b, bc = b + c, ac = a + c;
+    const correctSys = [`x + y = ${ab}`, `y + z = ${bc}`, `x + z = ${ac}`];
+    const wrongSys   = [`x + y = ${ab}`, `y + z = ${bc}`, `x + y = ${ac}`]; // ③ repeats ①'s form
+    return {
+      promptHTML: `Three numbers x, y, z: x+y = <strong>${ab}</strong>, y+z = <strong>${bc}</strong>, x+z = <strong>${ac}</strong>.<br>
+        A student wrote: ${renderSys(wrongSys)}
+        What is the <strong>correct</strong> system?`,
+      correctSys,
+      decoyDefs: [
+        { sys: wrongSys, error: `③ says x + y = ${ac} — but ${ac} is the sum of x and z, not x and y. ③ should be x + z = ${ac}` },
+        { sys: [`x + y = ${ab}`, `y + z = ${ac}`, `x + z = ${bc}`], error: `② and ③ totals are swapped: ${bc} goes with y+z, ${ac} goes with x+z` },
+        { sys: [`x + y = ${ab}`, `y + z = ${bc}`, `x + z = ${bc}`], error: `③ has the wrong total — x + z = ${ac}, not ${bc}` },
+      ],
+      hint: `Three different pairs → three different equations. The x+z pair gives x + z = ${ac}, not x + y = ${ac}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_sum_diff(id)     { const t = math.pick(POOL_L1)(); return buildSysQ(id, "sum_diff",     t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+function gen_count_qty(id)    { const t = math.pick(POOL_L2)(); return buildSysQ(id, "count_qty",    t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+function gen_two_price(id)    { const t = math.pick(POOL_L3)(); return buildSysQ(id, "two_price",    t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+function gen_ratio_total(id)  { const t = math.pick(POOL_L4)(); return buildSysQ(id, "ratio_total",  t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+function gen_three_vars(id)   { const t = math.pick(POOL_L5)(); return buildSysQ(id, "three_vars",   t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+function gen_build_verify(id) { const t = math.pick(POOL_RULE)(); return buildSysQ(id, "build_verify", t.promptHTML, t.correctSys, t.decoyDefs, t.hint); }
+
+const generators = {
+  sum_diff:     gen_sum_diff,
+  count_qty:    gen_count_qty,
+  two_price:    gen_two_price,
+  ratio_total:  gen_ratio_total,
+  three_vars:   gen_three_vars,
+  build_verify: gen_build_verify,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills:  [],
+  practice:    { topic: null, currentQ: null },
+  mastery:     { questions: [], answers: {}, score: null, bestScore: null },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:    state.diagnostic.results,
+    weakSkills: state.weakSkills,
+    bestScore:  state.mastery.bestScore,
+  }));
+}
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById("name-input").value = saved;
+    document.getElementById("greeting-msg").textContent =
+      `${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name) {
+  localStorage.setItem(NAME_KEY, name.trim());
+  state.studentName = name.trim();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct) {
+  const bar = document.getElementById("progress-bar");
+  bar.style.width = pct + "%";
+  bar.setAttribute("aria-label", pct + "% complete");
+}
+function showSection(id) { document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id) { document.getElementById(id).classList.add("hidden");    }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup() {
+  const v = document.getElementById("name-input").value.trim();
+  if (v) { saveSiteName(v); applyName(); }
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetProgress() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic = { questions: [], answers: {}, results: {} };
+  state.weakSkills  = [];
+  state.practice    = { topic: null, currentQ: null };
+  state.mastery     = { questions: [], answers: {}, score: null, bestScore: null };
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display = "none";
+  document.getElementById("mastery-submit-btn").style.display = "";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions() {
+  return Object.keys(skillLibrary).map((sid, i) => generators[sid](`diag_${i + 1}`));
+}
+
+function renderDiagnostic() {
+  document.getElementById("diagnostic-questions").innerHTML =
+    state.diagnostic.questions.map(q => renderMCCard(q, "diag")).join("");
+}
+
+function renderMCCard(q, ns) {
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="${ns}_${q.id}" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  return `
+    <div class="question-card" id="qcard_${q.id}">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+    </div>`;
+}
+
+function submitDiagnostic() {
+  Object.keys(skillLibrary).forEach(sid => {
+    state.diagnostic.results[sid] = { correct: 0, total: 0 };
+  });
+  let allAnswered = true;
+  state.diagnostic.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    q.skills.forEach(sid => {
+      state.diagnostic.results[sid].total++;
+      if (isCorrect) state.diagnostic.results[sid].correct++;
+    });
+    state.diagnostic.answers[q.id] = { chosen, isCorrect };
+  });
+  if (!allAnswered) { alert("Please answer all questions before submitting."); return; }
+  state.weakSkills = Object.entries(state.diagnostic.results)
+    .filter(([, r]) => r.total > 0 && r.correct / r.total < WEAK_THRESHOLD / 100)
+    .map(([sid]) => sid);
+  saveProgress();
+  renderResults();
+  showSection("section-results");
+  setProgress(30);
+  document.getElementById("section-results").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults() {
+  const skillIds = Object.keys(skillLibrary);
+  const rows = skillIds.map(sid => {
+    const sk     = skillLibrary[sid];
+    const r      = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct    = r.total > 0 ? Math.round(100 * r.correct / r.total) : 0;
+    const isWeak = state.weakSkills.includes(sid);
+    return `
+      <div class="skill-result">
+        <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level || "R"}</span>
+        <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /, "")}</span>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <span class="${isWeak ? "result-weak" : "result-pass"}">${pct}%${isWeak ? " ⚠" : " ✓"}</span>
+      </div>`;
+  }).join("");
+  const msg = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons below then try the Mastery Test.</p>`
+    : `<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML = msg + rows;
+  renderLessonCards();
+}
+
+function renderLessonCards() {
+  document.getElementById("lesson-cards").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk      = skillLibrary[sid];
+      const isWeak  = state.weakSkills.includes(sid);
+      const border  = isWeak ? "#c62828" : "#e8eaf6";
+      const stepsHTML = sk.steps.map(s => `<li>${s}</li>`).join("");
+      const conceptBtns = sk.keyConcepts.map((kc, i) =>
+        `<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`
+      ).join(" ");
+      return `
+        <div class="lesson-card" style="border-color:${border}">
+          <div class="lesson-title">
+            <span class="badge ${sk.badgeClass}">${sk.level > 0 ? "L" + sk.level : "Rule"}</span>
+            ${sk.name.replace(/Level \d+: |Rule: /, "")}
+          </div>
+          <p class="text-muted">${sk.summary}</p>
+          <ol>${stepsHTML}</ol>
+          <div class="lesson-example">
+            <strong>Example:</strong><br>${sk.example.problemHTML}<br><br>
+            <strong>Solution:</strong><br>${sk.example.solutionHTML}
+          </div>
+          <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+          <div class="question-actions mt-2">
+            <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+            <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+            ${conceptBtns}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId) {
+  const tid = topicId || state.weakSkills[0] || Object.keys(skillLibrary)[0];
+  showSection("section-practice");
+  setProgress(55);
+  renderTopicButtons(tid);
+  selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderTopicButtons(activeTid) {
+  document.getElementById("topic-buttons").innerHTML =
+    Object.keys(skillLibrary).map(sid => {
+      const sk     = skillLibrary[sid];
+      const active = sid === activeTid ? " active" : "";
+      const weak   = state.weakSkills.includes(sid) ? "border-color:#c62828;color:#c62828;" : "";
+      const label  = `${sk.level > 0 ? "L" + sk.level : "R"}: ${sk.name.replace(/Level \d+: |Rule: /, "")}`;
+      return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+    }).join("");
+}
+
+function selectTopic(sid) {
+  state.practice.topic = sid;
+  renderTopicButtons(sid);
+  nextPracticeQuestion();
+}
+
+function nextPracticeQuestion() {
+  const sid = state.practice.topic;
+  const q   = generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ = q;
+  const choices = q.choices.map((c, i) => `
+    <li><label>
+      <input type="radio" name="pq" value="${i}" />
+      ${c}
+    </label></li>`).join("");
+  document.getElementById("practice-area").innerHTML = `
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline"  onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint"     style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+
+function showPracticeHint() {
+  const h = document.getElementById("prac-hint");
+  h.style.display = "block";
+  h.textContent   = "💡 " + state.practice.currentQ.hint;
+}
+
+function submitPracticeAnswer() {
+  const q   = state.practice.currentQ;
+  const sel = document.querySelector('input[name="pq"]:checked');
+  if (!sel) { alert("Please select an answer."); return; }
+  const chosen    = parseInt(sel.value);
+  const isCorrect = chosen === q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r => r.disabled = true);
+  document.getElementById("prac-actions").style.display = "none";
+  const stepsHTML = q.explainSteps.map(s => `<li>${s}</li>`).join("");
+  const fb = document.getElementById("prac-feedback");
+  fb.style.display = "block";
+  fb.className = "feedback-msg " + (isCorrect ? "feedback-correct" : "feedback-wrong");
+  fb.innerHTML = `
+    ${isCorrect ? "✓ Correct!" : "✗ Not quite — here's how:"}
+    <ul class="explain-steps">${stepsHTML}</ul>
+    <button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+  renderMastery();
+  showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display = "";
+  document.getElementById("mastery-results").style.display    = "none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({ behavior: "smooth" });
+}
+
+function buildMasteryQuestions() {
+  const skillIds = Object.keys(skillLibrary);
+  const qs = skillIds.map((sid, i) => generators[sid](`mast_base_${i}`));
+  const pool = [...skillIds, ...state.weakSkills, ...state.weakSkills];
+  while (qs.length < 10) {
+    const sid = math.pick(pool);
+    qs.push(generators[sid](`mast_extra_${qs.length}`));
+  }
+  return math.shuffle(qs).slice(0, 10);
+}
+
+function renderMastery() {
+  document.getElementById("mastery-questions").innerHTML =
+    state.mastery.questions.map((q, i) => {
+      const choices = q.choices.map((c, ci) => `
+        <li><label>
+          <input type="radio" name="mq_${q.id}" value="${ci}" />
+          ${c}
+        </label></li>`).join("");
+      return `
+        <div class="question-card" id="mqcard_${q.id}">
+          <div class="question-prompt"><strong>Q${i + 1}.</strong> ${q.promptHTML}</div>
+          <ul class="mc-choices">${choices}</ul>
+        </div>`;
+    }).join("");
+}
+
+function submitMastery() {
+  let correct = 0, allAnswered = true;
+  state.mastery.questions.forEach(q => {
+    const sel = document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if (!sel) { allAnswered = false; return; }
+    const chosen    = parseInt(sel.value);
+    const isCorrect = chosen === q.answer.correctIdx;
+    if (isCorrect) correct++;
+    state.mastery.answers[q.id] = { chosen, isCorrect };
+    const card = document.getElementById(`mqcard_${q.id}`);
+    if (card) card.style.background = isCorrect ? "#d4edda" : "#f8d7da";
+  });
+  if (!allAnswered) { alert("Please answer all 10 questions."); return; }
+  const score = Math.round(100 * correct / state.mastery.questions.length);
+  state.mastery.score = score;
+  if (!state.mastery.bestScore || score > state.mastery.bestScore) state.mastery.bestScore = score;
+  saveProgress();
+  setProgress(score >= MASTERY_THRESHOLD ? 100 : 88);
+  document.getElementById("mastery-submit-btn").style.display = "none";
+  const passed     = score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? "#2e7d32" : "#c62828";
+  const resultsDiv = document.getElementById("mastery-results");
+  resultsDiv.style.display = "block";
+  resultsDiv.innerHTML = `
+    <div class="card">
+      <h2>Mastery Test Results</h2>
+      <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+      <p>${passed ? "🎉 Mastery achieved! You can confidently set up equation systems from word problems." : "Keep at it — try more practice then re-attempt the test."}</p>
+      <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+      <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+        <button class="btn btn-primary"   onclick="openMastery()">Try Again</button>
+      </div>
+      <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+    </div>`;
+  resultsDiv.scrollIntoView({ behavior: "smooth" });
+}
+
+function renderConnections(passed) {
+  const connections = {
+    foundational: [
+      { title: "From Words to One Equation",
+        url:   "../grade_4/words_to_equations_grade4.html",
+        reason: "Building a system of equations is an extension of the single-equation skill — master one equation first." },
+      { title: "Chicken-Rabbit Problems",
+        url:   "../grade_4/chicken_rabbit_grade4.html",
+        reason: "The count + quantity structure (heads and legs) is the most classic two-equation system at this level." },
+    ],
+    challenge: [
+      { title: "System of Two Linear Equations",
+        url:   "../grade_5/system_2eq_2var_grade5.html",
+        reason: "Once you can set up a system, the next step is learning to solve it using substitution and elimination." },
+    ],
+  };
+  const list = passed ? connections.challenge : connections.foundational;
+  return list.map(c => `
+    <div class="connection-card">
+      <a href="${c.url}">${c.title}</a>
+      <span class="connection-reason">${c.reason}</span>
+    </div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId) {
+  const sk    = skillLibrary[skillId];
+  const name  = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+  const prompt = [
+    `${name}I am a Grade 4 student learning to set up systems of equations from word problems.`,
+    ``, `I need extra help with: ${sk.name}.`,
+    ``, `What this is about: ${sk.summary}`,
+    ``, `Steps:`, steps,
+    ``, `Common mistake to avoid: ${sk.misconception}`,
+    ``, `Please explain clearly and give me 3 practice problems with full solutions.`,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk      = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name    = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const prompt  = [
+    `${name}I am a Grade 4 student learning to set up systems of equations from word problems.`,
+    ``, `I have a specific question about: ${concept.label}.`,
+    ``, concept.prompt,
+  ].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved && saved.bestScore) {
+    state.mastery.bestScore = saved.bestScore;
+    setProgress(saved.bestScore >= MASTERY_THRESHOLD ? 100 : 40);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

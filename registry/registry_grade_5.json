@@ -1,0 +1,102 @@
+{
+  "_shard": "math_grade_5",
+  "_description": "Math UEPG concepts at grade 5: fraction operations, decimal operations, intro to ratios, basic statistics, coordinate plane",
+  "_last_updated": "2026-03-21",
+  "_entry_count": 4,
+  "uepgs": [
+    {
+      "id": "smart_decimal_arithmetic_grade5",
+      "title": "Smart Decimal Arithmetic",
+      "grade": 5,
+      "subject": "arithmetic",
+      "concept_fingerprint": "calculation strategies for decimal expressions — common base factoring, complement to round numbers, two-level regrouping, ratio recognition between unusual decimals, and algebraic substitution",
+      "topics": [
+        "decimals", "arithmetic strategies", "mental math", "distributive law",
+        "common factor", "factoring", "complement method", "round numbers",
+        "ratio", "proportion", "algebraic substitution", "regrouping",
+        "fast calculation", "smart arithmetic", "competition math"
+      ],
+      "skills_summary": "common base factor (scaled decimals), complement to round number / missing piece, two-level regrouping, ratio/proportion recognition between unusual decimals, algebraic substitution for repeated groups, strategy selection",
+      "connections": {
+        "foundational": [
+          { "id": "smart_whole_number_arithmetic_grade4", "title": "Smart Whole Number Arithmetic", "file": "grade_4/smart_whole_number_arithmetic_grade4.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/smart_decimal_arithmetic_grade5.html",
+      "status": "complete",
+      "created": "2026-03-19"
+    },
+    {
+      "id": "system_2eq_2var_grade5",
+      "title": "System of Two Linear Equations",
+      "grade": 5,
+      "subject": "arithmetic",
+      "concept_fingerprint": "solving a system of two linear equations in two unknowns (x, y) — substitution, direct elimination, scale-then-eliminate, word problem setup, and solution verification",
+      "topics": [
+        "system of equations", "two unknowns", "linear equations", "substitution method",
+        "elimination method", "scaling equations", "word problems", "verify solution",
+        "simultaneous equations", "algebra", "two variables"
+      ],
+      "skills_summary": "system concepts and solution checking, substitution (coefficient-1 form, both x and y), direct elimination (equal coefficients), scale-then-eliminate (one or both equations), word problems (6 contexts: prices, tickets, two-number sum/diff, ages, fruit, speeds), strategy selection and explicit verification",
+      "connections": {
+        "foundational": [
+          { "id": "linear_equation_1var_grade4", "title": "Linear Equation in One Variable", "file": "grade_4/linear_equation_1var_grade4.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/system_2eq_2var_grade5.html",
+      "status": "complete",
+      "created": "2026-03-20"
+    }
+    ,{
+      "id": "mean_median_mode_grade5",
+      "title": "Mean, Median & Mode",
+      "grade": 5,
+      "subject": "arithmetic",
+      "concept_fingerprint": "three measures of centre — mode (most frequent), median (sorted middle), mean vs median comparison, effect of outliers, work-backwards to achieve a target mean or median, and choosing the right measure for a given context",
+      "topics": [
+        "mean", "median", "mode", "measures of centre", "average",
+        "outlier", "outlier effect", "skewed data", "bimodal",
+        "no mode", "sort", "even count", "odd count",
+        "work backwards", "target mean", "target median",
+        "choose measure", "salary", "categorical data", "robust"
+      ],
+      "skills_summary": "mode (single/bimodal/no-mode/trap), median (odd sort/even average), mean vs median comparison (skew), outlier effect on mean (New Mean = (A×N+outlier)÷(N+1)), work backwards for mean (x=target×N−knownSum) and median (x=2×target−neighbour), choose right measure (mean/median/mode)",
+      "connections": {
+        "foundational": [
+          { "id": "averages_grade4", "title": "Averages", "file": "grade_4/averages_grade4.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/mean_median_mode_grade5.html",
+      "status": "complete",
+      "created": "2026-03-21"
+    }
+    ,{
+      "id": "counting_grade5",
+      "title": "Combinatorial Counting",
+      "grade": 5,
+      "subject": "arithmetic",
+      "concept_fingerprint": "systematic counting strategies — multiplication principle for sequential independent choices, addition principle for mutually exclusive cases, pair/diagonal counting C(n,2), systematic enumeration of bills and digit restrictions, partitions with dividers (each≥1 and each≥2), and maximum regions by straight cuts",
+      "topics": [
+        "multiplication principle", "addition principle", "combinatorics",
+        "pair counting", "handshakes", "diagonals", "polygon diagonals",
+        "systematic enumeration", "bills", "digit restrictions", "permutations",
+        "partition", "dividers method", "stars and bars",
+        "max regions", "pizza cuts", "straight cuts", "counting strategies",
+        "tree diagram", "multiplication counting", "competition math"
+      ],
+      "skills_summary": "multiplication principle (2-step, 3-step, repeated choices), addition principle (simple OR, OR-of-products single relay, OR-of-products dual relay), pair counting C(n,2)=n(n-1)/2 and diagonals n(n-3)/2, systematic enumeration (bills: (a+1)(b+1)-1; digit restrictions: constrained position first), partitions with dividers (each≥1: (n-1)(n-2)/2; each≥2: (n-4)(n-5)/2), max regions by cuts: n(n+1)/2+1",
+      "connections": {
+        "foundational": [
+          { "id": "chicken_rabbit_grade4", "title": "Chicken-Rabbit Problems", "file": "grade_4/chicken_rabbit_grade4.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/counting_grade5.html",
+      "status": "complete",
+      "created": "2026-03-21"
+    }
+  ]
+}

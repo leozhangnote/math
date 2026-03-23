@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Combinatorial Counting — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#e65100,#f57c00); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Combinatorial Counting</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Multiplication &amp; Addition Principles, Pair Counting, Systematic Enumeration, Partitions, and Maximum Regions</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Multiply</span>
+      <span class="badge badge-L2">Add</span>
+      <span class="badge badge-L3">Pairs</span>
+      <span class="badge badge-L4">Enumerate</span>
+      <span class="badge badge-L5">Partition</span>
+      <span class="badge badge-rule">Regions</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Multiplication Principle:</strong> independent sequential stages → multiply all stage counts.</li>
+        <li><strong>Addition Principle:</strong> mutually exclusive cases (OR) → add the case counts.</li>
+        <li><strong>Pair counting:</strong> n objects, every pair counted once → n×(n−1)÷2. Diagonals of n-gon: n×(n−3)÷2.</li>
+        <li><strong>Bills/values:</strong> a bills of type X and b bills of type Y → (a+1)×(b+1)−1 non-zero amounts.</li>
+        <li><strong>Digit restrictions:</strong> handle the restricted position first, then multiply remaining free choices.</li>
+        <li><strong>Partitions (each ≥ 1, 3 groups):</strong> (n−1)×(n−2)÷2. Each ≥ 2: give 1 to each group first → (n−4)×(n−5)÷2.</li>
+        <li><strong>Max regions (n straight cuts):</strong> n×(n+1)÷2 + 1. Each new cut intersects all previous cuts, adding one more region per intersection.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_counting_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  mult_principle: {
+    name:"Level 1: Multiplication Principle", level:1, badgeClass:"badge-L1",
+    summary:"When choices are made in independent sequential stages, the total number of outcomes equals the product of the choices at each stage.",
+    steps:[
+      "Identify how many independent stages there are.",
+      "Count the number of choices at each stage.",
+      "Multiply all stage counts together.",
+      "Check: are the stages truly independent? (Choice at one stage does not affect choices at another.)",
+    ],
+    example:{
+      problemHTML:`From Town A there are <strong>3 roads</strong> to Town B, and from Town B there are <strong>4 roads</strong> to Town C. How many different routes go from A to C? Which equation is correct?`,
+      solutionHTML:`Stage 1 (A→B): 3 choices. Stage 2 (B→C): 4 choices. The stages are independent.<br>
+        Correct: ${mi('3 \\times 4 = 12')}.`,
+    },
+    misconception:"Don't add when stages are sequential and independent — add only when you have mutually exclusive cases (OR). Each road in stage 1 can be paired with each road in stage 2.",
+    keyConcepts:[
+      {label:"Why Multiply, Not Add", prompt:"A→B has 3 roads, B→C has 4 roads. List all 12 routes as pairs (road1, road2). Why does listing give 12, and why is that 3×4? What would 3+4 represent instead?"},
+      {label:"Three-Stage Problems", prompt:"A menu has 3 soups, 4 mains, and 2 desserts. How many complete meals? Explain why the answer is 3×4×2 and not 3+4+2. Draw a tree diagram for the soups and mains part."},
+    ],
+  },
+
+  add_principle: {
+    name:"Level 2: Addition Principle", level:2, badgeClass:"badge-L2",
+    summary:"When two sets of outcomes are mutually exclusive (you choose one OR the other, never both), the total is the sum of the two set sizes.",
+    steps:[
+      "Identify the distinct, non-overlapping cases.",
+      "Count the outcomes in each case separately.",
+      "Add the case counts together.",
+      "Check: can both cases happen at the same time? If yes, simple addition over-counts — you need inclusion-exclusion instead.",
+    ],
+    example:{
+      problemHTML:`From A to B you can travel by bus (<strong>3 routes</strong>) or by train (<strong>4 routes</strong>), but not both at once. How many ways are there? Which equation is correct?`,
+      solutionHTML:`Bus and train are mutually exclusive (OR). Bus: 3 routes, Train: 4 routes.<br>
+        Correct: ${mi('3 + 4 = 7')}.`,
+    },
+    misconception:"Don't multiply mutually exclusive cases. Multiplying 3×4=12 would mean 'take a bus AND a train simultaneously', which is impossible here.",
+    keyConcepts:[
+      {label:"OR vs AND", prompt:"Travel: 3 bus routes AND 4 train routes. Now travel: 3 bus routes OR 4 train routes (pick one). Calculate both and explain why one uses + and the other uses ×."},
+      {label:"Mixing + and ×", prompt:"From A to C, you can go via B (2 roads A→B and 3 roads B→C) OR take a direct express (5 routes). Write the equation and explain why the multiplication and addition both appear."},
+    ],
+  },
+
+  pair_counting: {
+    name:"Level 3: Pair Counting", level:3, badgeClass:"badge-L3",
+    summary:"When every pair of n objects forms exactly one outcome, total = n×(n−1)÷2. For diagonals of a convex n-gon: n×(n−3)÷2 (subtract the n sides from all pairs).",
+    steps:[
+      "Each object pairs with every other object exactly once.",
+      "A naive count gives n×(n−1) (each of n objects paired with n−1 others).",
+      "But each pair is counted twice (A-B and B-A are the same), so divide by 2.",
+      "For diagonals: total pairs = n(n-1)÷2, minus the n sides = n(n-3)÷2.",
+    ],
+    example:{
+      problemHTML:`8 students each shake hands with every other student exactly once. How many handshakes are there? Which equation is correct?`,
+      solutionHTML:`Each student shakes with 7 others → 8×7 = 56 hand-pairings, but every handshake was counted twice (once per person).<br>
+        Correct: ${mi('8 \\times 7 \\div 2 = 28')}.`,
+    },
+    misconception:"Don't use n×(n−1) — that double-counts every pair. The handshake between Ada and Ben is the same event whether counted from Ada's side or Ben's side.",
+    keyConcepts:[
+      {label:"Why Divide by 2", prompt:"5 people: A, B, C, D, E. List all handshakes starting from A, then B (skip A-B already listed), etc. Count them. Show this equals 5×4÷2=10. Why does each pair appear twice in the naive 5×4 count?"},
+      {label:"Diagonals vs All Segments", prompt:"A convex hexagon (6 vertices) has how many line segments connecting vertices? How many of those are sides? How many are diagonals? Write equations for all three and explain the subtraction."},
+    ],
+  },
+
+  systematic_count: {
+    name:"Level 4: Systematic Enumeration", level:4, badgeClass:"badge-L4",
+    summary:"Count by organizing choices stage by stage. For bill combinations: (a+1)×(b+1)−1. For digit restrictions: handle the constrained position first, then multiply remaining free choices.",
+    steps:[
+      "Bills: count choices for each denomination (0 through max), multiply, subtract 1 for the all-zero case.",
+      "Digits: identify which position has a restriction (must be even, can't be zero, etc.).",
+      "Fill the restricted position first (count its valid choices).",
+      "Fill remaining positions in order, updating the available count after each choice.",
+    ],
+    example:{
+      problemHTML:`You have <strong>2 two-dollar bills</strong> and <strong>3 five-dollar bills</strong>. How many different non-zero amounts can you make? Which equation is correct?`,
+      solutionHTML:`$2 bills: 0,1,2 → 3 choices. $5 bills: 0,1,2,3 → 4 choices.<br>
+        All combinations: 3×4=12. Subtract 1 (the $0 case).<br>
+        Correct: ${mi('(2+1) \\times (3+1) - 1 = 11')}.`,
+    },
+    misconception:"Don't forget to subtract 1 — using zero of every denomination makes $0, which is not a valid amount. Also, for digit problems, fill restricted positions first to avoid counting invalid arrangements.",
+    keyConcepts:[
+      {label:"Why (a+1)(b+1)−1", prompt:"List all amounts using at most 2 one-dollar bills and at most 2 five-dollar bills. There are 3×3=9 combinations including $0. Write them all out. Why is (2+1)(2+1)−1=8 the count of non-zero amounts?"},
+      {label:"Restricted Digit — Fill Constrained First", prompt:"From {1,2,3,4,5}, make 3-digit numbers with no repeats that are even. Why do we choose the last digit first (2 choices: 2 or 4)? What goes wrong if we choose the first digit first instead?"},
+    ],
+  },
+
+  partition: {
+    name:"Level 5: Partitions with Dividers", level:5, badgeClass:"badge-L5",
+    summary:"Distribute n identical objects among 3 groups (each ≥ 1): place 2 dividers in the n−1 gaps → (n−1)×(n−2)÷2 ways. Each group ≥ 2: first give 1 to each group, then apply the ≥1 formula to the remaining n−3 objects.",
+    steps:[
+      "Line up n identical balls in a row. There are n−1 gaps between adjacent balls.",
+      "Place k−1 dividers, one per gap (no two dividers share a gap), to split into k groups.",
+      "For k=3 and each ≥ 1: choose 2 of n−1 gaps → (n−1)(n−2)÷2 ways.",
+      "For each ≥ 2: give 1 to each group first (uses k balls), then apply the ≥1 formula to n−k remaining balls.",
+    ],
+    example:{
+      problemHTML:`7 identical balls are distributed among 3 children, each getting at least 1. How many ways are there? Which equation is correct?`,
+      solutionHTML:`Line up 7 balls: ● ● ● ● ● ● ●. There are 6 gaps. Place 2 dividers in 6 gaps (no sharing).<br>
+        Correct: ${mi('(7-1) \\times (7-2) \\div 2 = 6 \\times 5 \\div 2 = 15')}.`,
+    },
+    misconception:"Don't use n×(n−1)÷2 — that is pair counting (C(n,2)) using n objects, not n−1 gaps. The dividers go in the gaps between balls, so there are only n−1 available positions.",
+    keyConcepts:[
+      {label:"Why Gaps, Not Balls", prompt:"5 identical balls to 3 children (each ≥ 1). Line them up: ● ● ● ● ●. Label the 4 gaps as G1, G2, G3, G4. List all ways to place 2 dividers (no sharing). Count them and verify it equals (5-1)(5-2)÷2=6."},
+      {label:"Each ≥ 2 Variant", prompt:"9 balls to 3 children, each ≥ 2. Explain why giving 1 ball to each child first converts this to a '6 balls, each ≥ 1' problem. Apply the formula and find the answer. Why not give 2 to each upfront?"},
+    ],
+  },
+
+  max_regions: {
+    name:"Rule: Maximum Regions by Cuts", level:0, badgeClass:"badge-rule",
+    summary:"n straight cuts on a circle (no two cuts parallel, no three cuts meeting at one point) create at most n×(n+1)÷2 + 1 pieces. Each new cut k adds exactly k new regions (it crosses k−1 existing cuts, dividing itself into k segments, each creating 1 new region).",
+    steps:[
+      "Cut 1 creates 2 pieces (adds 1 region). Cut 2 crosses cut 1 once, adds 2 regions. Cut k adds k regions.",
+      "Total regions added = 1 + 2 + 3 + … + n = n(n+1)÷2.",
+      "Add the starting 1 (the uncut circle): total = n(n+1)÷2 + 1.",
+      "This is a maximum — achieved only when no two cuts are parallel and no three cuts share a point.",
+    ],
+    example:{
+      problemHTML:`A circular pizza is cut with <strong>5 straight cuts</strong> (no two parallel, no three meeting at one point). What is the maximum number of pieces? Which equation is correct?`,
+      solutionHTML:`Cuts add 1,2,3,4,5 new regions respectively. Total added = 1+2+3+4+5 = 15. Plus the original 1 piece.<br>
+        Correct: ${mi('5 \\times 6 \\div 2 + 1 = 16')}.`,
+    },
+    misconception:"A common error is thinking each cut always adds exactly 2 pieces (enters and exits the circle). This is only true for the 1st cut. Cut k crosses k−1 earlier lines inside the circle, splitting itself into k segments — each segment adds 1 new region, so cut k adds k regions total.",
+    keyConcepts:[
+      {label:"Building the Pattern Step by Step", prompt:"Draw a circle. Add 1 cut (2 pieces), then 2 cuts (4), then 3 cuts (7), then 4 cuts (11). Verify each step adds 1,2,3,4 pieces. Why does cut k add exactly k pieces?"},
+      {label:"Why Not 'Each Cut Adds 2'?", prompt:"Show that cut 3 adds 3 new regions (not 2). Draw it: cut 3 crosses cuts 1 and 2, making 3 segments inside the circle, each creating 1 new region. What is the total for n cuts?"},
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA
+══════════════════════════════════════════════════════════════ */
+
+// L1
+const L1_2STEP = [[3,4,12],[2,5,10],[4,5,20],[3,6,18],[2,6,12],[4,6,24],[3,5,15],[5,6,30]];
+const L1_3STEP = [[2,3,4,24],[2,3,5,30],[2,4,5,40],[3,4,5,60],[2,3,6,36],[3,4,4,48]];
+const L1_POW   = [[3,4,64],[2,5,25],[3,3,27],[2,6,36],[2,4,16]]; // [positions, choices_each, result]
+
+// L2
+const L2_ADD    = [[3,4,7],[4,5,9],[2,6,8],[5,7,12],[3,7,10],[4,6,10],[6,8,14],[5,6,11]];
+const L2_VIAOR  = [[2,3,4,10],[3,4,5,17],[2,4,3,11],[3,3,6,15],[2,5,4,14],[4,3,6,18]]; // n1*n2 + n3
+const L2_DUAL   = [[2,3,3,4,18],[3,4,2,5,22],[2,4,3,3,17],[2,3,2,4,14]]; // n1*n2 + n3*n4
+
+// L3
+const L3_PAIRS  = [[5,10],[6,15],[7,21],[8,28],[9,36],[10,45]]; // [n, n(n-1)/2]
+const L3_DIAG   = [[6,9],[8,20],[10,35]]; // [n, n(n-3)/2], only even n for clean decoys
+
+// L4 bills: [a, valA, b, valB, result=(a+1)(b+1)-1]
+const L4_BILLS  = [[2,2,3,5,11],[2,1,2,5,8],[3,1,2,5,11],[2,2,2,5,8],[2,1,3,5,11]];
+
+// L5
+const L5_K3_GE1 = [[5,6],[6,10],[7,15],[8,21],[9,28],[10,36]]; // [n, (n-1)(n-2)/2]
+const L5_K2_GE1 = [[5,4],[6,5],[7,6],[8,7],[9,8],[10,9]];      // [n, n-1]
+const L5_K3_GE2 = [[9,10],[10,15],[11,21],[12,28],[8,6]];       // [n, (n-4)(n-5)/2]
+
+// Rule
+const RULE_CUTS = [[4,11],[5,16],[6,22],[7,29],[8,37]]; // [n, n(n+1)/2+1]
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Multiplication Principle ──────────────────────────── */
+const POOL_L1 = [
+  // 2-step path/route
+  () => {
+    const [n1,n2,prod] = math.pick(L1_2STEP);
+    const [s1,s2] = math.pick([
+      ["roads from Town A to Town B","roads from Town B to Town C"],
+      ["bus routes from home to school","walking routes from bus stop to class"],
+      ["morning trains to the city","afternoon trains from city to destination"],
+    ]);
+    const correctLatex = `${n1} \\times ${n2} = ${prod}`;
+    return {
+      promptHTML:`There are <strong>${n1} ${s1}</strong> and <strong>${n2} ${s2}</strong>. How many different complete routes are there? Which equation is correct?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n1} + ${n2} = ${n1+n2}`,        error:`The stages are sequential and independent — multiply, don't add`},
+        {eq:`${n1} \\times ${n2-1} = ${n1*(n2-1)}`, error:`There are ${n2} choices at stage 2, not ${n2-1}`},
+        {eq:`${n1-1} \\times ${n2} = ${(n1-1)*n2}`, error:`There are ${n1} choices at stage 1, not ${n1-1}`},
+      ],
+      hint:`Sequential independent stages → multiply: ${n1} × ${n2} = ${prod}.`,
+    };
+  },
+  // 3-step path
+  () => {
+    const [n1,n2,n3,prod] = math.pick(L1_3STEP);
+    const ctx = math.pick([
+      `From A to B there are <strong>${n1} roads</strong>, from B to C there are <strong>${n2} roads</strong>, and from C to D there are <strong>${n3} roads</strong>.`,
+      `A set menu offers <strong>${n1} soups</strong>, <strong>${n2} mains</strong>, and <strong>${n3} desserts</strong> (one of each).`,
+      `A flag design has <strong>${n1} choices for the top stripe</strong>, <strong>${n2} for the middle stripe</strong>, and <strong>${n3} for the bottom stripe</strong> (all stripes different colours).`,
+    ]);
+    const correctLatex = `${n1} \\times ${n2} \\times ${n3} = ${prod}`;
+    return {
+      promptHTML:`${ctx} How many different complete combinations are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n1} + ${n2} + ${n3} = ${n1+n2+n3}`, error:`All three stages are independent — multiply all three, don't add`},
+        {eq:`${n1} \\times ${n2} = ${n1*n2}`,        error:`The third stage (${n3} choices) is missing from the product`},
+        {eq:`${n1} \\times ${n2} \\times ${n3+1} = ${n1*n2*(n3+1)}`, error:`The third stage has ${n3} choices, not ${n3+1}`},
+      ],
+      hint:`Three independent stages: ${n1} × ${n2} × ${n3} = ${prod}.`,
+    };
+  },
+  // Outfit (2 clothing items)
+  () => {
+    const [n1,n2,prod] = math.pick(L1_2STEP);
+    const [item1,item2] = math.pick([["shirts","pairs of trousers"],["tops","skirts"],["jackets","pairs of shoes"]]);
+    const correctLatex = `${n1} \\times ${n2} = ${prod}`;
+    return {
+      promptHTML:`A wardrobe has <strong>${n1} ${item1}</strong> and <strong>${n2} ${item2}</strong>. How many different complete outfits (one of each) are possible?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n1} + ${n2} = ${n1+n2}`,         error:`Choosing a ${item1.slice(0,-1)} AND a ${item2.slice(0,-1)} is sequential — multiply`},
+        {eq:`${n1} \\times ${n2} - 1 = ${prod-1}`, error:`No combination needs to be excluded — all ${prod} pairings are valid outfits`},
+        {eq:`${n1-1} \\times ${n2} = ${(n1-1)*n2}`, error:`All ${n1} ${item1} are available — none are excluded`},
+      ],
+      hint:`One item from each group, independently chosen: ${n1} × ${n2} = ${prod}.`,
+    };
+  },
+  // Password/code (repeated independent positions)
+  () => {
+    const [pos,ch,pow] = math.pick(L1_POW);
+    const ctx = math.pick([
+      `A lock code has <strong>${pos} digits</strong>, each chosen from <strong>${ch} symbols</strong> (repeats allowed).`,
+      `A multiple-choice quiz has <strong>${pos} questions</strong>, each with <strong>${ch} options</strong> (A–${String.fromCharCode(64+ch)}).`,
+    ]);
+    const eachStr = Array(pos).fill(ch).join(' \\\\times ');
+    const correctLatex = Array(pos).fill(`${ch}`).join(' \\times ') + ` = ${pow}`;
+    return {
+      promptHTML:`${ctx} How many different codes/answer sheets are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:Array(pos).fill(`${ch}`).join(' + ') + ` = ${ch*pos}`, error:`Each position is independent — multiply, don't add`},
+        {eq:`${ch} \\times ${pos} = ${ch*pos}`,                    error:`Multiply options by options (for each position), not options by positions`},
+        {eq:Array(pos).fill(`${ch}`).join(' \\times ') + ` - 1 = ${pow-1}`, error:`All ${pow} combinations are valid — nothing needs to be excluded here`},
+      ],
+      hint:`${pos} independent positions, ${ch} choices each: ${Array(pos).fill(ch).join('×')} = ${pow}.`,
+    };
+  },
+];
+
+/* ── L2: Addition Principle ─────────────────────────────────── */
+const POOL_L2 = [
+  // Simple OR — travel modes
+  () => {
+    const [m,n,sum] = math.pick(L2_ADD);
+    const [t1,t2] = math.pick([["bus","train"],["ferry","hovercraft"],["bicycle","scooter"],["express train","local train"]]);
+    const correctLatex = `${m} + ${n} = ${sum}`;
+    return {
+      promptHTML:`From Town A to Town B, there are <strong>${m} ${t1} routes</strong> and <strong>${n} ${t2} routes</strong>. You must choose exactly one mode of transport. How many ways are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${m} \\times ${n} = ${m*n}`, error:`These are OR choices (take one or the other), not AND — add, don't multiply`},
+        {eq:`${m} + ${n-1} = ${sum-1}`,   error:`All ${n} ${t2} routes count — the total is ${m}+${n}=${sum}`},
+        {eq:`${m} - ${n} = ${m-n}`,        error:`Cases are added (more options), not subtracted`},
+      ],
+      hint:`Mutually exclusive choices → add: ${m} + ${n} = ${sum}.`,
+    };
+  },
+  // Simple OR — category choice
+  () => {
+    const [m,n,sum] = math.pick(L2_ADD);
+    const [cat1,cat2] = math.pick([
+      [`${m} fiction books`,'${n} non-fiction books'],
+      [`${m} red pens`,'${n} blue pens'],
+      [`${m} hot drinks`,'${n} cold drinks'],
+    ]).map(s => typeof s === 'string' ? s : s);
+    const item1 = `${m} ${math.pick(["fiction books","sticker designs","red flags","morning sessions"])}`;
+    const item2 = `${n} ${math.pick(["non-fiction books","badge designs","blue flags","afternoon sessions"])}`;
+    const correctLatex = `${m} + ${n} = ${sum}`;
+    return {
+      promptHTML:`A library shelf has <strong>${item1}</strong> and <strong>${item2}</strong>. You pick exactly one book. How many choices do you have?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${m} \\times ${n} = ${m*n}`, error:`You pick one book OR the other — these categories don't combine, so add`},
+        {eq:`${sum} - 1 = ${sum-1}`,       error:`No book is unavailable — all ${sum} are valid choices`},
+        {eq:`${m} + ${n+1} = ${sum+1}`,    error:`There are exactly ${n} items in the second category, not ${n+1}`},
+      ],
+      hint:`Picking from one category OR the other → add: ${m} + ${n} = ${sum}.`,
+    };
+  },
+  // Via-relay OR direct
+  () => {
+    const [n1,n2,n3,total] = math.pick(L2_VIAOR);
+    const correctLatex = `${n1} \\times ${n2} + ${n3} = ${total}`;
+    return {
+      promptHTML:`From City A to City C, you can go <strong>via City B</strong> (${n1} roads A→B and ${n2} roads B→C) OR take a <strong>direct express</strong> (${n3} routes). How many ways are there in total?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n1} \\times ${n2} \\times ${n3} = ${n1*n2*n3}`, error:`The via-B path and direct path are OR choices — add the two path-groups, don't multiply all three`},
+        {eq:`${n1} + ${n2} + ${n3} = ${n1+n2+n3}`,             error:`The via-B route requires choosing BOTH a A→B road AND a B→C road (multiply), then add the direct option`},
+        {eq:`(${n1} + ${n2}) \\times ${n3} = ${(n1+n2)*n3}`,   error:`Add first then multiply is wrong — the via-B sub-total is ${n1}×${n2}=${n1*n2}, plus ${n3} direct`},
+      ],
+      hint:`Via B: ${n1}×${n2}=${n1*n2}. Direct: ${n3}. These are OR cases: ${n1*n2}+${n3}=${total}.`,
+    };
+  },
+  // Dual-relay OR
+  () => {
+    const [n1,n2,n3,n4,total] = math.pick(L2_DUAL);
+    const correctLatex = `${n1} \\times ${n2} + ${n3} \\times ${n4} = ${total}`;
+    return {
+      promptHTML:`From A to C, you can go <strong>via Relay B₁</strong> (${n1} roads A→B₁ and ${n2} roads B₁→C) OR <strong>via Relay B₂</strong> (${n3} roads A→B₂ and ${n4} roads B₂→C). How many routes go from A to C?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n1} \\times ${n2} \\times ${n3} \\times ${n4} = ${n1*n2*n3*n4}`, error:`The two relay paths are OR cases — add their sub-totals, don't multiply all four`},
+        {eq:`${n1} + ${n2} + ${n3} + ${n4} = ${n1+n2+n3+n4}`,                  error:`Within each relay path the legs multiply — compute ${n1}×${n2} and ${n3}×${n4} first, then add`},
+        {eq:`(${n1} + ${n3}) \\times (${n2} + ${n4}) = ${(n1+n3)*(n2+n4)}`,    error:`You can't cross relay paths — B₁ roads only connect to B₁ routes, not B₂ routes`},
+      ],
+      hint:`Via B₁: ${n1}×${n2}=${n1*n2}. Via B₂: ${n3}×${n4}=${n3*n4}. OR → add: ${n1*n2}+${n3*n4}=${total}.`,
+    };
+  },
+];
+
+/* ── L3: Pair Counting ──────────────────────────────────────── */
+const POOL_L3 = [
+  // Handshakes
+  () => {
+    const [n,ans] = math.pick(L3_PAIRS);
+    const correctLatex = `${n} \\times ${n-1} \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} students</strong> are in a room. Each student shakes hands with every other student exactly once. How many handshakes are there in total?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} = ${n*(n-1)}`,   error:`${n*(n-1)} double-counts every handshake (counted once from each person's side) — divide by 2`},
+        {eq:`${n} \\times ${n} \\div 2 = ${n*n/2}`, error:`Each person shakes with ${n-1} others (not ${n} — can't shake with yourself)`},
+        {eq:`${n-1} \\times ${n-2} \\div 2 = ${(n-1)*(n-2)/2}`, error:`All ${n} students participate — use n×(n-1)÷2, not (n-1)×(n-2)÷2`},
+      ],
+      hint:`Each of ${n} students shakes with ${n-1} others: ${n}×${n-1}=${n*(n-1)}, but each handshake counted twice → ÷2 = ${ans}.`,
+    };
+  },
+  // Line segments between points
+  () => {
+    const [n,ans] = math.pick(L3_PAIRS);
+    const correctLatex = `${n} \\times ${n-1} \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} points</strong> are placed on a plane (no 3 points in a straight line). Every pair of points is connected by a line segment. How many line segments are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} = ${n*(n-1)}`,       error:`This counts ordered pairs (A→B and B→A separately) — a segment is unordered, so divide by 2`},
+        {eq:`${n} \\times ${n} \\div 2 = ${n*n/2}`,   error:`A point cannot connect to itself — each point connects to ${n-1} others, not ${n}`},
+        {eq:`${n} + ${n-1} = ${n+n-1}`,                error:`This adds rather than uses the pairing formula — every pair of points forms one segment`},
+      ],
+      hint:`Every pair of points: ${n}×${n-1}÷2 = ${ans}.`,
+    };
+  },
+  // Round-robin tournament
+  () => {
+    const [n,ans] = math.pick(L3_PAIRS);
+    const correctLatex = `${n} \\times ${n-1} \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} teams</strong> enter a round-robin tournament. Every team plays every other team exactly once. How many games are played in total?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} = ${n*(n-1)}`,    error:`Each game is counted twice (once per team) in ${n*(n-1)} — divide by 2`},
+        {eq:`${n} \\times ${n} = ${n*n}`,           error:`A team does not play itself — each team plays ${n-1} games, not ${n}`},
+        {eq:`${n} \\times (${n}-2) \\div 2 = ${n*(n-2)/2}`, error:`Each team plays against all ${n-1} others — use n-1, not n-2`},
+      ],
+      hint:`${n} teams, each plays ${n-1} opponents: ${n}×${n-1}=${n*(n-1)}, each game counted twice → ÷2 = ${ans}.`,
+    };
+  },
+  // Diagonals of a convex polygon
+  () => {
+    const [n,ans] = math.pick(L3_DIAG);
+    const allPairs = n*(n-1)/2;
+    const correctLatex = `${n} \\times (${n} - 3) \\div 2 = ${ans}`;
+    return {
+      promptHTML:`A convex <strong>${n}-gon</strong> (polygon with ${n} vertices) has all its diagonals drawn. How many diagonals are there? (<em>Hint: diagonals connect non-adjacent vertices only.</em>)`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} \\div 2 = ${allPairs}`, error:`${allPairs} counts ALL segments (including the ${n} sides) — subtract the ${n} sides: ${allPairs}−${n}=${ans}`},
+        {eq:`${n} \\times (${n}-3) = ${n*(n-3)}`,         error:`The formula n(n-3)÷2 divides by 2 because each diagonal is counted from both endpoints — don't forget ÷2`},
+        {eq:`${n} \\times (${n}-2) \\div 2 = ${n*(n-2)/2}`, error:`Each vertex connects to n-3 non-adjacent vertices (not n-2) — subtract itself (1) and its 2 adjacent vertices`},
+      ],
+      hint:`All pairs: ${allPairs}. Subtract ${n} sides. Diagonals = ${allPairs}−${n} = ${ans}. Or use n(n-3)÷2 directly.`,
+    };
+  },
+];
+
+/* ── L4: Systematic Enumeration ─────────────────────────────── */
+const POOL_L4 = [
+  // Bills type A
+  () => {
+    const [a,va,b,vb,result] = math.pick(L4_BILLS);
+    const correctLatex = `(${a}+1) \\times (${b}+1) - 1 = ${result}`;
+    return {
+      promptHTML:`You have <strong>${a} $${va} bill${a>1?'s':''}</strong> and <strong>${b} $${vb} bill${b>1?'s':''}</strong>. How many different non-zero amounts of money can you make?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${a} \\times ${b} = ${a*b}`,               error:`Using 0 of each type is also a choice — each denomination has (count+1) options (including zero), then subtract the all-zero case`},
+        {eq:`(${a}+1) \\times (${b}+1) = ${(a+1)*(b+1)}`, error:`One of the ${(a+1)*(b+1)} combinations uses $0 of everything — subtract 1 to exclude it`},
+        {eq:`${a} + ${b} = ${a+b}`,                     error:`The denominations combine multiplicatively (each choice of $${va} bills pairs with each choice of $${vb} bills)`},
+      ],
+      hint:`$${va} bills: ${a+1} choices (0–${a}). $${vb} bills: ${b+1} choices (0–${b}). Total: ${(a+1)*(b+1)}, minus 1 for the $0 case = ${result}.`,
+    };
+  },
+  // Bills type B (3 denominations)
+  () => {
+    const [a,va,b,vb,r2] = math.pick(L4_BILLS);
+    const c = math.pick([1,2]);
+    const vc = math.pick([10,20]);
+    const result = (a+1)*(b+1)*(c+1) - 1;
+    const correctLatex = `(${a}+1) \\times (${b}+1) \\times (${c}+1) - 1 = ${result}`;
+    return {
+      promptHTML:`You have <strong>${a} $${va} bill${a>1?'s':''}</strong>, <strong>${b} $${vb} bill${b>1?'s':''}</strong>, and <strong>${c} $${vc} bill${c>1?'s':''}</strong>. How many different non-zero amounts can you make?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${a} \\times ${b} \\times ${c} = ${a*b*c}`,                         error:`Include the zero-use option for each denomination: counts are (a+1), (b+1), (c+1)`},
+        {eq:`(${a}+1) \\times (${b}+1) \\times (${c}+1) = ${(a+1)*(b+1)*(c+1)}`, error:`Subtract 1 to exclude the combination where you use none of any denomination ($0)`},
+        {eq:`(${a}+1) \\times (${b}+1) - 1 = ${r2}`,                             error:`The third denomination ($${vc} bills) must also be included in the product`},
+      ],
+      hint:`Three denominations: (${a+1})×(${b+1})×(${c+1})=${((a+1)*(b+1)*(c+1))}. Subtract 1 for $0 case = ${result}.`,
+    };
+  },
+  // Digit restriction — even number
+  () => {
+    const digits = [1,2,3,4,5];
+    const evenDigits = digits.filter(d => d%2===0).length; // 2 (digits 2,4)
+    const ans = evenDigits * (digits.length-1) * (digits.length-2); // 2*4*3=24
+    const correctLatex = `${evenDigits} \\times ${digits.length-1} \\times ${digits.length-2} = ${ans}`;
+    return {
+      promptHTML:`Using the digits <strong>{1, 2, 3, 4, 5}</strong> (no repeats), how many 3-digit numbers can be formed that are <strong>even</strong>? (<em>Strategy: decide the last digit first.</em>)`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${digits.length} \\times ${digits.length-1} \\times ${digits.length-2} = ${digits.length*(digits.length-1)*(digits.length-2)}`, error:`Ignored the "even" restriction — only ${evenDigits} of the 5 digits (${digits.filter(d=>d%2===0).join(', ')}) are valid last digits`},
+        {eq:`${digits.length} \\times ${digits.length-1} \\times ${evenDigits} = ${digits.length*(digits.length-1)*evenDigits}`, error:`The restriction is on the LAST digit, not the middle — apply it first, then count remaining positions`},
+        {eq:`${evenDigits} \\times ${digits.length} \\times ${digits.length-1} = ${evenDigits*digits.length*(digits.length-1)}`, error:`After choosing the last digit (${evenDigits} choices), only ${digits.length-1} digits remain for the first position — not all ${digits.length}`},
+      ],
+      hint:`Last digit (even: 2 or 4): 2 choices. First digit: 4 remaining. Middle digit: 3 remaining. 2×4×3=${ans}.`,
+    };
+  },
+  // Digit restriction — can't start with 0
+  () => {
+    const digits = [0,1,2,3,4]; // 5 digits
+    const firstChoices = digits.length - 1; // 4 (no 0)
+    const secondChoices = digits.length - 1; // 4 (any of remaining 4 including 0)
+    const ans = firstChoices * secondChoices; // 16
+    const correctLatex = `${firstChoices} \\times ${secondChoices} = ${ans}`;
+    return {
+      promptHTML:`Using the digits <strong>{0, 1, 2, 3, 4}</strong> (no repeats), how many <strong>2-digit numbers</strong> can be formed? (A 2-digit number cannot start with 0.)`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${digits.length} \\times ${digits.length-1} = ${digits.length*(digits.length-1)}`, error:`0 cannot be the first digit — only ${firstChoices} choices for position 1 (digits 1–4)`},
+        {eq:`${firstChoices} \\times ${digits.length-2} = ${firstChoices*(digits.length-2)}`,   error:`After choosing the first digit, 0 is still available for position 2 — ${secondChoices} choices remain, not ${digits.length-2}`},
+        {eq:`${firstChoices} \\times ${firstChoices} - 1 = ${firstChoices*firstChoices-1}`,     error:`No valid number needs to be excluded — once first digit ≠ 0 is ensured, all ${firstChoices}×${secondChoices} combinations are valid`},
+      ],
+      hint:`First digit: 4 choices (1,2,3,4). Second: 4 choices (0 + 3 unused). 4×4=${ans}.`,
+    };
+  },
+];
+
+/* ── L5: Partitions with Dividers ───────────────────────────── */
+const POOL_L5 = [
+  // k=3, each ≥ 1 — balls to children
+  () => {
+    const [n,ans] = math.pick(L5_K3_GE1);
+    const obj  = math.pick(["identical balls","identical marbles","identical stickers"]);
+    const correctLatex = `(${n}-1) \\times (${n}-2) \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} ${obj}</strong> are distributed among <strong>3 children</strong>, each child receiving <strong>at least 1</strong>. How many ways are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} \\div 2 = ${n*(n-1)/2}`,  error:`Pair-counting formula uses n(n-1)÷2 — partition uses (n-1)(n-2)÷2 because dividers go in the ${n-1} gaps, not among the ${n} balls`},
+        {eq:`(${n}-1) \\times (${n}-2) = ${(n-1)*(n-2)}`,  error:`Two dividers are placed in the gaps: (n-1)(n-2) counts ordered placement — divide by 2 because dividers are identical`},
+        {eq:`${n} - 1 = ${n-1}`,                           error:`That is the formula for 2 groups (k=2) — for 3 groups you need 2 dividers, giving (n-1)(n-2)÷2`},
+      ],
+      hint:`Line up ${n} balls. Gaps = ${n-1}. Place 2 dividers in any 2 different gaps: (${n-1})×(${n-2})÷2 = ${ans}.`,
+    };
+  },
+  // k=3, each ≥ 1 — different context (books to shelves)
+  () => {
+    const [n,ans] = math.pick(L5_K3_GE1);
+    const correctLatex = `(${n}-1) \\times (${n}-2) \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} identical books</strong> are placed across <strong>3 shelves</strong>, with <strong>at least 1 book on each shelf</strong>. How many ways can the books be arranged?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`${n} \\times ${n-1} \\times ${n-2} \\div 6 = ${n*(n-1)*(n-2)/6}`, error:`That is the formula for choosing 3 items from n (C(n,3)) — here we are placing 2 dividers in ${n-1} gaps: (${n-1})(${n-2})÷2`},
+        {eq:`(${n}-1) \\times (${n}-2) = ${(n-1)*(n-2)}`,                      error:`Divide by 2 — the two dividers are indistinguishable, so each placement is double-counted`},
+        {eq:`3^{${n}} = ${Math.pow(3,n)}`,                                       error:`3ⁿ counts arrangements where books are distinguishable — these books are identical`},
+      ],
+      hint:`${n} identical books, 3 shelves, each ≥ 1: (${n-1})(${n-2})÷2 = ${ans} ways.`,
+    };
+  },
+  // k=2, each ≥ 1
+  () => {
+    const [n,ans] = math.pick(L5_K2_GE1);
+    const [obj,grp] = math.pick([["sweets","2 bags"],["cookies","2 boxes"],["tokens","2 players"]]);
+    const correctLatex = `${n} - 1 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} identical ${obj}</strong> are split between <strong>${grp}</strong>, each group receiving <strong>at least 1</strong>. How many ways are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`(${n}-1) \\times (${n}-2) \\div 2 = ${ans*(ans-1)/2}`, error:`That formula is for 3 groups (2 dividers) — here there are only 2 groups, so 1 divider goes in 1 of ${n-1} gaps`},
+        {eq:`${n} \\div 2 = ${n/2}`,                                 error:`Dividing by 2 gives equal shares — but unequal splits are also valid (1+${n-1}, 2+${n-2}, …, ${n-1}+1)`},
+        {eq:`${n} = ${n}`,                                           error:`The total number of balls is not the answer — count the valid split positions: ${ans}`},
+      ],
+      hint:`1 divider in ${n-1} gaps → ${ans} ways (e.g. 1+${n-1}, 2+${n-2}, …, ${n-1}+1).`,
+    };
+  },
+  // k=3, each ≥ 2 (harder variant)
+  () => {
+    const [n,ans] = math.pick(L5_K3_GE2);
+    const obj = math.pick(["identical balls","identical candies","identical coins"]);
+    const geone = n - 3; // reduced n for ≥1 problem
+    const ge1ans = (geone-1)*(geone-2)/2;
+    const correctLatex = `(${n}-4) \\times (${n}-5) \\div 2 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} ${obj}</strong> are distributed among <strong>3 children</strong>, each child receiving <strong>at least 2</strong>. How many ways are there?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`(${n}-1) \\times (${n}-2) \\div 2 = ${(n-1)*(n-2)/2}`, error:`That is the formula for each ≥ 1 — first give 1 to each child (uses 3), reducing to ${geone} balls each ≥ 1, then apply (${geone}-1)(${geone}-2)÷2`},
+        {eq:`(${n}-4) \\times (${n}-5) = ${(n-4)*(n-5)}`,            error:`Remember to divide by 2 — two indistinguishable dividers are placed in (${geone}-1) = ${geone-1} gaps`},
+        {eq:`(${n}-2) \\times (${n}-3) \\div 2 = ${(n-2)*(n-3)/2}`, error:`Give exactly 1 to each child upfront (not 2) — this reduces each ≥ 2 to each ≥ 1 with ${geone} balls remaining`},
+      ],
+      hint:`Give 1 to each child (use 3): ${geone} balls, each ≥ 1. Gaps = ${geone-1}. (${geone-1})(${geone-2})÷2 = ${ans}.`,
+    };
+  },
+];
+
+/* ── Rule: Maximum Regions by Cuts ─────────────────────────── */
+const POOL_RULE = [
+  // Pizza cuts
+  () => {
+    const [n,ans] = math.pick(RULE_CUTS);
+    const correctLatex = `${n} \\times ${n+1} \\div 2 + 1 = ${ans}`;
+    return {
+      promptHTML:`A circular pizza is cut with <strong>${n} straight cuts</strong> (no two cuts parallel, no three cuts meeting at one point). What is the <em>maximum</em> number of pieces?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`1 + ${n} \\times 2 = ${2*n+1}`,             error:`Each cut does NOT add a fixed 2 pieces — cut k crosses k−1 earlier lines and adds k new regions (not always 2)`},
+        {eq:`${n} + 1 = ${n+1}`,                        error:`n+1 only applies when cuts don't intersect each other — here every cut crosses all previous cuts, adding more regions`},
+        {eq:`${n} \\times ${n} \\div 2 + 1 = ${n*n/2+1}`, error:`The formula uses n(n+1)÷2, not n²÷2 — cut k adds k new regions (1+2+…+n = n(n+1)÷2)`},
+      ],
+      hint:`Cuts add 1,2,3,…,${n} pieces: sum=${n*(n+1)/2}. Plus original 1: ${n*(n+1)/2}+1=${ans}.`,
+    };
+  },
+  // Lines across a circle
+  () => {
+    const [n,ans] = math.pick(RULE_CUTS);
+    const correctLatex = `${n} \\times ${n+1} \\div 2 + 1 = ${ans}`;
+    return {
+      promptHTML:`<strong>${n} straight lines</strong> are drawn across a circle (no two lines parallel, no three lines meet at one interior point). Into how many regions is the circle divided?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`2 \\times ${n} = ${2*n}`,                  error:`Each line does not simply add 2 regions — the kth line crosses k-1 existing lines, creating k new regions`},
+        {eq:`${n} \\times ${n-1} \\div 2 + 1 = ${n*(n-1)/2+1}`, error:`The formula is n(n+1)÷2+1, not n(n-1)÷2+1 — cut k adds k new regions (not k-1)`},
+        {eq:`${n+1} \\times ${n} \\div 2 - 1 = ${n*(n+1)/2-1}`, error:`Add 1 (the original region), don't subtract 1`},
+      ],
+      hint:`Line k adds k regions. Total new = 1+2+…+${n} = ${n*(n+1)/2}. Add 1 original: ${ans}.`,
+    };
+  },
+  // Reverse — given pieces, find cuts
+  () => {
+    const [n,ans] = math.pick(RULE_CUTS);
+    // Ask: "maximum pieces is ans, which equation finds the number of cuts?"
+    const correctLatex = `n \\times (n+1) \\div 2 + 1 = ${ans}, \\text{ so } n = ${n}`;
+    // But this is complex. Let me reframe: show the equation and ask which is the correct formula.
+    const correctLatex2 = `${n} \\times ${n+1} \\div 2 + 1 = ${ans}`;
+    return {
+      promptHTML:`A circle is divided into pieces by straight cuts. The formula for maximum pieces with n cuts is which of the following? (Verify with n=${n} giving <strong>${ans} pieces</strong>.)`,
+      correctLatex: correctLatex2,
+      decoyDefs:[
+        {eq:`1 + 2n \\text{ gives } ${2*n+1}`,                                 error:`1+2n gives ${2*n+1} for n=${n}, not ${ans} — each cut adds k regions (not always 2)`},
+        {eq:`n \\times (n-1) \\div 2 + 1 \\text{ gives } ${n*(n-1)/2+1}`,      error:`n(n-1)÷2+1 gives ${n*(n-1)/2+1} for n=${n}, not ${ans} — the correct formula is n(n+1)÷2+1`},
+        {eq:`n + 1 \\text{ gives } ${n+1}`,                                    error:`n+1 gives ${n+1} for n=${n}, not ${ans} — n+1 only works when cuts are all parallel (minimum pieces)`},
+      ],
+      hint:`Test n=${n}: ${n}×${n+1}÷2+1 = ${n*(n+1)/2}+1 = ${ans}. ✓`,
+    };
+  },
+  // Trap — "each cut adds 2" misconception vs real formula
+  () => {
+    const [n,ans] = math.pick(RULE_CUTS.filter(([nc]) => nc >= 5));
+    const wrong2n1 = 2*n + 1;   // student's wrong answer: 2n+1
+    const correctLatex = `${n} \\times ${n+1} \\div 2 + 1 = ${ans}`;
+    return {
+      promptHTML:`A student reasons: "Each straight cut enters and exits the circle, so it always adds exactly 2 new pieces. Starting from 1 piece, ${n} cuts give 1 + ${n}×2 = <strong>${wrong2n1}</strong> pieces." Which equation gives the <em>correct</em> maximum?`,
+      correctLatex,
+      decoyDefs:[
+        {eq:`1 + ${n} \\times 2 = ${wrong2n1}`,        error:`This works only for the 1st cut. Cut k crosses k−1 earlier lines, creating k new regions — not a fixed 2`},
+        {eq:`${n} + 1 = ${n+1}`,                       error:`n+1 is the minimum (when all cuts are parallel and none cross) — we want the maximum where every cut crosses all previous cuts`},
+        {eq:`${n} \\times ${n} \\div 2 + 1 = ${n*n/2+1}`, error:`The formula is n(n+1)÷2+1, not n²÷2+1 — cut k adds k new regions so the total new regions are 1+2+…+n = n(n+1)÷2`},
+      ],
+      hint:`Cut k adds k regions (it crosses k−1 lines, splitting into k segments). Total new = 1+2+…+${n} = ${n*(n+1)/2}. Add 1 original: ${ans}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_mult(id)    { const t=math.pick(POOL_L1)();   return buildEqQ(id,"mult_principle",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_add(id)     { const t=math.pick(POOL_L2)();   return buildEqQ(id,"add_principle",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_pair(id)    { const t=math.pick(POOL_L3)();   return buildEqQ(id,"pair_counting",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_syst(id)    { const t=math.pick(POOL_L4)();   return buildEqQ(id,"systematic_count",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_part(id)    { const t=math.pick(POOL_L5)();   return buildEqQ(id,"partition",       t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_reg(id)     { const t=math.pick(POOL_RULE)(); return buildEqQ(id,"max_regions",     t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  mult_principle:   gen_mult,
+  add_principle:    gen_add,
+  pair_counting:    gen_pair,
+  systematic_count: gen_syst,
+  partition:        gen_part,
+  max_regions:      gen_reg,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of combinatorial counting.":"Keep at it — try more practice then re-attempt the test."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      {title:"Chicken-Rabbit Problems", url:"../grade_4/chicken_rabbit_grade4.html",
+       reason:"Systematic two-constraint enumeration is the direct stepping stone — the same organized thinking that powers counting also solves chicken-rabbit problems."},
+    ],
+    challenge:[],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  if(list.length===0) return passed?`<p class="text-muted">Great work! Look for upcoming advanced counting modules.</p>`:``;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about combinatorial counting.`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about combinatorial counting.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+function init(){
+  applyName();
+  const saved=loadProgress();
+  if(saved&&saved.bestScore){ state.mastery.bestScore=saved.bestScore; setProgress(saved.bestScore>=MASTERY_THRESHOLD?100:40); }
+}
+window.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>

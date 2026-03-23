@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fraction Basics — Grade 3</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Fraction Basics</h1>
+    <p class="subtitle">Grade 3 &nbsp;·&nbsp; Learn what fractions mean, how to read and write them, and how to compare them.</p>
+    <div class="hero-tags">
+      <span class="hero-tag">Parts of a Whole</span>
+      <span class="hero-tag">Unit Fractions</span>
+      <span class="hero-tag">Comparing Fractions</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)" autocomplete="off" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Check ▶</button>
+      <button class="btn btn-outline" onclick="resetPage()" style="color:#fff;border-color:#fff">Reset</button>
+    </div>
+    <p id="greeting-msg"></p>
+    <div class="progress-wrap" style="margin-top:1rem">
+      <div id="progress-bar"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       REFERENCE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Parent Guide ▾
+    </button>
+    <div class="ref-body hidden">
+      <h3>What is a fraction?</h3>
+      <p>A fraction shows part of a whole that has been divided into <strong>equal parts</strong>.</p>
+      <h3>Parts of a fraction</h3>
+      <ul>
+        <li><strong>Numerator (top)</strong> — how many parts you have or are counting.</li>
+        <li><strong>Denominator (bottom)</strong> — how many equal parts the whole is divided into.</li>
+      </ul>
+      <h3>Key unit fractions to know</h3>
+      <ul>
+        <li>1/2 — one out of 2 equal parts (a half)</li>
+        <li>1/3 — one out of 3 equal parts (a third)</li>
+        <li>1/4 — one out of 4 equal parts (a quarter)</li>
+        <li>1/6 and 1/8 — one out of 6 or 8 equal parts</li>
+      </ul>
+      <h3>Comparing tips</h3>
+      <ul>
+        <li><strong>Same bottom?</strong> Bigger top = bigger fraction. (3/8 &gt; 1/8)</li>
+        <li><strong>Same top?</strong> Bigger bottom = smaller fraction. (1/3 &gt; 1/6)</li>
+      </ul>
+      <h3>Golden rule</h3>
+      <p>All parts must be <strong>equal in size</strong> before you can write a fraction!</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 1 — DIAGNOSTIC
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Your Knowledge</h2>
+      <p class="text-muted">Answer each question. This helps us find what to focus on.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Answers ▶</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 2 — RESULTS
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+
+    <!-- ─── STEP 3 — LESSON CARDS ─────────────────────────────── -->
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Study the lesson cards for any skills marked "needs work".</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 4 — PRACTICE
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Choose a topic and practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       STEP 5 — MASTERY TEST
+  ═══════════════════════════════════════════════════════════════ -->
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions across all skills. Score 80% or more to show mastery!</p>
+      <div id="mastery-questions"></div>
+      <button class="btn btn-primary mt-2" id="mastery-submit-btn" onclick="submitMastery()">Submit Test ▶</button>
+      <div id="mastery-results" style="display:none"></div>
+    </div>
+  </section>
+
+</div><!-- /.page-wrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════════════════════════ */
+const PAGE_KEY          = "uepg_fraction_basics_g3";
+const NAME_KEY          = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;   // % to pass mastery test
+const WEAK_THRESHOLD    = 75;   // % below which a skill is "weak"
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+const skillLibrary = {
+  parts_of_whole: {
+    name: "Level 1: Parts of a Whole",
+    level: 1,
+    badgeClass: "badge-L1",
+    summary: "A fraction describes equal parts of a whole — the denominator (bottom) is how many equal parts total, and the numerator (top) is how many parts we are counting.",
+    steps: [
+      "Check that the whole is divided into equal parts.",
+      "Count all the equal parts — this is the denominator (bottom number).",
+      "Count the shaded or selected parts — this is the numerator (top number).",
+      "Write the fraction: numerator on top, denominator on the bottom."
+    ],
+    example: {
+      problemHTML: `A rectangle is divided into 4 equal parts. 1 part is shaded. What fraction is shaded?`,
+      solutionHTML: `Total equal parts = 4 → denominator. Shaded parts = 1 → numerator. Answer: ${math.frac(1,4)}`
+    },
+    misconception: "Writing the fraction upside down — total parts (denominator) go on the BOTTOM; the counted parts (numerator) go on TOP.",
+    keyConcepts: [
+      { label: "Numerator & Denominator", prompt: "What are the numerator and denominator of a fraction? Which goes on top, which goes on the bottom, and what does each one mean? Please explain with a simple pizza example a Grade 3 student can understand." },
+      { label: "Equal Parts Rule", prompt: "Why must all parts of a shape be equal in size before I can write a fraction? What goes wrong if the parts are not all the same size? Give me a concrete example." }
+    ]
+  },
+  unit_fractions: {
+    name: "Level 2: Unit Fractions",
+    level: 2,
+    badgeClass: "badge-L2",
+    summary: "A unit fraction always has 1 on top — like 1/2, 1/3, 1/4, 1/6, 1/8. It means one equal part out of the whole.",
+    steps: [
+      "A unit fraction always has 1 as the numerator (top number).",
+      "The denominator (bottom) tells you how many equal parts the whole is divided into.",
+      "Read it as '1 out of [denominator] equal parts'."
+    ],
+    example: {
+      problemHTML: `A ribbon is cut into 3 equal pieces. You use 1 piece. What fraction of the ribbon did you use?`,
+      solutionHTML: `3 equal pieces total → denominator is 3. You used 1 → numerator is 1. Answer: ${math.frac(1,3)}`
+    },
+    misconception: "Thinking 1/8 is a big fraction because 8 is a big number — actually 1/8 is very small because the whole is cut into many pieces.",
+    keyConcepts: [
+      { label: "Unit Fraction", prompt: "What is a unit fraction and why does it always have 1 on top? Give me 5 examples of unit fractions and explain what each one means in everyday language a Grade 3 student can understand." }
+    ]
+  },
+  non_unit_fractions: {
+    name: "Level 3: Non-Unit Fractions",
+    level: 3,
+    badgeClass: "badge-L3",
+    summary: "A non-unit fraction has a numerator greater than 1 — like 2/3 or 3/4. It counts more than one equal part.",
+    steps: [
+      "Count ALL the equal parts to find the denominator (bottom).",
+      "Count only the shaded or selected parts to find the numerator (top).",
+      "In a proper fraction the numerator is always smaller than the denominator."
+    ],
+    example: {
+      problemHTML: `A pizza is cut into 8 equal slices. You eat 3 slices. What fraction did you eat?`,
+      solutionHTML: `Total slices = 8 → denominator. Slices eaten = 3 → numerator. Answer: ${math.frac(3,8)}`
+    },
+    misconception: "Swapping numerator and denominator — always remember: top = parts you have, bottom = total equal parts.",
+    keyConcepts: [
+      { label: "Proper Fraction", prompt: "What is a proper fraction? Why is the numerator always smaller than the denominator in a proper fraction? What would it mean if the numerator were equal to or bigger than the denominator?" }
+    ]
+  },
+  compare_same_denom: {
+    name: "Level 4: Comparing — Same Denominator",
+    level: 4,
+    badgeClass: "badge-L4",
+    summary: "When two fractions have the same denominator, pieces are the same size — so just compare the numerators: more pieces = bigger fraction.",
+    steps: [
+      "Check that both fractions have the same denominator (bottom number).",
+      "Since pieces are the same size, compare the numerators (top numbers).",
+      "The fraction with the larger numerator is the greater fraction."
+    ],
+    example: {
+      problemHTML: `Which is greater: ${math.frac(1,6)} or ${math.frac(4,6)}?`,
+      solutionHTML: `Same denominator (6) → pieces are the same size. Compare tops: 4 > 1. So ${math.frac(4,6)} is greater.`
+    },
+    misconception: "Thinking the fraction with more pieces is always bigger — this only works when the denominators match. Different denominators = different piece sizes.",
+    keyConcepts: [
+      { label: "Comparing Fractions", prompt: "How do I compare two fractions that have the same denominator? Why does having the same denominator make comparing easy? Give me 3 worked examples with small numbers." }
+    ]
+  },
+  compare_same_numer: {
+    name: "Level 5: Comparing — Same Numerator",
+    level: 5,
+    badgeClass: "badge-L5",
+    summary: "When two fractions have the same numerator, we count the same number of pieces — but bigger denominator means smaller pieces, so the bigger denominator gives the smaller fraction.",
+    steps: [
+      "Check that both fractions have the same numerator (top number).",
+      "Think about piece size: bigger denominator = more pieces = each piece is smaller.",
+      "The fraction with the SMALLER denominator has bigger pieces, so it is the greater fraction."
+    ],
+    example: {
+      problemHTML: `Which is greater: ${math.frac(1,3)} or ${math.frac(1,6)}?`,
+      solutionHTML: `Same numerator (1). Denominator 3 < 6, so each piece of ${math.frac(1,3)} is bigger. Answer: ${math.frac(1,3)} is greater.`
+    },
+    misconception: "Thinking bigger denominator = bigger fraction — it is the opposite! Cutting into more pieces makes each piece smaller.",
+    keyConcepts: [
+      { label: "Bigger Denominator = Smaller Pieces", prompt: "Why does a bigger denominator mean smaller pieces in a fraction? This seems backwards — can you explain it clearly with a pizza example, comparing cutting into 4 slices vs 8 slices?" }
+    ]
+  },
+  misconceptions: {
+    name: "Rule: Fraction Traps",
+    level: 0,
+    badgeClass: "badge-rule",
+    summary: "Two key traps: (1) bigger numbers do not always mean a bigger fraction; (2) fractions only work when ALL parts are exactly equal in size.",
+    steps: [
+      "Trap 1 — Bigger number ≠ bigger fraction: 1/8 is smaller than 1/4, even though 8 > 4.",
+      "Trap 2 — Unequal parts: you can only write a fraction when all parts are exactly the same size.",
+      "Always ask: are the parts equal? And which number tells me the size of each piece?"
+    ],
+    example: {
+      problemHTML: `True or false: ${math.frac(1,8)} is bigger than ${math.frac(1,4)} because 8 > 4.`,
+      solutionHTML: `<strong>False!</strong> Bigger denominator = more pieces = smaller pieces. ${math.frac(1,8)} is actually SMALLER than ${math.frac(1,4)}.`
+    },
+    misconception: "Judging a fraction by the size of its digits rather than thinking about what the numbers mean — always picture the pieces.",
+    keyConcepts: [
+      { label: "Fraction Traps", prompt: "What are the most common misconceptions Grade 3 students have when learning fractions? Explain the top 2 mistakes and how to avoid them, with clear examples." },
+      { label: "Equal Parts Rule", prompt: "Why is the equal-parts rule the most fundamental rule in fractions? What happens if I try to write a fraction when the parts are NOT equal? Give me a concrete example." }
+    ]
+  }
+};
+
+const ALL_SKILL_IDS = ["parts_of_whole","unit_fractions","non_unit_fractions",
+                       "compare_same_denom","compare_same_numer","misconceptions"];
+
+/* ══════════════════════════════════════════════════════════════
+   CONNECTIONS
+══════════════════════════════════════════════════════════════ */
+const connections = {
+  foundational: [],
+  challenge: [
+    {
+      title: "Fraction Simplification",
+      url:   "../grade_4/fraction_simplification_grade4.html",
+      reason: "The natural next step — once you understand what a fraction is, learn how to reduce it to its simplest form using the GCD."
+    }
+  ]
+};
+
+/* ── Aliases ──────────────────────────────────────────────── */
+const { frac, pick, randInt, shuffle } = {
+  frac:    (n, d) => math.frac(n, d),
+  pick:    (arr)  => math.pick(arr),
+  randInt: (a, b) => math.randInt(a, b),
+  shuffle: (arr)  => math.shuffle(arr)
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════════ */
+const state = {
+  studentName: "",
+  diagnostic: { questions: [], answers: {}, results: {} },
+  weakSkills: [],
+  practice: { topic: null, currentQuestion: null, attempts: 0, correct: 0, streak: 0 },
+  mastery:   { questions: [], answers: {}, score: null, bestScore: null }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   LOCALSTORAGE
+══════════════════════════════════════════════════════════════ */
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    studentName: state.studentName,
+    diagnostic:  state.diagnostic,
+    weakSkills:  state.weakSkills,
+    mastery:     { bestScore: state.mastery.bestScore }
+  }));
+}
+
+function loadProgress() {
+  const s = localStorage.getItem(PAGE_KEY);
+  return s ? JSON.parse(s) : null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_parts_of_whole(prefix = "q") {
+  const denoms = [2, 3, 4, 6, 8];
+  const d = pick(denoms);
+  const n = randInt(1, d - 1);
+
+  const contexts = [
+    `A shape is divided into ${d} equal parts. ${n === 1 ? "1 part is" : n + " parts are"} shaded. What fraction is shaded?`,
+    `A pizza is cut into ${d} equal slices. ${n} ${n === 1 ? "slice is" : "slices are"} eaten. What fraction is that?`,
+    `A ribbon is cut into ${d} equal pieces. ${n} ${n === 1 ? "piece is" : "pieces are"} used. What fraction was used?`
+  ];
+
+  const correct = frac(n, d);
+  const decoys = [frac(d, n), frac(n, d + 1), frac(d - n, d), frac(n + 1, d)]
+    .filter(c => c !== correct);
+  const choices = shuffle([correct, ...[...new Set(decoys)].slice(0, 3)]);
+
+  return {
+    id: prefix + "_parts_" + Date.now(),
+    type: "mc", skills: ["parts_of_whole"],
+    promptHTML: pick(contexts),
+    answer: { correctIdx: choices.indexOf(correct) },
+    explainSteps: [
+      `The bottom number (denominator) is the total number of equal parts: ${d}.`,
+      `The top number (numerator) is how many parts we are counting: ${n}.`,
+      `The fraction is ${frac(n, d)}.`
+    ],
+    hint: "Top = shaded parts. Bottom = ALL equal parts.",
+    choices
+  };
+}
+
+function gen_unit_fractions(prefix = "q") {
+  const denoms = [2, 3, 4, 6, 8];
+  const d = pick(denoms);
+
+  const contexts = [
+    `A pizza is cut into ${d} equal slices. You eat 1 slice. What fraction of the pizza did you eat?`,
+    `A ribbon is cut into ${d} equal pieces. You use 1 piece. What fraction of the ribbon is that?`,
+    `A shape is divided into ${d} equal parts. Only 1 part is shaded. What fraction is shaded?`
+  ];
+
+  const correct = frac(1, d);
+  const otherDenoms = denoms.filter(x => x !== d);
+  const decoys = shuffle(otherDenoms).slice(0, 3).map(x => frac(1, x));
+  const choices = shuffle([correct, ...decoys]);
+
+  return {
+    id: prefix + "_unit_" + Date.now(),
+    type: "mc", skills: ["unit_fractions"],
+    promptHTML: pick(contexts),
+    answer: { correctIdx: choices.indexOf(correct) },
+    explainSteps: [
+      `The whole is divided into ${d} equal parts — that is the denominator.`,
+      `Only 1 part is being counted — that is the numerator.`,
+      `1 out of ${d} equal parts is written as ${frac(1, d)}.`
+    ],
+    hint: "A unit fraction always has 1 on top. The bottom tells you how many equal parts exist.",
+    choices
+  };
+}
+
+function gen_non_unit_fractions(prefix = "q") {
+  const pairs = [[2,3],[3,4],[2,5],[3,5],[3,8],[5,6],[5,8],[2,6]];
+  const [n, d] = pick(pairs);
+
+  const contexts = [
+    `A shape is divided into ${d} equal parts. ${n} parts are shaded. What fraction is shaded?`,
+    `A pizza is cut into ${d} equal slices. You eat ${n} slices. What fraction did you eat?`,
+    `A ribbon is cut into ${d} equal pieces. ${n} pieces are coloured. What fraction is coloured?`
+  ];
+
+  const correct = frac(n, d);
+  const decoys = [frac(d, n), frac(n, d + 1), frac(n + 1, d), frac(d - n, d)]
+    .filter(c => c !== correct);
+  const choices = shuffle([correct, ...[...new Set(decoys)].slice(0, 3)]);
+
+  return {
+    id: prefix + "_nonunit_" + Date.now(),
+    type: "mc", skills: ["non_unit_fractions"],
+    promptHTML: pick(contexts),
+    answer: { correctIdx: choices.indexOf(correct) },
+    explainSteps: [
+      `The total number of equal parts is ${d} — that is the denominator (bottom).`,
+      `The number of parts being counted is ${n} — that is the numerator (top).`,
+      `The fraction is ${frac(n, d)}.`
+    ],
+    hint: "Count the shaded parts for the top. Count ALL equal parts for the bottom.",
+    choices
+  };
+}
+
+function gen_compare_same_denom(prefix = "q") {
+  const denoms = [3, 4, 6, 8];
+  const d = pick(denoms);
+  let n1 = randInt(1, d - 1);
+  let n2;
+  do { n2 = randInt(1, d - 1); } while (n2 === n1);
+
+  const larger  = Math.max(n1, n2);
+  const smaller = Math.min(n1, n2);
+  const correct = frac(larger, d);
+  const decoys  = [frac(smaller, d), frac(d, larger), frac(larger, d + 1)]
+    .filter(c => c !== correct);
+  const choices = shuffle([correct, ...[...new Set(decoys)].slice(0, 3)]);
+
+  return {
+    id: prefix + "_samedenom_" + Date.now(),
+    type: "mc", skills: ["compare_same_denom"],
+    promptHTML: `Which fraction is greater? &nbsp; ${frac(n1, d)} &nbsp; or &nbsp; ${frac(n2, d)}`,
+    answer: { correctIdx: choices.indexOf(correct) },
+    explainSteps: [
+      `Both fractions have the same denominator: ${d}. The pieces are the same size.`,
+      `When pieces are the same size, more pieces = more fraction.`,
+      `${larger} pieces > ${smaller} pieces, so ${frac(larger, d)} is greater.`
+    ],
+    hint: "Same bottom numbers → same size pieces → just compare the top numbers.",
+    choices
+  };
+}
+
+function gen_compare_same_numer(prefix = "q") {
+  const denoms = [2, 3, 4, 6, 8];
+  let d1, d2;
+  do {
+    d1 = pick(denoms);
+    d2 = pick(denoms);
+  } while (d1 === d2);
+
+  // Smaller denominator → bigger pieces → greater fraction
+  const bigger  = Math.min(d1, d2);  // fraction with smaller denom is greater
+  const smaller = Math.max(d1, d2);
+  const correct = frac(1, bigger);
+  const decoys  = [frac(1, smaller), frac(2, bigger), frac(1, bigger + 1)]
+    .filter(c => c !== correct);
+  const choices = shuffle([correct, ...[...new Set(decoys)].slice(0, 3)]);
+
+  return {
+    id: prefix + "_samenumer_" + Date.now(),
+    type: "mc", skills: ["compare_same_numer"],
+    promptHTML: `Which fraction is greater? &nbsp; ${frac(1, d1)} &nbsp; or &nbsp; ${frac(1, d2)}`,
+    answer: { correctIdx: choices.indexOf(correct) },
+    explainSteps: [
+      `Both fractions have the same numerator (1) — we are counting 1 piece each.`,
+      `But the denominators are different: ${d1} and ${d2}.`,
+      `A whole cut into ${bigger} parts has bigger pieces than one cut into ${smaller} parts.`,
+      `So ${frac(1, bigger)} (bigger piece) is greater than ${frac(1, smaller)} (smaller piece).`
+    ],
+    hint: "Same top → same number of pieces → think about SIZE. Bigger bottom = smaller pieces = smaller fraction.",
+    choices
+  };
+}
+
+function gen_misconceptions(prefix = "q") {
+  const cases = [
+    {
+      promptHTML: `A student says: "Since 8 is bigger than 4, the fraction ${frac(1,8)} must be bigger than ${frac(1,4)}." Is this correct?`,
+      correct: "No — bigger denominator means smaller pieces, so 1/8 < 1/4",
+      choices: [
+        "No — bigger denominator means smaller pieces, so 1/8 < 1/4",
+        "Yes — bigger numbers always mean a bigger fraction",
+        "Yes — 1/8 is bigger because 8 > 4",
+        "No — they are equal because both have 1 on top"
+      ],
+      explainSteps: [
+        "When the top number is the same, a bigger bottom means the whole is cut into MORE pieces.",
+        "More pieces means each piece is SMALLER.",
+        `So ${frac(1,8)} (one out of 8) is actually SMALLER than ${frac(1,4)} (one out of 4).`,
+        "Imagine cutting a pizza into 8 slices vs 4 slices — the 8-slice pieces are much smaller!"
+      ],
+      hint: "Imagine cutting a pizza into 8 pieces vs 4 pieces. Which slice would be bigger?"
+    },
+    {
+      promptHTML: `Which fraction is larger: ${frac(3,4)} or ${frac(3,8)}?`,
+      correct: `${frac(3,4)} — same numerator, smaller denominator means bigger pieces`,
+      choices: [
+        `${frac(3,4)} — same numerator, smaller denominator means bigger pieces`,
+        `${frac(3,8)} — because 8 is a bigger number than 4`,
+        "They are equal — both have 3 on top",
+        `${frac(3,8)} — because it has more equal parts`
+      ],
+      explainSteps: [
+        "Both fractions have 3 on top — we are counting 3 pieces in each.",
+        `${frac(3,4)} counts 3 pieces out of 4; ${frac(3,8)} counts 3 pieces out of 8.`,
+        `A whole cut into 4 slices has bigger slices than one cut into 8 slices.`,
+        `So 3 big slices (${frac(3,4)}) is more than 3 small slices (${frac(3,8)}).`
+      ],
+      hint: "Both have 3 parts — but are the parts the same size? Think about which denominator gives bigger pieces."
+    },
+    {
+      promptHTML: `A shape is split into 3 parts: one large piece and two small pieces. The large piece is shaded. A student writes the shaded fraction as ${frac(1,3)}. Is this correct?`,
+      correct: "No — the parts must all be equal in size for a fraction to be valid",
+      choices: [
+        "No — the parts must all be equal in size for a fraction to be valid",
+        `Yes — 1 out of 3 parts is shaded, so it is ${frac(1,3)}`,
+        `No — it should be ${frac(1,2)} because there is 1 shaded and 1 unshaded type`,
+        "Yes — you can always count shaded parts over total parts"
+      ],
+      explainSteps: [
+        "Fractions only work correctly when ALL parts are EXACTLY equal in size.",
+        "If the pieces are different sizes, the fraction is meaningless.",
+        "In this shape the pieces are unequal — so no fraction can be written.",
+        "Always check: are all parts the same size before writing a fraction?"
+      ],
+      hint: "The most important rule for fractions: all parts must be exactly the same size."
+    }
+  ];
+
+  const c = pick(cases);
+  const shuffled = shuffle(c.choices);
+  return {
+    id: prefix + "_misc_" + Date.now(),
+    type: "mc", skills: ["misconceptions"],
+    promptHTML: c.promptHTML,
+    answer: { correctIdx: shuffled.indexOf(c.correct) },
+    explainSteps: c.explainSteps,
+    hint: c.hint,
+    choices: shuffled
+  };
+}
+
+const questionGenerators = {
+  parts_of_whole:    gen_parts_of_whole,
+  unit_fractions:    gen_unit_fractions,
+  non_unit_fractions: gen_non_unit_fractions,
+  compare_same_denom: gen_compare_same_denom,
+  compare_same_numer: gen_compare_same_numer,
+  misconceptions:    gen_misconceptions
+};
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER QUESTION
+══════════════════════════════════════════════════════════════ */
+function renderQuestion(q, context) {
+  const badges = q.skills.map(s =>
+    `<span class="badge ${skillLibrary[s]?.badgeClass || ''}">${skillLibrary[s]?.name || s}</span>`
+  ).join(' ');
+
+  const choicesHTML = `<ul class="mc-choices">${q.choices.map((c, i) =>
+    `<li><label><input type="radio" name="${q.id}" value="${i}" /> ${c}</label></li>`
+  ).join('')}</ul>`;
+
+  const actions = context === 'practice'
+    ? `<button class="btn btn-primary btn-sm" onclick="checkPracticeAnswer('${q.id}')">Check Answer</button>
+       <button class="btn btn-secondary btn-sm" onclick="showHint('${q.id}', ${JSON.stringify(q.hint)})">Hint</button>
+       <button class="btn btn-outline btn-sm" onclick="newPracticeQuestion()">New Question</button>`
+    : '';
+
+  return `
+    <div class="question-card" id="qcard-${q.id}">
+      <div style="margin-bottom:.4rem">${badges}</div>
+      <div class="question-prompt">${q.promptHTML}</div>
+      ${choicesHTML}
+      <div class="question-actions">${actions}</div>
+      <div id="feedback-${q.id}" class="feedback-msg" style="display:none"></div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANSWER VALIDATION
+══════════════════════════════════════════════════════════════ */
+function checkAnswer(q, selectedIdxStr) {
+  const idx = parseInt(selectedIdxStr, 10);
+  if (isNaN(idx)) return "wrong";
+  return idx === q.answer.correctIdx ? "correct" : "wrong";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD DIAGNOSTIC QUESTIONS
+══════════════════════════════════════════════════════════════ */
+function buildDiagnosticQuestions() {
+  return ALL_SKILL_IDS.map(sid => questionGenerators[sid]("diag"));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD MASTERY QUESTIONS
+══════════════════════════════════════════════════════════════ */
+function buildMasteryQuestions() {
+  const pool = [];
+  // Over-sample weak skills
+  ALL_SKILL_IDS.forEach(sid => {
+    const count = state.weakSkills.includes(sid) ? 2 : 1;
+    for (let i = 0; i < count; i++) pool.push(questionGenerators[sid]("mast"));
+  });
+  // Shuffle and take 10, guarantee last skill (hardest) is represented
+  const shuffled = shuffle(pool);
+  return shuffled.slice(0, 10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+function showSection(id) { document.getElementById(id).classList.remove('hidden'); }
+function hideSection(id) { document.getElementById(id).classList.add('hidden'); }
+
+function setProgress(pct, label) {
+  const bar = document.getElementById('progress-bar');
+  bar.style.width = pct + '%';
+  bar.setAttribute('aria-label', label || pct + '%');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STUDENT NAME
+══════════════════════════════════════════════════════════════ */
+function getGreeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+}
+
+function applyName() {
+  const saved = localStorage.getItem(NAME_KEY) || "";
+  if (saved) {
+    state.studentName = saved;
+    document.getElementById('name-input').value = saved;
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${saved}! Ready to learn about fractions?`;
+  }
+}
+
+function saveSiteName(name) {
+  state.studentName = name.trim();
+  if (state.studentName) localStorage.setItem(NAME_KEY, state.studentName);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — START CHECKUP
+══════════════════════════════════════════════════════════════ */
+function startCheckup() {
+  const nameVal = document.getElementById('name-input').value.trim();
+  saveSiteName(nameVal);
+  if (state.studentName) {
+    document.getElementById('greeting-msg').textContent =
+      `${getGreeting()}, ${state.studentName}! Let's see what you already know.`;
+  }
+
+  state.diagnostic.questions = buildDiagnosticQuestions();
+  state.diagnostic.answers   = {};
+  state.diagnostic.results   = {};
+
+  document.getElementById('diagnostic-questions').innerHTML =
+    state.diagnostic.questions.map(q => renderQuestion(q, 'diagnostic')).join('');
+
+  showSection('section-diagnostic');
+  setProgress(20, 'Check Knowledge');
+  document.getElementById('section-diagnostic').scrollIntoView({ behavior: 'smooth' });
+  saveProgress();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — SUBMIT DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+function submitDiagnostic() {
+  const qs = state.diagnostic.questions;
+  let unanswered = 0;
+
+  qs.forEach(q => {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (!sel) { unanswered++; return; }
+    state.diagnostic.answers[q.id] = sel.value;
+  });
+
+  if (unanswered > 0) {
+    alert(`Please answer all questions (${unanswered} remaining).`);
+    return;
+  }
+
+  // Score per skill
+  const skillTally = {};
+  ALL_SKILL_IDS.forEach(sid => { skillTally[sid] = { correct: 0, total: 0 }; });
+
+  qs.forEach(q => {
+    const result = checkAnswer(q, state.diagnostic.answers[q.id]);
+    q.skills.forEach(sid => {
+      skillTally[sid].total++;
+      if (result === "correct") skillTally[sid].correct++;
+    });
+  });
+
+  state.diagnostic.results = skillTally;
+  state.weakSkills = ALL_SKILL_IDS.filter(sid => {
+    const t = skillTally[sid];
+    return t.total > 0 && (t.correct / t.total) * 100 < WEAK_THRESHOLD;
+  });
+
+  saveProgress();
+  renderResults();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RENDER RESULTS
+══════════════════════════════════════════════════════════════ */
+function renderResults() {
+  const rows = ALL_SKILL_IDS.map(sid => {
+    const sk = skillLibrary[sid];
+    const t  = state.diagnostic.results[sid] || { correct: 0, total: 1 };
+    const pct = Math.round((t.correct / t.total) * 100);
+    const isWeak = state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:6rem;text-align:center">${sk.name}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span style="min-width:3rem;text-align:right">${t.correct}/${t.total}</span>
+      <span class="${isWeak ? 'result-weak' : 'result-pass'}">${isWeak ? '✗ needs work' : '✓ good'}</span>
+    </div>`;
+  }).join('');
+
+  const intro = state.weakSkills.length === 0
+    ? `<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">Great work! You got everything right. Review the lessons below or go straight to practice.</p>`
+    : `<p style="margin-bottom:.8rem">Skills to work on: <strong>${state.weakSkills.map(s => skillLibrary[s].name).join(', ')}</strong>. Study the lesson cards below.</p>`;
+
+  document.getElementById('results-summary').innerHTML = intro + rows;
+
+  buildLessonCards();
+  showSection('section-results');
+  setProgress(55, 'Reviewing Results');
+  document.getElementById('section-results').scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ASK AI
+══════════════════════════════════════════════════════════════ */
+function askAI(skillId) {
+  const sk = skillLibrary[skillId];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+  const steps = sk.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n");
+
+  const prompt = [
+    `${name}I am a Grade 3 math student learning about fraction basics.`,
+    ``,
+    `I need extra help understanding: ${sk.name}.`,
+    ``,
+    `What this skill is about: ${sk.summary}`,
+    ``,
+    `Steps involved:`,
+    steps,
+    ``,
+    `Common mistake to avoid: ${sk.misconception}`,
+    ``,
+    `Please explain this concept clearly in a way a Grade 3 student can understand, then give me 3 practice problems with full step-by-step solutions.`
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+function askAIConcept(skillId, idx) {
+  const sk = skillLibrary[skillId];
+  const concept = sk.keyConcepts[idx];
+  const name = state.studentName ? `My name is ${state.studentName}. ` : "";
+
+  const prompt = [
+    `${name}I am a Grade 3 math student learning about fraction basics.`,
+    ``,
+    `I have a specific question about: ${concept.label}.`,
+    ``,
+    concept.prompt
+  ].join("\n");
+
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`, "_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUILD LESSON CARDS
+══════════════════════════════════════════════════════════════ */
+function buildLessonCards() {
+  const targets = state.weakSkills.length > 0 ? state.weakSkills : ALL_SKILL_IDS;
+  document.getElementById('lesson-cards').innerHTML = targets.map(sid => {
+    const sk = skillLibrary[sid];
+    return `<div class="lesson-card">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.name}</span></div>
+      <p style="font-size:.92rem;margin-bottom:.5rem">${sk.summary}</p>
+      <ol>${sk.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+      <div class="lesson-example"><strong>Example:</strong> ${sk.example.problemHTML}<br/>
+        <strong>Solution:</strong> ${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn btn-outline btn-sm"
+          onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-ai btn-sm"
+          onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${(sk.keyConcepts || []).map((c, i) =>
+          `<button class="btn btn-ai-concept btn-sm"
+            onclick="askAIConcept('${sid}', ${i})">Ask about ${c.label}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+function openPractice(topicId) {
+  const topics = [
+    { id: 'mixed', label: 'Mixed (all levels)' },
+    ...ALL_SKILL_IDS.map(sid => ({ id: sid, label: skillLibrary[sid].name }))
+  ];
+  document.getElementById('topic-buttons').innerHTML = topics.map(t =>
+    `<button class="btn btn-secondary btn-sm btn-topic" id="topic-btn-${t.id}"
+      onclick="selectTopic('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  showSection('section-practice');
+  setProgress(80, 'Practicing');
+  selectTopic(topicId || state.weakSkills[0] || 'mixed');
+  document.getElementById('section-practice').scrollIntoView({ behavior: 'smooth' });
+}
+
+function selectTopic(topicId) {
+  state.practice.topic = topicId;
+  document.querySelectorAll('.btn-topic').forEach(b => b.classList.remove('btn-primary'));
+  const activeBtn = document.getElementById('topic-btn-' + topicId);
+  if (activeBtn) activeBtn.classList.add('btn-primary');
+
+  // Reset streak display when switching topics
+  state.practice.currentQuestion = null;
+  newPracticeQuestion();
+}
+
+function newPracticeQuestion() {
+  const topicId = state.practice.topic;
+  let q;
+  if (topicId === 'mixed') {
+    const sid = pick(state.weakSkills.length > 0 ? state.weakSkills : ALL_SKILL_IDS);
+    q = questionGenerators[sid]("prac");
+  } else {
+    q = questionGenerators[topicId]("prac");
+  }
+  state.practice.currentQuestion = q;
+
+  const streakMsg = state.practice.streak >= 3
+    ? `<p style="color:#2e7d32;font-weight:700">🔥 ${state.practice.streak} in a row!</p>` : '';
+
+  document.getElementById('practice-area').innerHTML =
+    streakMsg +
+    renderQuestion(q, 'practice') +
+    `<button class="btn btn-success mt-2" onclick="openMastery()">Take Mastery Test ▶</button>`;
+}
+
+function showHint(qid, hint) {
+  const fb = document.getElementById('feedback-' + qid);
+  fb.style.display = 'block';
+  fb.className = 'feedback-msg';
+  fb.style.background = '#e8eaf6';
+  fb.style.borderColor = '#7986cb';
+  fb.innerHTML = `💡 Hint: ${hint}`;
+}
+
+function checkPracticeAnswer(qid) {
+  const q = state.practice.currentQuestion;
+  if (!q) return;
+  const sel = document.querySelector(`input[name="${qid}"]:checked`);
+  if (!sel) { alert("Please select an answer first."); return; }
+
+  const result = checkAnswer(q, sel.value);
+  state.practice.attempts++;
+  if (result === "correct") {
+    state.practice.correct++;
+    state.practice.streak++;
+  } else {
+    state.practice.streak = 0;
+  }
+
+  showFeedback(qid, result, q);
+  saveProgress();
+}
+
+function showFeedback(qid, result, q) {
+  const fb = document.getElementById('feedback-' + qid);
+  fb.style.display = 'block';
+
+  // Disable further selection
+  document.querySelectorAll(`input[name="${qid}"]`).forEach(r => r.disabled = true);
+
+  // Highlight correct answer
+  const correctLabel = document.querySelectorAll(`input[name="${qid}"]`)[q.answer.correctIdx]?.parentElement;
+  if (correctLabel) correctLabel.style.background = '#d4edda';
+
+  const stepsHTML = q.explainSteps.length
+    ? `<ul class="explain-steps">${q.explainSteps.map(s => `<li>${s}</li>`).join('')}</ul>` : '';
+
+  if (result === "correct") {
+    fb.className = 'feedback-msg feedback-correct';
+    fb.innerHTML = `✓ Correct! ${stepsHTML}`;
+  } else {
+    fb.className = 'feedback-msg feedback-wrong';
+    fb.innerHTML = `✗ Not quite. ${stepsHTML}`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+function openMastery() {
+  state.mastery.questions = buildMasteryQuestions();
+  state.mastery.answers   = {};
+
+  document.getElementById('mastery-questions').innerHTML =
+    state.mastery.questions.map(q => renderQuestion(q, 'mastery')).join('');
+  document.getElementById('mastery-results').style.display = 'none';
+  document.getElementById('mastery-submit-btn').style.display = 'inline-block';
+
+  showSection('section-mastery');
+  setProgress(90, 'Mastery Test');
+  document.getElementById('section-mastery').scrollIntoView({ behavior: 'smooth' });
+}
+
+function submitMastery() {
+  const qs = state.mastery.questions;
+  let unanswered = 0;
+
+  qs.forEach(q => {
+    const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (!sel) { unanswered++; return; }
+    state.mastery.answers[q.id] = sel.value;
+  });
+
+  if (unanswered > 0) {
+    alert(`Please answer all questions (${unanswered} remaining).`);
+    return;
+  }
+
+  let correct = 0;
+  qs.forEach(q => {
+    if (checkAnswer(q, state.mastery.answers[q.id]) === "correct") correct++;
+  });
+
+  state.mastery.score = Math.round((correct / qs.length) * 100);
+  if (!state.mastery.bestScore || state.mastery.score > state.mastery.bestScore) {
+    state.mastery.bestScore = state.mastery.score;
+  }
+
+  document.getElementById('mastery-submit-btn').style.display = 'none';
+  // Lock inputs and show per-question feedback
+  qs.forEach(q => {
+    document.querySelectorAll(`input[name="${q.id}"]`).forEach(r => r.disabled = true);
+    const result = checkAnswer(q, state.mastery.answers[q.id]);
+    showFeedback(q.id, result, q);
+  });
+
+  renderMasteryResults();
+  setProgress(100, 'Complete');
+  saveProgress();
+}
+
+function renderMasteryResults() {
+  const passed = state.mastery.score >= MASTERY_THRESHOLD;
+  const scoreColor = passed ? '#2e7d32' : '#c62828';
+  const name = state.studentName ? `, ${state.studentName}` : '';
+
+  let html = `
+    <div style="margin-top:1.2rem;padding:1rem;border-radius:10px;border:2px solid ${scoreColor};background:${passed ? '#f1f8e9' : '#fff3e0'}">
+      <div style="font-size:1.4rem;font-weight:800;color:${scoreColor}">
+        ${passed ? '🎉' : '📚'} Score: ${state.mastery.score}%
+        ${state.mastery.bestScore > state.mastery.score ? ` (best: ${state.mastery.bestScore}%)` : ''}
+      </div>
+      <div style="font-size:1rem;margin-top:.4rem">
+        ${passed
+          ? `Excellent work${name}! You have mastered fraction basics.`
+          : `Good effort${name}! Review the lesson cards and try again.`}
+      </div>
+    </div>`;
+
+  // Connections
+  const links = passed ? connections.challenge : connections.foundational;
+  if (links.length > 0) {
+    html += `<div style="margin-top:1rem"><strong>${passed ? '🚀 Ready for a challenge?' : '📖 Want to review something foundational?'}</strong></div>`;
+    html += links.map(c => `
+      <div class="connection-card">
+        <a href="${c.url}">${c.title}</a>
+        <span class="connection-reason">${c.reason}</span>
+      </div>`).join('');
+  }
+
+  const resultsDiv = document.getElementById('mastery-results');
+  resultsDiv.innerHTML = html;
+  resultsDiv.style.display = 'block';
+  resultsDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════════════════════ */
+function resetPage() {
+  if (!confirm("Reset all progress for this page?")) return;
+  localStorage.removeItem(PAGE_KEY);
+  location.reload();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+function init() {
+  applyName();
+  const saved = loadProgress();
+  if (saved?.mastery?.bestScore) {
+    state.mastery.bestScore = saved.mastery.bestScore;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
