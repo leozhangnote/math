@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Greatest Common Divisor (GCD) — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#283593,#3949ab); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Greatest Common Divisor (GCD)</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Factors, listing method, prime factorization, Euclidean algorithm, and word problems</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Factors</span>
+      <span class="badge badge-L2">Listing</span>
+      <span class="badge badge-L3">Prime Fact.</span>
+      <span class="badge badge-L4">Euclidean</span>
+      <span class="badge badge-L5">Word Problems</span>
+      <span class="badge badge-rule">Coprime</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Factor:</strong> a divides b evenly (no remainder). List factor pairs from 1 up to √b.</li>
+        <li><strong>GCD by listing:</strong> list all factors of each number, find common ones, pick the largest.</li>
+        <li><strong>GCD by prime factorization:</strong> factor each number; for each common prime, take the <em>minimum</em> exponent; multiply.</li>
+        <li><strong>Euclidean algorithm:</strong> GCD(a, b) = GCD(b, a mod b). Repeat until remainder = 0; GCD = last non-zero remainder.</li>
+        <li><strong>Word problem signal:</strong> "equal pieces, no waste / no leftovers / largest equal share" → GCD.</li>
+        <li><strong>Coprime:</strong> GCD(a, b) = 1. After dividing both by GCD d, the quotients m and n satisfy GCD(m, n) = 1.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_gcd_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  factor_basics: {
+    name:"Level 1: Factors & Divisibility", level:1, badgeClass:"badge-L1",
+    summary:"A number a is a factor of b if b ÷ a leaves no remainder. List all factors systematically using factor pairs: start from 1 × b, then 2 × ?, 3 × ?, up to √b.",
+    steps:[
+      "Write '1 ×  ___' = b. The partner factor is b ÷ 1 = b.",
+      "Try 2: does b ÷ 2 have no remainder? If yes, record the pair (2, b÷2).",
+      "Continue with 3, 4, 5 … up to √b. Once the smaller factor exceeds √b, all pairs are found.",
+      "Collect both members of every pair; sort them. This is the complete factor list.",
+    ],
+    example:{
+      problemHTML:`How many factors does <strong>24</strong> have?`,
+      solutionHTML:`Pairs: 1×24, 2×12, 3×8, 4×6. Stop after 4 since √24 ≈ 4.9.<br>
+        Factors: {1, 2, 3, 4, 6, 8, 12, 24} → <strong>8 factors</strong>. ${mi('24 = 2^3 \\times 3')}.`,
+    },
+    misconception:"Many students miss factor pairs by checking only the small numbers and forgetting their partners. Always collect both numbers in each pair: if 3 divides 24, both 3 and 8 are factors.",
+    keyConcepts:[
+      {label:"Factor Pairs", prompt:"What is a factor pair? Explain how to systematically find all factor pairs of 36 without missing any. Why do you stop checking at the square root?"},
+      {label:"Divisibility Rules", prompt:"What are the divisibility rules for 2, 3, 4, 5, 6, 9, and 10? Give one example of each and explain why the rule works."},
+    ],
+  },
+
+  gcd_listing: {
+    name:"Level 2: GCD by Listing Factors", level:2, badgeClass:"badge-L2",
+    summary:"Find the Greatest Common Divisor (GCD) by listing all factors of each number, identifying the common factors, and selecting the largest.",
+    steps:[
+      "List all factors of the first number in order.",
+      "List all factors of the second number in order.",
+      "Circle (or list) every number that appears in both lists — these are the common factors.",
+      "The largest circled number is the GCD.",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\gcd(18, 24)')} by listing factors.`,
+      solutionHTML:`Factors of 18: {1, 2, 3, 6, 9, 18}.<br>
+        Factors of 24: {1, 2, 3, 4, 6, 8, 12, 24}.<br>
+        Common factors: {1, 2, 3, 6}. Largest = <strong>6</strong>. So ${mi('\\gcd(18,24)=6')}.`,
+    },
+    misconception:"Don't confuse GCD with LCM. The GCD divides both numbers (it's ≤ the smaller number). The LCM is a multiple of both (it's ≥ the larger number). GCD and LCM are different operations.",
+    keyConcepts:[
+      {label:"GCD vs LCM", prompt:"Explain the difference between GCD and LCM using the numbers 12 and 18 as an example. When would you use GCD? When would you use LCM?"},
+      {label:"Common Factors", prompt:"What does it mean for a number to be a common factor of two numbers? List all common factors of 24 and 36. Which one is the greatest?"},
+    ],
+  },
+
+  gcd_prime: {
+    name:"Level 3: GCD by Prime Factorization", level:3, badgeClass:"badge-L3",
+    summary:"Write each number as a product of prime powers. The GCD is the product of each common prime base raised to the minimum exponent seen in either factorization.",
+    steps:[
+      "Use a factor tree (or repeated division) to fully prime-factorize each number.",
+      "Write each factorization using prime bases with exponents: e.g. 24 = 2³ × 3.",
+      "For each prime that appears in BOTH factorizations, write it with the SMALLER (minimum) exponent.",
+      "Multiply these selected prime powers together to get the GCD.",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\gcd(36, 48)')} by prime factorization.`,
+      solutionHTML:`${mi('36 = 2^2 \\times 3^2')} and ${mi('48 = 2^4 \\times 3')}.<br>
+        Common primes: 2 (min exponent: min(2,4)=2) and 3 (min exponent: min(2,1)=1).<br>
+        ${mi('\\gcd(36,48) = 2^2 \\times 3 = 4 \\times 3 = 12')}.`,
+    },
+    misconception:"Take MINIMUM exponents for GCD (not maximum). Maximum exponents give the LCM. Also, only include primes that appear in BOTH numbers — a prime only in one number contributes nothing to the GCD.",
+    keyConcepts:[
+      {label:"Why Minimum Exponents", prompt:"To find GCD(12,18), we use 12=2²×3 and 18=2×3². Why do we take min(2,1)=1 for the power of 2, giving 2¹, and not max(2,1)=2? What would taking the maximum give us instead?"},
+      {label:"Prime Factorization Tree", prompt:"Draw a factor tree for 60 and 84. Write each as a product of prime powers. Identify the common primes and their minimum exponents. What is GCD(60,84)?"},
+    ],
+  },
+
+  gcd_euclid: {
+    name:"Level 4: GCD by Euclidean Algorithm", level:4, badgeClass:"badge-L4",
+    summary:"The Euclidean algorithm repeatedly replaces (a, b) with (b, a mod b) until the remainder is 0. The GCD equals the last non-zero remainder.",
+    steps:[
+      "Divide the larger number a by the smaller number b. Record the remainder r = a mod b.",
+      "If r = 0, stop: GCD = b.",
+      "Otherwise replace: a ← b, b ← r. Repeat from Step 1.",
+      "The GCD is the value of b just before the remainder becomes 0.",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\gcd(48, 18)')} using the Euclidean algorithm.`,
+      solutionHTML:`Step 1: 48 = 2 × 18 + <strong>12</strong> → GCD(48,18) = GCD(18,12).<br>
+        Step 2: 18 = 1 × 12 + <strong>6</strong> → GCD(18,12) = GCD(12,6).<br>
+        Step 3: 12 = 2 × 6 + <strong>0</strong> → remainder is 0, so <strong>GCD = 6</strong>.`,
+    },
+    misconception:"The algorithm stops when the remainder is 0 — the GCD is the DIVISOR at that final step (b), not the dividend (a). Also: 'a mod b' means the remainder, not the quotient.",
+    keyConcepts:[
+      {label:"Why It Works", prompt:"Why does GCD(a,b) = GCD(b, a mod b)? Explain using the example GCD(48,18): why does replacing 48 with its remainder after dividing by 18 not change the GCD?"},
+      {label:"Remainder vs Quotient", prompt:"In the step '35 = 2 × 14 + 7', identify the dividend, divisor, quotient, and remainder. Which value carries forward to the next Euclidean step? Why?"},
+    ],
+  },
+
+  gcd_word: {
+    name:"Level 5: GCD Word Problems", level:5, badgeClass:"badge-L5",
+    summary:"GCD word problems ask for the largest equal share with no waste. Keywords: 'equal pieces / groups', 'no leftover', 'as long / large as possible', 'maximum pieces per group'.",
+    steps:[
+      "Identify the two (or more) quantities in the problem.",
+      "Recognize the GCD signal: equal division with no remainder, maximize the piece/group size.",
+      "Compute GCD of the quantities using any method.",
+      "Interpret: the GCD is the answer (piece length, tile size, group size, etc.).",
+    ],
+    example:{
+      problemHTML:`Two ribbons: one <strong>24 cm</strong> and one <strong>36 cm</strong> long. Cut both into equal pieces of the greatest possible length with no ribbon wasted. How long is each piece?`,
+      solutionHTML:`Greatest common length with no waste → GCD(24, 36).<br>
+        Factors of 24: {1,2,3,4,6,8,12,24}. Factors of 36: {1,2,3,4,6,9,12,18,36}.<br>
+        GCD = 12. Each piece is <strong>12 cm</strong> long (24÷12=2 pieces; 36÷12=3 pieces).`,
+    },
+    misconception:"Don't use LCM here — LCM applies to 'when do events next coincide / meet again'. GCD applies to 'largest equal pieces / maximum group size'. The key word is 'no waste / no leftover'.",
+    keyConcepts:[
+      {label:"GCD vs LCM in Word Problems", prompt:"Give one real-life word problem that requires GCD and one that requires LCM. Explain the key difference in what each problem is asking, and why that tells you which operation to use."},
+      {label:"No-Waste Cutting", prompt:"You have a rope of 30 cm and another of 45 cm. You want to cut both into equal pieces with no rope wasted. List all possible piece lengths. Which is the greatest? How does GCD give you this answer?"},
+    ],
+  },
+
+  coprime: {
+    name:"Rule: Coprime Numbers & GCD Properties", level:0, badgeClass:"badge-rule",
+    summary:"Two numbers are coprime (relatively prime) if GCD = 1. When GCD(a,b) = d, writing a = d×m and b = d×n always gives GCD(m,n) = 1. Special cases: GCD(n,n) = n, GCD(n,1) = 1, GCD(n,0) = n.",
+    steps:[
+      "Coprime: GCD(a,b) = 1. The only common factor is 1. Example: GCD(7,9) = 1.",
+      "Factoring out GCD: if GCD(a,b) = d, then a = d×m and b = d×n where m and n are coprime.",
+      "Special values: GCD(n,n) = n (a number is its own GCD with itself).",
+      "GCD(n,1) = 1 (1 is coprime with every number); GCD(n,0) = n by convention.",
+    ],
+    example:{
+      problemHTML:`${mi('\\gcd(12, 18) = 6')}. We write ${mi('12 = 6 \\times 2')} and ${mi('18 = 6 \\times 3')}. What is ${mi('\\gcd(2, 3)')}?`,
+      solutionHTML:`After dividing out the GCD (6), the remaining factors 2 and 3 must be coprime.<br>
+        ${mi('\\gcd(2, 3) = 1')} ✓ (factors of 2: {1,2}; factors of 3: {1,3}; only common: {1}).`,
+    },
+    misconception:"Coprime does NOT mean 'both are prime numbers'. For example, 8 and 9 are coprime (GCD=1) even though neither is prime. Coprime means they share no common factor other than 1.",
+    keyConcepts:[
+      {label:"Coprime ≠ Prime", prompt:"Give two examples of coprime pairs where neither number is prime. Give two examples of prime pairs that are coprime. Explain why 'coprime' and 'prime' are different concepts."},
+      {label:"Factoring Out GCD", prompt:"GCD(42,56)=14. Write 42=14×? and 56=14×?. Are those two quotients coprime? Verify by listing their factors. Explain why dividing out the GCD always leaves coprime remainders."},
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA
+══════════════════════════════════════════════════════════════ */
+
+// L1: [n, sorted_factors]
+const L1_FACTORS = [
+  [12,[1,2,3,4,6,12]],
+  [18,[1,2,3,6,9,18]],
+  [24,[1,2,3,4,6,8,12,24]],
+  [30,[1,2,3,5,6,10,15,30]],
+  [36,[1,2,3,4,6,9,12,18,36]],
+  [20,[1,2,4,5,10,20]],
+  [28,[1,2,4,7,14,28]],
+  [16,[1,2,4,8,16]],
+  [40,[1,2,4,5,8,10,20,40]],
+  [48,[1,2,3,4,6,8,12,16,24,48]],
+];
+
+// L2 & L5: [a, b, gcd]
+const L2_GCD = [[12,18,6],[16,24,8],[15,25,5],[20,30,10],[12,16,4],[18,27,9],[24,36,12],[14,21,7],[30,45,15],[8,12,4]];
+const L5_WORD = [[24,36,12],[16,24,8],[30,45,15],[18,27,9],[20,30,10],[48,72,24],[14,21,7],[40,60,20]];
+
+// L3: [a, b, gcd, factA_parts, factB_parts, factGcd_parts]  each part = [base, exp]
+const L3_PRIMEFACT = [
+  [12, 18, 6,  [[2,2],[3,1]], [[2,1],[3,2]], [[2,1],[3,1]]],
+  [24, 36, 12, [[2,3],[3,1]], [[2,2],[3,2]], [[2,2],[3,1]]],
+  [30, 42, 6,  [[2,1],[3,1],[5,1]], [[2,1],[3,1],[7,1]], [[2,1],[3,1]]],
+  [60, 84, 12, [[2,2],[3,1],[5,1]], [[2,2],[3,1],[7,1]], [[2,2],[3,1]]],
+  [48, 72, 24, [[2,4],[3,1]], [[2,3],[3,2]], [[2,3],[3,1]]],
+  [45, 75, 15, [[3,2],[5,1]], [[3,1],[5,2]], [[3,1],[5,1]]],
+  [36, 48, 12, [[2,2],[3,2]], [[2,4],[3,1]], [[2,2],[3,1]]],
+  [56, 84, 28, [[2,3],[7,1]], [[2,2],[3,1],[7,1]], [[2,2],[7,1]]],
+];
+
+// L4: [a, b, gcd, steps=[{a,b,q,r},...]]
+const L4_EUCLID = [
+  [48, 18, 6,  [{a:48,b:18,q:2,r:12},{a:18,b:12,q:1,r:6},{a:12,b:6,q:2,r:0}]],
+  [56, 21, 7,  [{a:56,b:21,q:2,r:14},{a:21,b:14,q:1,r:7},{a:14,b:7,q:2,r:0}]],
+  [35, 14, 7,  [{a:35,b:14,q:2,r:7}, {a:14,b:7,q:2,r:0}]],
+  [45, 30, 15, [{a:45,b:30,q:1,r:15},{a:30,b:15,q:2,r:0}]],
+  [72, 48, 24, [{a:72,b:48,q:1,r:24},{a:48,b:24,q:2,r:0}]],
+  [60, 36, 12, [{a:60,b:36,q:1,r:24},{a:36,b:24,q:1,r:12},{a:24,b:12,q:2,r:0}]],
+  [63, 42, 21, [{a:63,b:42,q:1,r:21},{a:42,b:21,q:2,r:0}]],
+  [100,75, 25, [{a:100,b:75,q:1,r:25},{a:75,b:25,q:3,r:0}]],
+];
+
+// Rule: coprime pairs [a,b] GCD=1; decomp [a,b,d,m,n] a=d*m, b=d*n, GCD(m,n)=1
+const RULE_COPRIME = [[7,9],[8,15],[11,13],[4,9],[5,7],[7,11],[3,8],[5,9]];
+const RULE_DECOMP  = [[12,18,6,2,3],[24,36,12,2,3],[30,45,15,2,3],[42,56,14,3,4],[60,84,12,5,7],[40,60,20,2,3]];
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+// Convert [[base,exp],...] to LaTeX product string
+function factToLatex(parts) {
+  return parts.map(([b,e]) => math.latexPow(String(b), e)).join(' \\times ');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Factors & Divisibility ──────────────────────────── */
+const POOL_L1 = [
+  // P0: factor count
+  () => {
+    const [n, factors] = math.pick(L1_FACTORS);
+    const count = factors.length;
+    return {
+      promptHTML:`How many factors does <strong>${n}</strong> have in total? (Include 1 and ${n} itself.)`,
+      correctLatex:`${count}`,
+      decoyDefs:[
+        {eq:`${count-1}`, error:`Missing one factor — list pairs systematically: 1×${n}, then 2, 3, … up to √${n} ≈ ${Math.floor(Math.sqrt(n))}`},
+        {eq:`${count+1}`, error:`One too many — verify each candidate divides ${n} with zero remainder`},
+        {eq:`${count+2}`, error:`Too many — some numbers in your list don't divide ${n} evenly`},
+      ],
+      hint:`Factor pairs: 1×${n}, then check 2,3,… up to √${n}≈${Math.floor(Math.sqrt(n))}. Each pair gives 2 factors (or 1 if n is a perfect square).`,
+    };
+  },
+  // P1: largest proper factor
+  () => {
+    const [n, factors] = math.pick(L1_FACTORS.filter(([x]) => x >= 16));
+    const lp = factors[factors.length-2]; // largest factor < n
+    const sp = factors[factors.length-3]; // second largest < n
+    return {
+      promptHTML:`What is the largest factor of <strong>${n}</strong> other than ${n} itself?`,
+      correctLatex:`${lp}`,
+      decoyDefs:[
+        {eq:`${n}`,    error:`${n} is a factor of itself, but we want the largest factor strictly less than ${n}`},
+        {eq:`${sp}`,   error:`${sp} is a factor, but ${lp} is larger — ${n} ÷ ${lp} = ${n/lp} (no remainder)`},
+        {eq:`${lp+1}`, error:`${lp+1} does not divide ${n}: ${n} ÷ ${lp+1} = ${(n/(lp+1)).toFixed(2)}`},
+      ],
+      hint:`The largest proper factor of n = n ÷ (smallest prime factor of n). What is the smallest prime dividing ${n}?`,
+    };
+  },
+  // P2: missing factor in pair
+  () => {
+    const [n, factors] = math.pick(L1_FACTORS.filter(([x]) => x >= 16));
+    const inner = factors.filter(f => f > 1 && f < n && f*f <= n);
+    const a = math.pick(inner);
+    const b = n / a;
+    return {
+      promptHTML:`<strong>${n} = ${a} × ___</strong>. What is the missing factor?`,
+      correctLatex:`${b}`,
+      decoyDefs:[
+        {eq:`${b+1}`, error:`${a} × ${b+1} = ${a*(b+1)}, not ${n}`},
+        {eq:`${b-1}`, error:`${a} × ${b-1} = ${a*(b-1)}, not ${n}`},
+        {eq:`${n-a}`, error:`${n}−${a}=${n-a} is subtraction — the missing factor is ${n} ÷ ${a}`},
+      ],
+      hint:`Missing factor = ${n} ÷ ${a} = ?`,
+    };
+  },
+  // P3: which is NOT a factor
+  () => {
+    const [n, factors] = math.pick(L1_FACTORS.filter(([x]) => x >= 16));
+    const inner = factors.filter(f => f > 1 && f < n);
+    const [f1, f2, f3] = math.shuffle(inner).slice(0, 3);
+    const factSet = new Set(factors);
+    let nf = 2; while (factSet.has(nf)) nf++;
+    return {
+      promptHTML:`Which of the following is <strong>NOT</strong> a factor of <strong>${n}</strong>?`,
+      correctLatex:`${nf}`,
+      decoyDefs:[
+        {eq:`${f1}`, error:`${f1} IS a factor: ${n} ÷ ${f1} = ${n/f1} (no remainder)`},
+        {eq:`${f2}`, error:`${f2} IS a factor: ${n} ÷ ${f2} = ${n/f2} (no remainder)`},
+        {eq:`${f3}`, error:`${f3} IS a factor: ${n} ÷ ${f3} = ${n/f3} (no remainder)`},
+      ],
+      hint:`Test each option: does ${n} ÷ candidate leave zero remainder? If yes, it IS a factor.`,
+    };
+  },
+];
+
+/* ── L2: GCD by Listing ──────────────────────────────────── */
+const POOL_L2 = [
+  // P0: find GCD — answer as equation
+  () => {
+    const [a, b, g] = math.pick(L2_GCD);
+    const lcm = a*b/g;
+    return {
+      promptHTML:`Find ${mi(`\\gcd(${a}, ${b})`)} by listing all factors of each number and finding the largest common one.`,
+      correctLatex:`\\gcd(${a}, ${b}) = ${g}`,
+      decoyDefs:[
+        {eq:`\\gcd(${a}, ${b}) = ${g+1}`, error:`${g+1} does not divide both ${a} and ${b} — it is not a common factor`},
+        {eq:`\\gcd(${a}, ${b}) = ${g-1}`, error:`${g-1} is smaller than the GCD — the GCD is the GREATEST (largest) common factor`},
+        {eq:`\\gcd(${a}, ${b}) = ${lcm}`, error:`${lcm} is the LCM(${a},${b}), not the GCD — LCM is the least common MULTIPLE, GCD is the greatest common DIVISOR`},
+      ],
+      hint:`List factors of ${a} and ${b}. Circle shared ones. The biggest shared factor is the GCD.`,
+    };
+  },
+  // P1: how many common factors
+  () => {
+    const [a, b, g] = math.pick(L2_GCD);
+    // number of common factors = number of factors of g
+    const factorsOfG = [];
+    for (let k=1; k<=g; k++) if (g%k===0) factorsOfG.push(k);
+    const cf = factorsOfG.length;
+    return {
+      promptHTML:`How many common factors do <strong>${a}</strong> and <strong>${b}</strong> have?`,
+      correctLatex:`${cf}`,
+      decoyDefs:[
+        {eq:`${cf-1}`, error:`Missing one — every factor of the GCD (${g}) is a common factor of both ${a} and ${b}`},
+        {eq:`${cf+1}`, error:`One too many — only factors of the GCD ${g} are common to both numbers`},
+        {eq:`1`,       error:`1 is always a common factor, but there are more — list all factors of GCD(${a},${b})=${g}`},
+      ],
+      hint:`Every common factor of a and b is also a factor of GCD(a,b). Count the factors of GCD=${g}.`,
+    };
+  },
+  // P2: verify which value equals GCD
+  () => {
+    const [a, b, g] = math.pick(L2_GCD);
+    return {
+      promptHTML:`A student claims ${mi(`\\gcd(${a}, ${b}) = ${g}`)}. Which fact confirms this is correct?`,
+      correctLatex:`${g} \\mid ${a} \\text{ and } ${g} \\mid ${b}, \\text{ and no larger number divides both}`,
+      decoyDefs:[
+        {eq:`${g} + ${g} = ${2*g}`, error:`Adding the GCD to itself gives ${2*g}, which is not a verification — GCD is confirmed by divisibility, not arithmetic`},
+        {eq:`${a} + ${b} = ${a+b}`, error:`The sum ${a+b} has no direct role in finding GCD`},
+        {eq:`${a} \\times ${b} = ${a*b}`, error:`The product ${a*b} = LCM×GCD, but this alone doesn't confirm the GCD value`},
+      ],
+      hint:`GCD(a,b)=g means: g divides a, g divides b, and no integer larger than g divides both.`,
+    };
+  },
+];
+
+/* ── L3: GCD by Prime Factorization ─────────────────────── */
+const POOL_L3 = [
+  // P0: find GCD value from given factorizations
+  () => {
+    const [a, b, g, fA, fB] = math.pick(L3_PRIMEFACT);
+    const latexA = factToLatex(fA), latexB = factToLatex(fB);
+    const lcm = a*b/g;
+    return {
+      promptHTML:`The prime factorizations are ${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}. What is ${mi(`\\gcd(${a}, ${b})`)}?`,
+      correctLatex:`${g}`,
+      decoyDefs:[
+        {eq:`${lcm}`,  error:`${lcm} is the LCM — it uses the MAXIMUM exponent of each prime. GCD uses the MINIMUM exponent of each COMMON prime`},
+        {eq:`${a+b}`,  error:`${a+b} is the sum, not the GCD — apply the minimum-exponent rule to the common prime factors`},
+        {eq:`${Math.min(a,b)}`, error:`${Math.min(a,b)} is the smaller number — GCD may be much smaller; take only common primes with minimum exponents`},
+      ],
+      hint:`Identify common prime bases. For each, take the SMALLER exponent. Multiply those prime powers.`,
+    };
+  },
+  // P1: which product expression equals GCD
+  () => {
+    const [a, b, g, fA, fB, fG] = math.pick(L3_PRIMEFACT);
+    const latexA = factToLatex(fA), latexB = factToLatex(fB), latexG = factToLatex(fG);
+    const lcm = a*b/g;
+    // build LCM parts: for each prime in union, take max exponent
+    const primeMap = {};
+    [...fA,...fB].forEach(([base,exp]) => {
+      primeMap[base] = Math.max(primeMap[base]||0, exp);
+    });
+    const lcmLatex = Object.entries(primeMap).map(([b,e]) => math.latexPow(b,e)).join(' \\times ');
+    return {
+      promptHTML:`${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}. Which expression correctly gives ${mi(`\\gcd(${a}, ${b})`)}?`,
+      correctLatex:`${latexG} = ${g}`,
+      decoyDefs:[
+        {eq:`${lcmLatex} = ${lcm}`,  error:`This is LCM(${a},${b}) — it takes MAXIMUM exponents of ALL primes. GCD takes MINIMUM exponents of COMMON primes only`},
+        {eq:`${latexA} = ${a}`,      error:`${a} is the factorization of the first number, not the GCD`},
+        {eq:`${a} \\times ${b} = ${a*b}`, error:`${a*b} is the product of the two numbers, not the GCD`},
+      ],
+      hint:`GCD: keep only primes common to BOTH factorizations, each with its MINIMUM exponent.`,
+    };
+  },
+  // P2: identify the minimum-exponent rule
+  () => {
+    const [a, b, g, fA, fB] = math.pick(L3_PRIMEFACT.filter(([,,, fA]) => fA.length >= 2));
+    const latexA = factToLatex(fA), latexB = factToLatex(fB);
+    // pick one common prime to ask about
+    const aMap = Object.fromEntries(fA.map(([b,e])=>[b,e]));
+    const bMap = Object.fromEntries(fB.map(([b,e])=>[b,e]));
+    const commonPrimes = fA.filter(([base]) => bMap[base]!==undefined);
+    const [cp, expA] = math.pick(commonPrimes);
+    const expB = bMap[cp];
+    const minExp = Math.min(expA,expB), maxExp = Math.max(expA,expB);
+    return {
+      promptHTML:`${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}.<br>When computing ${mi(`\\gcd(${a},${b})`)}, what power of ${mi(`${cp}`)} is included?`,
+      correctLatex:`${cp}^{${minExp}} \\text{ (min of ${expA} and ${expB} is ${minExp})}`,
+      decoyDefs:[
+        {eq:`${cp}^{${maxExp}} \\text{ (max of ${expA} and ${expB})}`, error:`Maximum exponents give LCM, not GCD — for GCD take the MINIMUM exponent`},
+        {eq:`${cp}^{${expA+expB}} \\text{ (sum ${expA}+${expB})}`,   error:`Adding exponents means multiplying the prime powers — that's not how GCD or LCM works`},
+        {eq:`${cp}^{0} = 1 \\text{ (excluded)}`,                      error:`${cp} appears in BOTH factorizations, so it IS part of the GCD — don't exclude it`},
+      ],
+      hint:`For each common prime, GCD uses the MINIMUM exponent. LCM uses the MAXIMUM exponent.`,
+    };
+  },
+];
+
+/* ── L4: Euclidean Algorithm ─────────────────────────────── */
+const POOL_L4 = [
+  // P0: first remainder
+  () => {
+    const [a, b, g, steps] = math.pick(L4_EUCLID);
+    const s = steps[0];
+    return {
+      promptHTML:`Start the Euclidean algorithm: <strong>${s.a} = ${s.q} × ${s.b} + ___</strong>. What is the remainder?`,
+      correctLatex:`${s.r}`,
+      decoyDefs:[
+        {eq:`${s.q}`,     error:`${s.q} is the quotient, not the remainder — remainder = ${s.a} − ${s.q}×${s.b} = ${s.a-s.q*s.b}`},
+        {eq:`${s.r+s.b}`, error:`${s.r+s.b} exceeds the divisor ${s.b} — the remainder must be strictly less than the divisor`},
+        {eq:`${s.r+1}`,   error:`Off by one: ${s.a} − ${s.q}×${s.b} = ${s.a} − ${s.q*s.b} = ${s.r}, not ${s.r+1}`},
+      ],
+      hint:`Remainder = ${s.a} − ${s.q} × ${s.b} = ${s.a} − ${s.q*s.b} = ${s.r}.`,
+    };
+  },
+  // P1: apply full algorithm
+  () => {
+    const [a, b, g, steps] = math.pick(L4_EUCLID);
+    const stepsHtml = steps.map(s =>
+      s.r === 0
+        ? `${mi(`${s.a} = ${s.q} \\times ${s.b} + 0`)} &nbsp;→ remainder = 0, so GCD = <strong>${s.b}</strong>`
+        : `${mi(`${s.a} = ${s.q} \\times ${s.b} + ${s.r}`)}`
+    ).join('<br>');
+    return {
+      promptHTML:`Apply the Euclidean algorithm to find ${mi(`\\gcd(${a}, ${b})`)}: <br>${stepsHtml}`,
+      correctLatex:`\\gcd(${a}, ${b}) = ${g}`,
+      decoyDefs:[
+        {eq:`\\gcd(${a}, ${b}) = ${b}`,   error:`${b} is the original smaller number — the algorithm may reduce further before reaching 0`},
+        {eq:`\\gcd(${a}, ${b}) = ${a-b}`, error:`${a-b} = ${a}−${b} (simple subtraction) — GCD uses the division-with-remainder process`},
+        {eq:`\\gcd(${a}, ${b}) = ${g+1}`, error:`${g+1} does not divide both ${a} and ${b} — trace the steps to the final non-zero remainder`},
+      ],
+      hint:`GCD = the last non-zero remainder. Trace each step until remainder = 0.`,
+    };
+  },
+  // P2: intermediate step — reduce to sub-problem
+  () => {
+    const [a, b, g, steps] = math.pick(L4_EUCLID.filter(([,,, s]) => s.length >= 2));
+    const s0 = steps[0];
+    return {
+      promptHTML:`The Euclidean algorithm gives: ${mi(`${s0.a} = ${s0.q} \\times ${s0.b} + ${s0.r}`)}.<br>
+        So ${mi(`\\gcd(${a}, ${b}) = \\gcd(${s0.b}, ${s0.r})`)}.
+        What value does ${mi(`\\gcd(${s0.b}, ${s0.r})`)} eventually equal?`,
+      correctLatex:`\\gcd(${s0.b}, ${s0.r}) = ${g}`,
+      decoyDefs:[
+        {eq:`\\gcd(${s0.b}, ${s0.r}) = ${s0.r}`, error:`${s0.r} is the current remainder — apply the algorithm once more (or more) to reduce further`},
+        {eq:`\\gcd(${s0.b}, ${s0.r}) = ${s0.b}`, error:`${s0.b} is the current divisor — the algorithm continues until remainder = 0`},
+        {eq:`\\gcd(${s0.b}, ${s0.r}) = ${s0.b-s0.r}`, error:`${s0.b-s0.r} is a difference — keep dividing with remainder until you reach 0`},
+      ],
+      hint:`GCD(${s0.b}, ${s0.r}): divide ${s0.b} by ${s0.r}, record remainder, and repeat. GCD equals the last non-zero remainder.`,
+    };
+  },
+];
+
+/* ── L5: Word Problems ───────────────────────────────────── */
+const POOL_L5 = [
+  // P0: ribbon / rope cutting
+  () => {
+    const [a, b, g] = math.pick(L5_WORD);
+    const lcm = a*b/g;
+    const ctx = math.pick([
+      `One ribbon is <strong>${a} cm</strong> long and another is <strong>${b} cm</strong> long.`,
+      `One rope is <strong>${a} m</strong> long and another is <strong>${b} m</strong> long.`,
+    ]);
+    return {
+      promptHTML:`${ctx} Both are cut into equal pieces of the greatest possible length, with no material wasted. How long is each piece?`,
+      correctLatex:`\\gcd(${a}, ${b}) = ${g}`,
+      decoyDefs:[
+        {eq:`${a} + ${b} = ${a+b}`, error:`${a+b} is the total length — the piece length must divide BOTH ${a} and ${b} evenly`},
+        {eq:`\\text{lcm}(${a}, ${b}) = ${lcm}`, error:`${lcm} is the LCM — LCM is used for "when do events coincide", not for "equal pieces with no waste"`},
+        {eq:`${Math.abs(a-b)}`,     error:`${Math.abs(a-b)} = |${a}−${b}| is their difference — use GCD, not subtraction`},
+      ],
+      hint:`"Equal pieces, no waste, greatest length" → GCD. Compute GCD(${a}, ${b}).`,
+    };
+  },
+  // P1: tile / square floor
+  () => {
+    const [a, b, g] = math.pick(L5_WORD.filter(([x,y]) => x !== y));
+    const lcm = a*b/g;
+    return {
+      promptHTML:`A rectangular garden is <strong>${a} m</strong> long and <strong>${b} m</strong> wide. It is paved with identical square tiles, with no tiles cut. What is the largest possible side length of each tile?`,
+      correctLatex:`\\gcd(${a}, ${b}) = ${g} \\text{ m}`,
+      decoyDefs:[
+        {eq:`${lcm} \\text{ m}`,    error:`${lcm} m is the LCM — a tile of side ${lcm} m would exceed the garden dimensions`},
+        {eq:`${Math.min(a,b)} \\text{ m}`, error:`${Math.min(a,b)} m — check: does ${Math.min(a,b)} divide BOTH ${a} and ${b} evenly? ${Math.max(a,b)} ÷ ${Math.min(a,b)} = ${(Math.max(a,b)/Math.min(a,b)).toFixed(2)}`},
+        {eq:`1 \\text{ m}`,         error:`1 m works but is not the LARGEST — GCD(${a},${b})=${g} gives a bigger tile that still fits exactly`},
+      ],
+      hint:`Tile side must divide both length and width exactly → GCD(${a}, ${b}).`,
+    };
+  },
+  // P2: equal distribution (two types)
+  () => {
+    const [a, b, g] = math.pick(L5_WORD);
+    const [item1, item2] = math.pick([["apples","oranges"],["pencils","erasers"],["red balls","blue balls"],["stickers","stamps"]]);
+    return {
+      promptHTML:`A teacher has <strong>${a} ${item1}</strong> and <strong>${b} ${item2}</strong>. She wants to give each student the same number of ${item1} and the same number of ${item2}, with nothing left over. What is the maximum number of students she can serve?`,
+      correctLatex:`\\gcd(${a}, ${b}) = ${g} \\text{ students}`,
+      decoyDefs:[
+        {eq:`${a} + ${b} = ${a+b} \\text{ students}`, error:`${a+b} students would mean each gets less than 1 item — the number of students must divide BOTH ${a} and ${b}`},
+        {eq:`${a} \\times ${b} = ${a*b} \\text{ students}`, error:`${a*b} students is far too many — there aren't enough items for each student to get at least one of each type`},
+        {eq:`${Math.min(a,b)} \\text{ students}`,          error:`${Math.min(a,b)} students works only if ${Math.min(a,b)} divides ${Math.max(a,b)}: ${Math.max(a,b)}÷${Math.min(a,b)}=${(Math.max(a,b)/Math.min(a,b)).toFixed(2)} — not always whole`},
+      ],
+      hint:`Max students = GCD(${a}, ${b}). Each student gets ${a}÷${g}=${a/g} ${item1} and ${b}÷${g}=${b/g} ${item2}.`,
+    };
+  },
+  // P3: plank / board cutting
+  () => {
+    const [a, b, g] = math.pick(L5_WORD);
+    return {
+      promptHTML:`Two wooden planks are <strong>${a} cm</strong> and <strong>${b} cm</strong> long. Both are cut into equal pieces with no wood wasted. What is the longest possible piece length?`,
+      correctLatex:`${g} \\text{ cm}`,
+      decoyDefs:[
+        {eq:`${a*b/g} \\text{ cm}`, error:`${a*b/g} cm = LCM(${a},${b}) — a piece longer than both planks is impossible`},
+        {eq:`${a+b} \\text{ cm}`,   error:`${a+b} cm exceeds both plank lengths — piece length must divide each plank evenly`},
+        {eq:`${g-1} \\text{ cm}`,   error:`${g-1} cm is shorter than necessary — ${g} cm also divides both ${a} and ${b} exactly`},
+      ],
+      hint:`Longest equal piece with no waste from both planks → GCD(${a}, ${b}).`,
+    };
+  },
+];
+
+/* ── Rule: Coprime & GCD Properties ─────────────────────── */
+const POOL_RULE = [
+  // P0: coprime identification — GCD of coprime pair
+  () => {
+    const [a, b] = math.pick(RULE_COPRIME);
+    return {
+      promptHTML:`What is ${mi(`\\gcd(${a}, ${b})`)}? (List all factors of each number carefully.)`,
+      correctLatex:`\\gcd(${a}, ${b}) = 1`,
+      decoyDefs:[
+        {eq:`\\gcd(${a}, ${b}) = ${Math.min(a,b)}`,       error:`${Math.min(a,b)} is the smaller number — check: does ${Math.min(a,b)} divide ${Math.max(a,b)}? ${Math.max(a,b)}÷${Math.min(a,b)} = ${(Math.max(a,b)/Math.min(a,b)).toFixed(2)}`},
+        {eq:`\\gcd(${a}, ${b}) = ${Math.max(a,b)-Math.min(a,b)}`, error:`${Math.max(a,b)-Math.min(a,b)} is their difference — GCD is not found by subtraction; list common factors`},
+        {eq:`\\gcd(${a}, ${b}) = ${a*b}`,                 error:`${a*b} is their product — the GCD can never exceed min(${a},${b})=${Math.min(a,b)}`},
+      ],
+      hint:`When two numbers share no common factor except 1, GCD = 1 and they are called coprime (relatively prime).`,
+    };
+  },
+  // P1: after factoring out GCD, quotients are coprime
+  () => {
+    const [a, b, d, m, n] = math.pick(RULE_DECOMP);
+    return {
+      promptHTML:`${mi(`\\gcd(${a}, ${b}) = ${d}`)}. We write ${mi(`${a} = ${d} \\times ${m}`)} and ${mi(`${b} = ${d} \\times ${n}`)}. What is ${mi(`\\gcd(${m}, ${n})`)}?`,
+      correctLatex:`\\gcd(${m}, ${n}) = 1`,
+      decoyDefs:[
+        {eq:`\\gcd(${m}, ${n}) = ${d}`, error:`${d} is the GCD of the original numbers — after factoring out d, the remaining quotients m=${m} and n=${n} must be coprime`},
+        {eq:`\\gcd(${m}, ${n}) = ${m}`, error:`${m} would require ${m} to divide ${n}: ${n}÷${m} = ${(n/m).toFixed(2)} — not a whole number`},
+        {eq:`\\gcd(${m}, ${n}) = ${m+n}`, error:`${m+n} = ${m}+${n} is their sum, which exceeds both values and cannot be a common divisor`},
+      ],
+      hint:`Factoring out the GCD always leaves coprime remainders. GCD(m,n) = 1 is a guaranteed property.`,
+    };
+  },
+  // P2: special GCD values
+  () => {
+    const n = math.pick([6,8,9,12,15,18,20,24,25,30]);
+    const type = math.pick(["self","one"]);
+    if (type === "self") {
+      return {
+        promptHTML:`What is ${mi(`\\gcd(${n}, ${n})`)}? A number and itself have which GCD?`,
+        correctLatex:`\\gcd(${n}, ${n}) = ${n}`,
+        decoyDefs:[
+          {eq:`\\gcd(${n}, ${n}) = 1`,    error:`1 is GCD when numbers are coprime — but ${n} and ${n} share ALL the same factors, so GCD = ${n} itself`},
+          {eq:`\\gcd(${n}, ${n}) = 0`,    error:`GCD is always at least 1 (since 1 divides every number) — and here every factor of ${n} is shared, so GCD = ${n}`},
+          {eq:`\\gcd(${n}, ${n}) = ${n*n}`, error:`${n*n} = ${n}² is the product, far larger than either number — GCD ≤ min(${n},${n}) = ${n}`},
+        ],
+        hint:`GCD(n, n) = n, because n divides n and n is the largest possible divisor.`,
+      };
+    } else {
+      return {
+        promptHTML:`What is ${mi(`\\gcd(${n}, 1)`)}? What is the GCD of any number with 1?`,
+        correctLatex:`\\gcd(${n}, 1) = 1`,
+        decoyDefs:[
+          {eq:`\\gcd(${n}, 1) = ${n}`, error:`${n} doesn't divide 1 (1÷${n} = ${(1/n).toFixed(2)}), so ${n} is not a common factor — only 1 divides both`},
+          {eq:`\\gcd(${n}, 1) = 0`,    error:`GCD is always ≥ 1, since 1 divides every integer — GCD(n,1) = 1`},
+          {eq:`\\gcd(${n}, 1) = ${n+1}`, error:`${n+1} > ${n} cannot be a divisor of ${n}`},
+        ],
+        hint:`1 is coprime with every positive integer: GCD(n, 1) = 1 for all n.`,
+      };
+    }
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_factor(id)  { const t=math.pick(POOL_L1)();   return buildEqQ(id,"factor_basics", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_list(id)    { const t=math.pick(POOL_L2)();   return buildEqQ(id,"gcd_listing",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_prime(id)   { const t=math.pick(POOL_L3)();   return buildEqQ(id,"gcd_prime",     t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_euclid(id)  { const t=math.pick(POOL_L4)();   return buildEqQ(id,"gcd_euclid",    t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_word(id)    { const t=math.pick(POOL_L5)();   return buildEqQ(id,"gcd_word",      t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_coprime(id) { const t=math.pick(POOL_RULE)(); return buildEqQ(id,"coprime",       t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  factor_basics: gen_factor,
+  gcd_listing:   gen_list,
+  gcd_prime:     gen_prime,
+  gcd_euclid:    gen_euclid,
+  gcd_word:      gen_word,
+  coprime:       gen_coprime,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of GCD.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      { title:"Smart Whole Number Arithmetic",
+        url:"../grade_4/smart_whole_number_arithmetic_grade4.html",
+        reason:"GCD relies on confident multiplication, division, and prime recognition — sharpen those whole-number skills here." },
+    ],
+    challenge:[
+      { title:"Least Common Multiple (LCM)",
+        url:"../grade_5/lcm_grade5.html",
+        reason:"LCM is GCD's partner — together they unlock the identity LCM(a,b) × GCD(a,b) = a × b, opening the door to competition-level number theory." },
+    ],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about Greatest Common Divisor (GCD).`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about GCD.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+applyName();
+</script>
+</body>
+</html>

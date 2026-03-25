@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Least Common Multiple (LCM) — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#006064,#0097a7); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Least Common Multiple (LCM)</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Multiples, listing method, prime factorization, GCD shortcut, and word problems</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Multiples</span>
+      <span class="badge badge-L2">Listing</span>
+      <span class="badge badge-L3">Prime Fact.</span>
+      <span class="badge badge-L4">GCD Shortcut</span>
+      <span class="badge badge-L5">Word Problems</span>
+      <span class="badge badge-rule">Properties</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Multiple:</strong> n × k for any positive integer k. Multiples of 4: 4, 8, 12, 16, …</li>
+        <li><strong>LCM by listing:</strong> list multiples of each number; the first value appearing in both lists is the LCM.</li>
+        <li><strong>LCM by prime factorization:</strong> factor each number; for every prime that appears in either factorization, take the <em>maximum</em> exponent; multiply.</li>
+        <li><strong>GCD shortcut:</strong> LCM(a, b) = a × b ÷ GCD(a, b). Find GCD first, then divide the product.</li>
+        <li><strong>Word problem signal:</strong> "next time both coincide / meet again / synchronize" → LCM.</li>
+        <li><strong>Properties:</strong> LCM(a, b) × GCD(a, b) = a × b. If a divides b, then LCM(a, b) = b. LCM(n, n) = n.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_lcm_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+const lcmOp = (a, b) => `\\operatorname{lcm}(${a}, ${b})`;
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  mult_basics: {
+    name:"Level 1: Multiples & Divisibility", level:1, badgeClass:"badge-L1",
+    summary:"A multiple of n is any product n × k (k = 1, 2, 3, …). Multiples are evenly spaced and go on forever. To check if m is a multiple of n, test whether m ÷ n is a whole number.",
+    steps:[
+      "List multiples of n by multiplying: n×1, n×2, n×3, … in order.",
+      "To find the kth multiple of n: compute n × k.",
+      "To check if m is a multiple of n: divide m ÷ n. If the result is a whole number (remainder 0), then yes.",
+      "Common multiples of a and b appear in both lists — every common multiple is a multiple of the LCM.",
+    ],
+    example:{
+      problemHTML:`List the first 6 multiples of <strong>7</strong> and identify a common multiple of 7 and 4.`,
+      solutionHTML:`Multiples of 7: 7, 14, 21, 28, 35, 42.<br>
+        Multiples of 4: 4, 8, 12, 16, 20, 24, 28, …<br>
+        Common multiple: <strong>28</strong> (appears in both). LCM(7,4) = 28.`,
+    },
+    misconception:"Multiples grow forever — every number has infinitely many multiples. Don't confuse multiples (n × k, bigger than n) with factors (divisors of n, smaller than n).",
+    keyConcepts:[
+      {label:"Multiples vs Factors", prompt:"Explain the difference between multiples and factors using n=12 as an example. List three multiples of 12 and three factors of 12. Why are factors finite but multiples are infinite?"},
+      {label:"Common Multiples", prompt:"What is a common multiple of two numbers? List the first four common multiples of 4 and 6. How are they related to the LCM?"},
+    ],
+  },
+
+  lcm_listing: {
+    name:"Level 2: LCM by Listing Multiples", level:2, badgeClass:"badge-L2",
+    summary:"Find the Least Common Multiple (LCM) by listing multiples of each number in order until you find the first value that appears in both lists.",
+    steps:[
+      "Write out multiples of the first number: a, 2a, 3a, 4a, …",
+      "Write out multiples of the second number: b, 2b, 3b, 4b, …",
+      "Scan both lists left-to-right. The first number that appears in both lists is the LCM.",
+      "The LCM is always ≥ max(a, b). All other common multiples are 2×LCM, 3×LCM, …",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\operatorname{lcm}(6, 9)')} by listing multiples.`,
+      solutionHTML:`Multiples of 6: 6, 12, <strong>18</strong>, 24, 30, …<br>
+        Multiples of 9: 9, <strong>18</strong>, 27, 36, …<br>
+        First common value: <strong>18</strong>. So ${mi('\\operatorname{lcm}(6,9)=18')}.`,
+    },
+    misconception:"The LCM is the SMALLEST common multiple — not just any common multiple. The product a×b is always a common multiple but is often not the smallest. For example, LCM(4,6)=12, not 4×6=24.",
+    keyConcepts:[
+      {label:"LCM vs Product", prompt:"Find LCM(4,6) by listing multiples. Then compute 4×6=24. Why is 24 a common multiple but not the LCM? When does LCM(a,b) equal a×b?"},
+      {label:"LCM vs GCD", prompt:"Compare GCD and LCM using the numbers 12 and 18. GCD is the greatest common divisor; LCM is the least common multiple. Which is smaller? Which is larger? How do they relate to the original numbers?"},
+    ],
+  },
+
+  lcm_prime: {
+    name:"Level 3: LCM by Prime Factorization", level:3, badgeClass:"badge-L3",
+    summary:"Write each number as a product of prime powers. The LCM is the product of every prime that appears in either factorization, each raised to its maximum exponent.",
+    steps:[
+      "Use a factor tree to fully prime-factorize each number.",
+      "Write each factorization using prime bases with exponents: e.g. 12 = 2² × 3.",
+      "List every prime that appears in EITHER factorization (take the union).",
+      "For each prime, take the LARGER (maximum) exponent. Multiply these prime powers together.",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\operatorname{lcm}(12, 18)')} by prime factorization.`,
+      solutionHTML:`${mi('12 = 2^2 \\times 3')} and ${mi('18 = 2 \\times 3^2')}.<br>
+        Primes: 2 (max exponent: max(2,1)=2) and 3 (max exponent: max(1,2)=2).<br>
+        ${mi('\\operatorname{lcm}(12,18) = 2^2 \\times 3^2 = 4 \\times 9 = 36')}.`,
+    },
+    misconception:"Take MAXIMUM exponents for LCM (not minimum). Minimum exponents give the GCD. Also include primes that appear in only ONE of the numbers — they still contribute to the LCM.",
+    keyConcepts:[
+      {label:"Why Maximum Exponents", prompt:"To find LCM(12,18): 12=2²×3, 18=2×3². Why do we take max(2,1)=2 for the power of 2, giving 2²? What would taking the minimum give us instead?"},
+      {label:"Including Unique Primes", prompt:"Find LCM(12,20): 12=2²×3, 20=2²×5. The prime 3 only appears in 12 and 5 only appears in 20. Why must both be included in the LCM? What would happen if we ignored them?"},
+    ],
+  },
+
+  lcm_shortcut: {
+    name:"Level 4: GCD Shortcut — LCM = a × b ÷ GCD", level:4, badgeClass:"badge-L4",
+    summary:"The identity LCM(a,b) × GCD(a,b) = a × b lets you find LCM quickly once you know GCD. Compute LCM = a × b ÷ GCD(a, b).",
+    steps:[
+      "Find GCD(a, b) using any method (listing, prime factorization, or Euclidean algorithm).",
+      "Compute the product a × b.",
+      "Divide: LCM = a × b ÷ GCD(a, b).",
+      "Verify: LCM × GCD should equal a × b exactly.",
+    ],
+    example:{
+      problemHTML:`Find ${mi('\\operatorname{lcm}(12, 18)')} using the GCD shortcut.`,
+      solutionHTML:`GCD(12, 18) = 6 (common factors: 1, 2, 3, 6).<br>
+        LCM = 12 × 18 ÷ 6 = 216 ÷ 6 = <strong>36</strong>.<br>
+        Check: 36 × 6 = 216 = 12 × 18 ✓.`,
+    },
+    misconception:"Don't multiply by GCD — divide by it. LCM = a×b ÷ GCD. Multiplying would give a×b×GCD, which is too large. Also, compute the product first (a×b), then divide — don't try to simplify out of order.",
+    keyConcepts:[
+      {label:"Why the Identity Works", prompt:"Why does LCM(a,b) × GCD(a,b) = a × b? Use a=12, b=18, GCD=6, LCM=36 to verify. Can you explain intuitively why dividing the product by GCD 'removes the overlap'?"},
+      {label:"Reverse: Finding GCD from LCM", prompt:"If LCM(a,b)=42 and a×b=294, what is GCD(a,b)? Rearrange the identity LCM×GCD=a×b to solve for GCD. What are a and b?"},
+    ],
+  },
+
+  lcm_word: {
+    name:"Level 5: LCM Word Problems", level:5, badgeClass:"badge-L5",
+    summary:"LCM word problems ask 'when do two repeating events next coincide?' Keywords: 'meet again / next time both / synchronize / first time together again after starting at the same moment'.",
+    steps:[
+      "Identify the two repeating cycles or intervals.",
+      "Recognize the LCM signal: two events that repeat independently — when is the next joint occurrence?",
+      "Compute LCM of the two intervals using any method.",
+      "Interpret: the LCM is the answer (next meeting time, next synchronization, etc.).",
+    ],
+    example:{
+      problemHTML:`Bus A departs every <strong>4 minutes</strong>. Bus B departs every <strong>6 minutes</strong>. They depart together at 8:00 am. After how many minutes will they next depart together?`,
+      solutionHTML:`Both depart together when the elapsed time is a multiple of both 4 and 6.<br>
+        Multiples of 4: 4, 8, <strong>12</strong>, … Multiples of 6: 6, <strong>12</strong>, …<br>
+        LCM(4, 6) = 12. They next depart together <strong>12 minutes</strong> later.`,
+    },
+    misconception:"Don't use GCD here — GCD applies to 'equal pieces with no waste'. LCM applies to 'periodic events that coincide'. The key signal is two repeating cycles that restart independently.",
+    keyConcepts:[
+      {label:"GCD vs LCM in Word Problems", prompt:"Bus A runs every 4 minutes, Bus B every 6 minutes. Why does 'when do they next depart together' require LCM, not GCD? What would a GCD word problem about buses look like instead?"},
+      {label:"Multiple Events", prompt:"Three traffic lights change every 30 seconds, 45 seconds, and 60 seconds. They all change at time 0. When do all three next change at the same time? How does LCM extend to three numbers?"},
+    ],
+  },
+
+  lcm_props: {
+    name:"Rule: LCM Properties", level:0, badgeClass:"badge-rule",
+    summary:"Key identities: LCM(a,b) × GCD(a,b) = a × b. If a divides b, then LCM(a,b) = b. LCM(n,n) = n. LCM(1,n) = n. All common multiples of a and b are multiples of LCM(a,b).",
+    steps:[
+      "LCM × GCD = product: LCM(a,b) × GCD(a,b) = a × b — the fundamental identity.",
+      "Divisibility: if a | b (a divides b), then LCM(a,b) = b (b is already a multiple of a).",
+      "Self: LCM(n,n) = n. With 1: LCM(1,n) = n.",
+      "All common multiples: every common multiple of a and b equals k × LCM(a,b) for some positive integer k.",
+    ],
+    example:{
+      problemHTML:`${mi('\\operatorname{lcm}(4, 12)')} = ? Use the divisibility property.`,
+      solutionHTML:`4 divides 12 exactly (12 ÷ 4 = 3). So every multiple of 12 is also a multiple of 4.<br>
+        Therefore ${mi('\\operatorname{lcm}(4, 12) = 12')}.`,
+    },
+    misconception:"Coprime numbers (GCD = 1) have LCM = a × b. But most pairs are NOT coprime — always check GCD before assuming LCM = product. Also: all common multiples form an infinite arithmetic sequence with step = LCM.",
+    keyConcepts:[
+      {label:"When LCM = Product", prompt:"LCM(a,b) = a×b exactly when GCD(a,b) = 1 (they are coprime). Give two examples of coprime pairs and verify LCM = product. Give two examples where LCM < product."},
+      {label:"Common Multiples Structure", prompt:"All common multiples of 4 and 6 are: 12, 24, 36, 48, ... These are exactly 12×1, 12×2, 12×3, 12×4, ... Why are all common multiples multiples of the LCM? Prove it using divisibility."},
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA
+══════════════════════════════════════════════════════════════ */
+
+// L1
+const L1_MULTIPLES = [
+  [3,[3,6,9,12,15,18,21,24]],
+  [4,[4,8,12,16,20,24,28,32]],
+  [5,[5,10,15,20,25,30,35,40]],
+  [6,[6,12,18,24,30,36,42,48]],
+  [7,[7,14,21,28,35,42,49,56]],
+  [8,[8,16,24,32,40,48,56,64]],
+  [9,[9,18,27,36,45,54,63,72]],
+  [12,[12,24,36,48,60,72,84,96]],
+];
+// [n, upper_bound, count=floor(upper/n)]
+const L1_COUNT = [[3,20,6],[4,30,7],[5,40,8],[6,50,8],[7,50,7],[8,60,7],[9,60,6],[4,40,10]];
+// [a, b, first_common_multiple = LCM]
+const L1_COMMON = [[3,4,12],[2,5,10],[4,6,12],[3,7,21],[5,6,30],[3,8,24],[4,9,36]];
+
+// L2: [a, b, lcm]
+const L2_LCM = [[4,6,12],[3,5,15],[4,10,20],[6,9,18],[3,8,24],[5,6,30],[6,8,24],[4,9,36],[5,8,40],[6,10,30],[8,12,24],[4,15,60]];
+
+// L3: [a, b, lcm, gcd, factA_parts, factB_parts, factLcm_parts, factGcd_parts]
+const L3_PRIMEFACT = [
+  [12,18,36,6,  [[2,2],[3,1]],[[2,1],[3,2]],[[2,2],[3,2]],[[2,1],[3,1]]],
+  [12,20,60,4,  [[2,2],[3,1]],[[2,2],[5,1]],[[2,2],[3,1],[5,1]],[[2,2]]],
+  [18,24,72,6,  [[2,1],[3,2]],[[2,3],[3,1]],[[2,3],[3,2]],[[2,1],[3,1]]],
+  [20,30,60,10, [[2,2],[5,1]],[[2,1],[3,1],[5,1]],[[2,2],[3,1],[5,1]],[[2,1],[5,1]]],
+  [15,18,90,3,  [[3,1],[5,1]],[[2,1],[3,2]],[[2,1],[3,2],[5,1]],[[3,1]]],
+  [12,15,60,3,  [[2,2],[3,1]],[[3,1],[5,1]],[[2,2],[3,1],[5,1]],[[3,1]]],
+  [8,12,24,4,   [[2,3]],[[2,2],[3,1]],[[2,3],[3,1]],[[2,2]]],
+  [9,12,36,3,   [[3,2]],[[2,2],[3,1]],[[2,2],[3,2]],[[3,1]]],
+  [10,15,30,5,  [[2,1],[5,1]],[[3,1],[5,1]],[[2,1],[3,1],[5,1]],[[5,1]]],
+  [24,36,72,12, [[2,3],[3,1]],[[2,2],[3,2]],[[2,3],[3,2]],[[2,2],[3,1]]],
+];
+
+// L4: [a, b, gcd, lcm]  gcd×lcm = a×b
+const L4_GCD_SHORT = [[6,8,2,24],[9,12,3,36],[10,15,5,30],[12,18,6,36],[15,20,5,60],[8,12,4,24],[14,21,7,42],[18,27,9,54],[20,30,10,60],[24,36,12,72],[15,25,5,75],[16,24,8,48]];
+
+// L5: [a, b, lcm]
+const L5_WORD = [[4,6,12],[3,5,15],[6,8,24],[5,6,30],[8,12,24],[9,12,36],[4,10,20],[6,9,18],[5,8,40],[4,15,60]];
+
+// Rule: [a,b] where a|b; LCM(a,b)=b
+const RULE_DIVIDES = [[3,12],[4,20],[5,30],[6,24],[7,21],[8,40],[9,36]];
+
+/* ══════════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function factToLatex(parts) {
+  return parts.map(([b,e]) => math.latexPow(String(b), e)).join(' \\times ');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Multiples & Divisibility ────────────────────────── */
+const POOL_L1 = [
+  // P0: kth multiple
+  () => {
+    const [n] = math.pick(L1_MULTIPLES);
+    const k = math.pick([3,4,5,6,7,8]);
+    const ans = n * k;
+    return {
+      promptHTML:`What is the <strong>${k}th multiple</strong> of <strong>${n}</strong>?`,
+      correctLatex:`${k} \\times ${n} = ${ans}`,
+      decoyDefs:[
+        {eq:`${k} + ${n} = ${k+n}`,              error:`Addition is wrong — the kth multiple of ${n} is k × ${n}, not k + ${n}`},
+        {eq:`${k} \\times ${n-1} = ${k*(n-1)}`,  error:`${n-1} ≠ ${n} — the kth multiple of ${n} is ${k} × ${n}`},
+        {eq:`${k} \\times ${n} - 1 = ${ans-1}`,  error:`No subtraction — the ${k}th multiple of ${n} is exactly ${k} × ${n} = ${ans}`},
+      ],
+      hint:`The kth multiple of n is n × k. So ${k}th multiple of ${n} = ${k} × ${n} = ${ans}.`,
+    };
+  },
+  // P1: NOT a multiple
+  () => {
+    const [n, mults] = math.pick(L1_MULTIPLES);
+    const [m1, m2, m3] = math.shuffle(mults).slice(0,3);
+    const baseK = math.pick([2,3,4,5]);
+    const nonMult = n * baseK + 1;
+    return {
+      promptHTML:`Which of the following is <strong>NOT</strong> a multiple of <strong>${n}</strong>?`,
+      correctLatex:`${nonMult}`,
+      decoyDefs:[
+        {eq:`${m1}`, error:`${m1} = ${m1/n} × ${n} — it IS a multiple of ${n}`},
+        {eq:`${m2}`, error:`${m2} = ${m2/n} × ${n} — it IS a multiple of ${n}`},
+        {eq:`${m3}`, error:`${m3} = ${m3/n} × ${n} — it IS a multiple of ${n}`},
+      ],
+      hint:`${nonMult} ÷ ${n} = ${(nonMult/n).toFixed(2)} — not a whole number, so ${nonMult} is NOT a multiple of ${n}.`,
+    };
+  },
+  // P2: identify a common multiple of A and B
+  () => {
+    const [a, b, cm] = math.pick(L1_COMMON);
+    let d1 = a * 2; while (d1 % b === 0) d1 += a;
+    let d2 = b * 2; while (d2 % a === 0) d2 += b;
+    let d3 = cm - 1; while (d3 > 0 && (d3 % a === 0 || d3 % b === 0)) d3--;
+    if (d3 <= 0) d3 = cm + 3;
+    return {
+      promptHTML:`Which of the following is a <strong>common multiple</strong> of both <strong>${a}</strong> and <strong>${b}</strong>?`,
+      correctLatex:`${cm}`,
+      decoyDefs:[
+        {eq:`${d1}`, error:`${d1} is a multiple of ${a} (${d1}÷${a}=${d1/a}), but not of ${b}: ${d1}÷${b}=${(d1/b).toFixed(2)}`},
+        {eq:`${d2}`, error:`${d2} is a multiple of ${b} (${d2}÷${b}=${d2/b}), but not of ${a}: ${d2}÷${a}=${(d2/a).toFixed(2)}`},
+        {eq:`${d3}`, error:`${d3} is not divisible by ${a}: ${d3}÷${a}=${(d3/a).toFixed(2)}`},
+      ],
+      hint:`A common multiple must be divisible by BOTH ${a} and ${b} with no remainder.`,
+    };
+  },
+  // P3: count multiples in range
+  () => {
+    const [n, upper, count] = math.pick(L1_COUNT);
+    return {
+      promptHTML:`How many multiples of <strong>${n}</strong> are there from 1 to <strong>${upper}</strong> (inclusive)?`,
+      correctLatex:`\\lfloor ${upper} \\div ${n} \\rfloor = ${count}`,
+      decoyDefs:[
+        {eq:`${count-1}`, error:`Missing one — list them: ${n}, ${n*2}, …, ${n*count}. That's ${count} values`},
+        {eq:`${count+1}`, error:`One too many — the ${count+1}th multiple would be ${n*(count+1)}, which exceeds ${upper}`},
+        {eq:`${upper-n}`, error:`${upper-n} = ${upper}−${n} is subtraction — count multiples: ⌊${upper}÷${n}⌋ = ${count}`},
+      ],
+      hint:`Count = ⌊${upper} ÷ ${n}⌋ = ⌊${(upper/n).toFixed(2)}⌋ = ${count}.`,
+    };
+  },
+];
+
+/* ── L2: LCM by Listing ──────────────────────────────────── */
+const POOL_L2 = [
+  // P0: find LCM by listing
+  () => {
+    const [a, b, lcm] = math.pick(L2_LCM);
+    const g = math.gcd(a, b);
+    return {
+      promptHTML:`Find ${mi(lcmOp(a,b))} by listing multiples of ${a} and ${b} until you find the first common value.`,
+      correctLatex:`${lcmOp(a,b)} = ${lcm}`,
+      decoyDefs:[
+        {eq:`${lcmOp(a,b)} = ${g}`,   error:`${g} is the GCD — the GREATEST COMMON DIVISOR. LCM is the LEAST COMMON MULTIPLE and must be ≥ max(${a},${b})=${Math.max(a,b)}`},
+        {eq:`${lcmOp(a,b)} = ${a*b}`, error:`${a*b} = ${a}×${b} is a common multiple, but usually not the smallest — list multiples to find the first one`},
+        {eq:`${lcmOp(a,b)} = ${lcm+1}`, error:`${lcm+1} is not divisible by ${a}: ${lcm+1}÷${a}=${((lcm+1)/a).toFixed(2)}`},
+      ],
+      hint:`List multiples of ${a}: ${a},${a*2},${a*3},… and of ${b}: ${b},${b*2},${b*3},… First common value is the LCM.`,
+    };
+  },
+  // P1: second common multiple — not the LCM
+  () => {
+    const [a, b, lcm] = math.pick(L2_LCM);
+    const second = 2 * lcm;
+    return {
+      promptHTML:`Which number is a common multiple of <strong>${a}</strong> and <strong>${b}</strong>, but is <em>not</em> the LCM?`,
+      correctLatex:`${second}`,
+      decoyDefs:[
+        {eq:`${lcm}`,   error:`${lcm} IS the LCM — it is the SMALLEST common multiple. We want one that is common but not the smallest`},
+        {eq:`${lcm-1}`, error:`${lcm-1} is not a common multiple: ${lcm-1}÷${a}=${((lcm-1)/a).toFixed(2)}`},
+        {eq:`${lcm+1}`, error:`${lcm+1} is not a common multiple: ${lcm+1}÷${b}=${((lcm+1)/b).toFixed(2)}`},
+      ],
+      hint:`All common multiples are multiples of LCM = ${lcm}: ${lcm}, ${second}, ${3*lcm}, …`,
+    };
+  },
+  // P2: LCM vs GCD — identify correct value
+  () => {
+    const [a, b, lcm] = math.pick(L2_LCM);
+    const g = math.gcd(a, b);
+    return {
+      promptHTML:`For <strong>${a}</strong> and <strong>${b}</strong>: GCD = ${g}. Which value equals ${mi(lcmOp(a,b))}?`,
+      correctLatex:`${lcm}`,
+      decoyDefs:[
+        {eq:`${g}`,      error:`${g} is the GCD — the largest DIVISOR of both. LCM is the smallest MULTIPLE of both, so LCM ≥ max(${a},${b})=${Math.max(a,b)}`},
+        {eq:`${a+b}`,    error:`${a+b} is the sum ${a}+${b} — list multiples of each to find the first common one`},
+        {eq:`${lcm+1}`,  error:`${lcm+1} is not divisible by both: check ${lcm+1}÷${a}=${((lcm+1)/a).toFixed(2)}`},
+      ],
+      hint:`LCM ≥ max(a,b) and divisible by both. GCD ≤ min(a,b) and divides both. LCM × GCD = a × b.`,
+    };
+  },
+];
+
+/* ── L3: LCM by Prime Factorization ─────────────────────── */
+const POOL_L3 = [
+  // P0: find LCM value from factorizations
+  () => {
+    const [a, b, lcm, gcd, fA, fB] = math.pick(L3_PRIMEFACT);
+    const latexA = factToLatex(fA), latexB = factToLatex(fB);
+    return {
+      promptHTML:`The prime factorizations are ${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}. What is ${mi(lcmOp(a,b))}?`,
+      correctLatex:`${lcm}`,
+      decoyDefs:[
+        {eq:`${gcd}`,  error:`${gcd} is the GCD — it uses MINIMUM exponents. LCM uses MAXIMUM exponents of ALL primes from either factorization`},
+        {eq:`${a*b}`,  error:`${a*b} is the product a×b — LCM = a×b only when GCD=1. Here GCD=${gcd}, so LCM = ${a*b}÷${gcd} = ${lcm}`},
+        {eq:`${Math.max(a,b)}`, error:`${Math.max(a,b)} is the larger number — LCM must be divisible by both ${a} and ${b}, so it may be larger`},
+      ],
+      hint:`Identify all primes in either factorization. For each, take the MAXIMUM exponent. Multiply.`,
+    };
+  },
+  // P1: which factorization expression equals LCM
+  () => {
+    const [a, b, lcm, gcd, fA, fB, fLcm, fGcd] = math.pick(L3_PRIMEFACT);
+    const latexA = factToLatex(fA), latexB = factToLatex(fB);
+    const latexLcm = factToLatex(fLcm), latexGcd = factToLatex(fGcd);
+    return {
+      promptHTML:`${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}. Which expression correctly gives ${mi(lcmOp(a,b))}?`,
+      correctLatex:`${latexLcm} = ${lcm}`,
+      decoyDefs:[
+        {eq:`${latexGcd} = ${gcd}`,   error:`This is GCD(${a},${b}) — it takes MINIMUM exponents of common primes. LCM takes MAXIMUM exponents of ALL primes`},
+        {eq:`${latexA} = ${a}`,       error:`${a} is just the first number, not the LCM — the LCM must be divisible by both ${a} and ${b}`},
+        {eq:`${a*b}`,                 error:`${a*b} = a×b is a common multiple, but LCM = a×b ÷ GCD = ${a*b}÷${gcd}=${lcm} (since GCD=${gcd}≠1)`},
+      ],
+      hint:`LCM: include ALL primes from both factorizations, each with its MAXIMUM exponent.`,
+    };
+  },
+  // P2: max exponent rule for a specific prime
+  () => {
+    const [a, b, lcm, gcd, fA, fB] = math.pick(L3_PRIMEFACT.filter(([,,,,fA]) => fA.length >= 2));
+    const latexA = factToLatex(fA), latexB = factToLatex(fB);
+    const aMap = Object.fromEntries(fA.map(([b,e])=>[b,e]));
+    const bMap = Object.fromEntries(fB.map(([b,e])=>[b,e]));
+    const allPrimes = [...new Set([...fA,...fB].map(([b])=>b))];
+    const cp = math.pick(allPrimes.filter(p => aMap[p] && bMap[p]));
+    const expA = aMap[cp], expB = bMap[cp];
+    const maxExp = Math.max(expA, expB), minExp = Math.min(expA, expB);
+    return {
+      promptHTML:`${mi(`${a} = ${latexA}`)} and ${mi(`${b} = ${latexB}`)}.<br>When computing ${mi(lcmOp(a,b))}, what power of ${mi(`${cp}`)} is used?`,
+      correctLatex:`${cp}^{${maxExp}} \\text{ (max of ${expA} and ${expB} is ${maxExp})}`,
+      decoyDefs:[
+        {eq:`${cp}^{${minExp}} \\text{ (min of ${expA} and ${expB})}`, error:`Minimum exponents give GCD, not LCM — for LCM take the MAXIMUM exponent`},
+        {eq:`${cp}^{${expA+expB}} \\text{ (sum ${expA}+${expB})}`,   error:`Adding exponents means multiplying the powers — that gives neither GCD nor LCM`},
+        {eq:`${cp}^{0} = 1 \\text{ (excluded)}`,                      error:`${cp} appears in both factorizations — it contributes to BOTH GCD and LCM with its max exponent`},
+      ],
+      hint:`For LCM, take the MAXIMUM exponent of each prime. For GCD, take the MINIMUM.`,
+    };
+  },
+];
+
+/* ── L4: GCD Shortcut ────────────────────────────────────── */
+const POOL_L4 = [
+  // P0: compute LCM given GCD
+  () => {
+    const [a, b, g, l] = math.pick(L4_GCD_SHORT);
+    return {
+      promptHTML:`${mi(`\\gcd(${a}, ${b}) = ${g}`)}. Use the formula ${mi(`\\operatorname{lcm}(a,b) = a \\times b \\div \\gcd(a,b)`)} to find ${mi(lcmOp(a,b))}.`,
+      correctLatex:`${a} \\times ${b} \\div ${g} = ${l}`,
+      decoyDefs:[
+        {eq:`${a*b}`,      error:`${a*b} = a×b is the product — divide by GCD=${g} to get LCM: ${a*b}÷${g}=${l}`},
+        {eq:`${a+b-g}`,    error:`${a+b-g} = a+b−GCD is not a valid formula — use LCM = a×b÷GCD`},
+        {eq:`${Math.max(a,b)}`, error:`${Math.max(a,b)} = max(a,b) equals LCM only when one number divides the other — verify: does ${Math.min(a,b)} divide ${Math.max(a,b)}? ${Math.max(a,b)}÷${Math.min(a,b)}=${(Math.max(a,b)/Math.min(a,b)).toFixed(2)}`},
+      ],
+      hint:`LCM = a×b÷GCD = ${a}×${b}÷${g} = ${a*b}÷${g} = ${l}.`,
+    };
+  },
+  // P1: find GCD given LCM (reverse)
+  () => {
+    const [a, b, g, l] = math.pick(L4_GCD_SHORT.filter(([a,b,g,l]) => l !== g*g));
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} = ${l}. Use the identity LCM × GCD = a × b to find ${mi(`\\gcd(${a}, ${b})`)}.`,
+      correctLatex:`${a} \\times ${b} \\div ${l} = ${g}`,
+      decoyDefs:[
+        {eq:`${a*b}`,   error:`${a*b} = a×b is the product — the GCD is obtained by dividing: ${a}×${b}÷${l}=${g}`},
+        {eq:`${l-a}`,   error:`${l-a} = LCM−a is not a valid formula — use GCD = a×b÷LCM = ${a*b}÷${l}=${g}`},
+        {eq:`${l/g}`,   error:`${l/g} = LCM÷GCD, not GCD itself — solve for GCD: GCD = a×b÷LCM = ${a*b}÷${l} = ${g}`},
+      ],
+      hint:`GCD = a×b÷LCM = ${a}×${b}÷${l} = ${a*b}÷${l} = ${g}.`,
+    };
+  },
+  // P2: verify LCM × GCD = a × b
+  () => {
+    const [a, b, g, l] = math.pick(L4_GCD_SHORT);
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} = ${l} and ${mi(`\\gcd(${a}, ${b})`)} = ${g}. The identity LCM(a,b) × GCD(a,b) = a × b means ${mi(`${l} \\times ${g}`)} should equal ${mi(`${a} \\times ${b}`)}. What is ${mi(`${l} \\times ${g}`)}?`,
+      correctLatex:`${l} \\times ${g} = ${a*b}`,
+      decoyDefs:[
+        {eq:`${l} \\times ${g} = ${l+g}`,   error:`${l+g} = ${l}+${g} is addition — compute multiplication: ${l}×${g} = ${a*b}`},
+        {eq:`${l} \\times ${g} = ${l}`,     error:`${l} is the LCM alone — multiply LCM×GCD: ${l}×${g} = ${a*b}`},
+        {eq:`${l} \\times ${g} = ${a*b+g}`, error:`Off by GCD: ${a*b+g} ≠ ${l}×${g} = ${a*b}. Check: ${l}×${g} = ${a*b}`},
+      ],
+      hint:`LCM×GCD = a×b always. So ${l}×${g} = ${a}×${b} = ${a*b}.`,
+    };
+  },
+];
+
+/* ── L5: Word Problems ───────────────────────────────────── */
+const POOL_L5 = [
+  // P0: bus / train timing
+  () => {
+    const [a, b, lcm] = math.pick(L5_WORD);
+    const [unitA, unitB] = math.pick([["minutes","minutes"],["hours","hours"]]);
+    const [vA, vB] = math.pick([["Bus A","Bus B"],["Train A","Train B"],["Ferry A","Ferry B"]]);
+    return {
+      promptHTML:`<strong>${vA}</strong> departs every <strong>${a} ${unitA}</strong>. <strong>${vB}</strong> departs every <strong>${b} ${unitB}</strong>. They depart together at the same time. After how many ${unitA} will they <em>next</em> depart together?`,
+      correctLatex:`\\operatorname{lcm}(${a}, ${b}) = ${lcm} \\text{ ${unitA}}`,
+      decoyDefs:[
+        {eq:`\\gcd(${a}, ${b}) = ${math.gcd(a,b)} \\text{ ${unitA}}`, error:`GCD gives the largest common divisor — for 'when do they next coincide', we need the smallest common multiple (LCM)`},
+        {eq:`${a} + ${b} = ${a+b} \\text{ ${unitA}}`,                 error:`${a+b} is the sum — 'next meeting time' requires LCM, the smallest multiple of both intervals`},
+        {eq:`${a} \\times ${b} = ${a*b} \\text{ ${unitA}}`,           error:`${a*b} is the product, which is a common multiple but usually not the smallest — LCM(${a},${b})=${lcm}`},
+      ],
+      hint:`"Next joint departure" = smallest time divisible by both ${a} and ${b} = LCM(${a},${b}).`,
+    };
+  },
+  // P1: blinking lights
+  () => {
+    const [a, b, lcm] = math.pick(L5_WORD);
+    return {
+      promptHTML:`Light A blinks every <strong>${a} seconds</strong>. Light B blinks every <strong>${b} seconds</strong>. Both blink together at time 0. After how many seconds do they <em>next</em> blink at the same moment?`,
+      correctLatex:`\\operatorname{lcm}(${a}, ${b}) = ${lcm} \\text{ seconds}`,
+      decoyDefs:[
+        {eq:`${math.gcd(a,b)} \\text{ seconds}`,  error:`${math.gcd(a,b)} = GCD(${a},${b}) — GCD applies to equal-sharing problems, not to periodic coincidence`},
+        {eq:`${a*b} \\text{ seconds}`,             error:`${a*b} = ${a}×${b} is a common multiple but not the smallest — LCM(${a},${b})=${lcm}`},
+        {eq:`${a+b} \\text{ seconds}`,             error:`${a+b} is the sum — list multiples of ${a} and ${b} to find when they first coincide`},
+      ],
+      hint:`Both blink together every LCM(${a},${b}) seconds. Next blink together: LCM = ${lcm} s.`,
+    };
+  },
+  // P2: work / event cycle
+  () => {
+    const [a, b, lcm] = math.pick(L5_WORD);
+    const [ctxA, ctxB, unit] = math.pick([
+      [`Worker A completes a job cycle every <strong>${a} days</strong>`, `Worker B every <strong>${b} days</strong>`, "days"],
+      [`Machine A finishes a batch every <strong>${a} hours</strong>`, `Machine B every <strong>${b} hours</strong>`, "hours"],
+      [`Person A reviews files every <strong>${a} days</strong>`, `Person B every <strong>${b} days</strong>`, "days"],
+    ]);
+    return {
+      promptHTML:`${ctxA}. ${ctxB}. They both finish a cycle today. After how many ${unit} will they <em>next</em> finish a cycle on the same ${unit === "days" ? "day" : "hour"}?`,
+      correctLatex:`\\operatorname{lcm}(${a}, ${b}) = ${lcm} \\text{ ${unit}}`,
+      decoyDefs:[
+        {eq:`${math.gcd(a,b)} \\text{ ${unit}}`,  error:`${math.gcd(a,b)} = GCD — too small to be a multiple of both ${a} and ${b}; use LCM for cycle coincidence`},
+        {eq:`${a+b} \\text{ ${unit}}`,            error:`${a+b} is the sum — the next joint completion is LCM(${a},${b})=${lcm}, not ${a+b}`},
+        {eq:`${a*b} \\text{ ${unit}}`,            error:`${a*b} is a joint completion time, but not the earliest — LCM(${a},${b})=${lcm} < ${a*b}`},
+      ],
+      hint:`"Next time both finish together" = LCM of the two cycle lengths = LCM(${a},${b}) = ${lcm}.`,
+    };
+  },
+  // P3: two events recurring — find first coincidence
+  () => {
+    const [a, b, lcm] = math.pick(L5_WORD);
+    const ctx = math.pick([
+      `Event A happens every <strong>${a} days</strong> and Event B every <strong>${b} days</strong>. Both happen today (Day 0).`,
+      `A red light changes every <strong>${a} minutes</strong> and a green light every <strong>${b} minutes</strong>. Both just changed.`,
+    ]);
+    return {
+      promptHTML:`${ctx} What is the <em>minimum</em> number of days/minutes until both happen again on the same day/minute?`,
+      correctLatex:`\\operatorname{lcm}(${a}, ${b}) = ${lcm}`,
+      decoyDefs:[
+        {eq:`${math.gcd(a,b)}`, error:`${math.gcd(a,b)} = GCD(${a},${b}) — GCD is for greatest-common-divisor problems; 'first coincidence of two cycles' always requires LCM`},
+        {eq:`${lcm-1}`,         error:`${lcm-1} is not a multiple of both ${a} and ${b}: ${lcm-1}÷${a}=${((lcm-1)/a).toFixed(2)}`},
+        {eq:`${a*b}`,           error:`${a*b} = a×b is a valid joint date, but the FIRST (minimum) is LCM(${a},${b})=${lcm}`},
+      ],
+      hint:`First coincidence = smallest positive multiple of both ${a} and ${b} = LCM(${a},${b}) = ${lcm}.`,
+    };
+  },
+];
+
+/* ── Rule: LCM Properties ────────────────────────────────── */
+const POOL_RULE = [
+  // P0: when a | b, LCM(a,b) = b
+  () => {
+    const [a, b] = math.pick(RULE_DIVIDES);
+    return {
+      promptHTML:`Since <strong>${a}</strong> divides <strong>${b}</strong> exactly (${b} ÷ ${a} = ${b/a}), what is ${mi(lcmOp(a,b))}?`,
+      correctLatex:`${lcmOp(a,b)} = ${b}`,
+      decoyDefs:[
+        {eq:`${lcmOp(a,b)} = ${a*b}`, error:`${a*b} = ${a}×${b} is too large — when ${a}|${b}, every multiple of ${b} is already a multiple of ${a}, so LCM = ${b}`},
+        {eq:`${lcmOp(a,b)} = ${a}`,   error:`${a} is the smaller number — LCM must be a multiple of ${b} as well, so LCM ≥ ${b}`},
+        {eq:`${lcmOp(a,b)} = ${a+b}`, error:`${a+b} is their sum — when ${a} divides ${b}, LCM = ${b} (the larger number is already the LCM)`},
+      ],
+      hint:`When a divides b: b is already a multiple of a, so LCM(a,b) = b.`,
+    };
+  },
+  // P1: LCM(n,n) or LCM(1,n)
+  () => {
+    const n = math.pick([6,8,9,12,15,18,20,24,25,30]);
+    const type = math.pick(["self","one"]);
+    if (type === "self") {
+      return {
+        promptHTML:`What is ${mi(lcmOp(n,n))}?`,
+        correctLatex:`${lcmOp(n,n)} = ${n}`,
+        decoyDefs:[
+          {eq:`${lcmOp(n,n)} = ${2*n}`,  error:`${2*n} = 2×${n} — but ${n} itself is already a common multiple of ${n} and ${n}, and it's the smallest one`},
+          {eq:`${lcmOp(n,n)} = 1`,       error:`1 is GCD(${n},${n}), not LCM — LCM must be ≥ ${n}`},
+          {eq:`${lcmOp(n,n)} = ${n*n}`,  error:`${n*n} = ${n}² is the product — LCM(n,n) = n itself (a number is its own LCM with itself)`},
+        ],
+        hint:`LCM(n,n) = n: the smallest common multiple of n with itself is n.`,
+      };
+    } else {
+      return {
+        promptHTML:`What is ${mi(lcmOp(1,n))}?`,
+        correctLatex:`${lcmOp(1,n)} = ${n}`,
+        decoyDefs:[
+          {eq:`${lcmOp(1,n)} = 1`,     error:`1 is GCD(1,${n}) — LCM must be a multiple of ${n}, so LCM ≥ ${n}`},
+          {eq:`${lcmOp(1,n)} = ${n+1}`, error:`${n+1} is not a multiple of ${n}: ${n+1}÷${n}=${((n+1)/n).toFixed(2)}`},
+          {eq:`${lcmOp(1,n)} = ${n-1}`, error:`${n-1} < ${n} — LCM must be a multiple of ${n}, so it cannot be smaller than ${n}`},
+        ],
+        hint:`LCM(1,n) = n: 1 divides every integer, so the smallest common multiple of 1 and n is n itself.`,
+      };
+    }
+  },
+  // P2: LCM × GCD = a × b — find a × b
+  () => {
+    const [a, b, g, l] = math.pick(L4_GCD_SHORT);
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} = ${l} and ${mi(`\\gcd(${a}, ${b})`)} = ${g}. The identity says LCM × GCD = a × b. What is ${mi(`${a} \\times ${b}`)}?`,
+      correctLatex:`${a} \\times ${b} = ${a*b}`,
+      decoyDefs:[
+        {eq:`${a} \\times ${b} = ${l+g}`, error:`${l+g} = LCM+GCD — use multiplication: LCM×GCD = ${l}×${g} = ${a*b}`},
+        {eq:`${a} \\times ${b} = ${l}`,   error:`${l} is the LCM alone — a×b = LCM×GCD = ${l}×${g} = ${a*b}`},
+        {eq:`${a} \\times ${b} = ${a*b+g}`, error:`${a*b+g} ≠ LCM×GCD = ${l}×${g} = ${a*b}`},
+      ],
+      hint:`a×b = LCM×GCD = ${l}×${g} = ${a*b}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_mult(id)     { const t=math.pick(POOL_L1)();   return buildEqQ(id,"mult_basics",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_list(id)     { const t=math.pick(POOL_L2)();   return buildEqQ(id,"lcm_listing",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_prime(id)    { const t=math.pick(POOL_L3)();   return buildEqQ(id,"lcm_prime",     t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_shortcut(id) { const t=math.pick(POOL_L4)();   return buildEqQ(id,"lcm_shortcut",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_word(id)     { const t=math.pick(POOL_L5)();   return buildEqQ(id,"lcm_word",      t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_props(id)    { const t=math.pick(POOL_RULE)(); return buildEqQ(id,"lcm_props",     t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  mult_basics:  gen_mult,
+  lcm_listing:  gen_list,
+  lcm_prime:    gen_prime,
+  lcm_shortcut: gen_shortcut,
+  lcm_word:     gen_word,
+  lcm_props:    gen_props,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of LCM.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      { title:"Greatest Common Divisor (GCD)",
+        url:"../grade_5/gcd_grade5.html",
+        reason:"LCM relies on GCD — the identity LCM×GCD=a×b and the prime-factorization max/min rules are built on GCD understanding." },
+    ],
+    challenge:[
+      { title:"LCM + GCD Combined",
+        url:"../grade_5/lcm_gcd_grade5.html",
+        reason:"Competition-level problems combine both operations: given GCD and LCM, find valid number pairs, count solutions, and solve multi-variable number theory puzzles." },
+    ],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about Least Common Multiple (LCM).`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about LCM.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+applyName();
+</script>
+</body>
+</html>

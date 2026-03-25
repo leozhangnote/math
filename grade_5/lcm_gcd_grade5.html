@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LCM &amp; GCD Combined — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#4527a0,#7b1fa2); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>LCM &amp; GCD Combined</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Competition &nbsp;·&nbsp; Identity, pair reconstruction, three-number operations, word problems, and ratio problems</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Identity</span>
+      <span class="badge badge-L2">Find Pair</span>
+      <span class="badge badge-L3">3-Numbers</span>
+      <span class="badge badge-L4">Word Probs</span>
+      <span class="badge badge-L5">Relations</span>
+      <span class="badge badge-rule">Competition</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Identity:</strong> LCM(a, b) × GCD(a, b) = a × b. Always.</li>
+        <li><strong>Find the pair:</strong> GCD = g, LCM = L → write a = g·m, b = g·n where gcd(m, n) = 1 and m·n = L ÷ g. Each coprime factorisation of L÷g gives one valid pair.</li>
+        <li><strong>Three numbers:</strong> GCD(a, b, c) = GCD(GCD(a, b), c). LCM(a, b, c) = LCM(LCM(a, b), c). Always reduce two at a time.</li>
+        <li><strong>Ratio rule:</strong> If a : b = m : n with gcd(m, n) = 1, then GCD(a, b) = a÷m = b÷n and LCM(a, b) = m·n·GCD.</li>
+        <li><strong>Word problem signals:</strong> "equal distribution / no waste" → GCD. "next coincidence / synchronise" → LCM.</li>
+        <li><strong>LCM ÷ GCD:</strong> LCM(a,b) ÷ GCD(a,b) = (a÷GCD) × (b÷GCD) = the product of the coprime quotients.</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_lcm_gcd_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi     = s => math.inline(s);
+const lcmOp  = (a, b) => `\\operatorname{lcm}(${a}, ${b})`;
+const gcdOp  = (a, b) => `\\gcd(${a}, ${b})`;
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  identity: {
+    name:"Level 1: LCM × GCD Identity", level:1, badgeClass:"badge-L1",
+    summary:"For any two positive integers a and b: LCM(a, b) × GCD(a, b) = a × b. This identity lets you find any one of the four quantities — a, b, GCD, or LCM — when the other three are known.",
+    steps:[
+      "Write down the identity: LCM(a, b) × GCD(a, b) = a × b.",
+      "Identify which of the four quantities (a, b, GCD, LCM) is unknown.",
+      "Substitute the three known values and solve: unknown = product of two knowns ÷ third known.",
+      "If finding one of the numbers: b = (a × b) ÷ a = GCD × LCM ÷ a.",
+      "Check: verify LCM × GCD equals a × b.",
+    ],
+    example:{
+      problemHTML:`GCD(8, 12) = 4. Using only this and the identity, find LCM(8, 12).`,
+      solutionHTML:`Identity: LCM × GCD = a × b<br>
+        LCM × 4 = 8 × 12 = 96<br>
+        LCM = 96 ÷ 4 = <strong>24</strong>.<br>
+        Check: 24 × 4 = 96 = 8 × 12 ✓`,
+    },
+    misconception:"The identity connects ALL FOUR quantities. A common mistake is to confuse which values to divide: always divide the PRODUCT (a × b) by the known GCD or LCM — not the other way around.",
+    keyConcepts:[
+      {label:"Why the Identity Works", prompt:"Explain why LCM(a,b) × GCD(a,b) = a × b using the example (8,12). Break the proof into the prime factorisation step and the max+min exponent step."},
+      {label:"Find the Missing Number", prompt:"GCD(a, b) = 6 and LCM(a, b) = 36. One number is 12. How do I find the other number using the identity? Show me two approaches."},
+    ],
+  },
+
+  find_pair: {
+    name:"Level 2: Find Valid Pairs from GCD and LCM", level:2, badgeClass:"badge-L2",
+    summary:"Given GCD = g and LCM = L, reconstruct all valid pairs (a, b). Write a = g·m and b = g·n where gcd(m, n) = 1 (m and n are coprime). Then m × n = L ÷ g. Every coprime factorisation of L÷g gives one valid pair.",
+    steps:[
+      "Compute the ratio R = LCM ÷ GCD.",
+      "List all factor pairs (m, n) of R with m ≤ n.",
+      "Keep only coprime pairs: gcd(m, n) = 1.",
+      "Each coprime pair (m, n) gives a valid number pair: a = GCD × m, b = GCD × n.",
+      "Verify: check that GCD(a, b) = g and LCM(a, b) = L.",
+    ],
+    example:{
+      problemHTML:`GCD = 3 and LCM = 18. Find all valid pairs (a, b) with a ≤ b.`,
+      solutionHTML:`R = 18 ÷ 3 = 6. Factor pairs of 6: (1, 6) and (2, 3).<br>
+        gcd(1, 6) = 1 ✓ → pair: (3×1, 3×6) = <strong>(3, 18)</strong>.<br>
+        gcd(2, 3) = 1 ✓ → pair: (3×2, 3×3) = <strong>(6, 9)</strong>.<br>
+        Both pairs have GCD = 3 and LCM = 18 ✓`,
+    },
+    misconception:"Not all factor pairs of R are valid — you must discard pairs (m, n) where gcd(m, n) > 1. For example, for R = 4: (1, 4) is coprime ✓ but (2, 2) has gcd = 2 ✗.",
+    keyConcepts:[
+      {label:"Counting Valid Pairs", prompt:"GCD = 5 and LCM = 60. How many valid pairs (a, b) with a ≤ b exist? Walk me through listing factor pairs of R = 60÷5 = 12 and filtering out non-coprime ones."},
+      {label:"Why Coprime?", prompt:"Why must m and n be coprime when reconstructing a pair from GCD and LCM? Use an example to show what goes wrong if gcd(m, n) > 1."},
+    ],
+  },
+
+  three_nums: {
+    name:"Level 3: GCD and LCM of Three Numbers", level:3, badgeClass:"badge-L3",
+    summary:"To find GCD or LCM of three numbers, apply the two-number rule twice: GCD(a, b, c) = GCD(GCD(a, b), c), and LCM(a, b, c) = LCM(LCM(a, b), c). Always reduce two at a time.",
+    steps:[
+      "To find GCD(a, b, c): first compute GCD(a, b) = d. Then compute GCD(d, c). This is the answer.",
+      "To find LCM(a, b, c): first compute LCM(a, b) = m. Then compute LCM(m, c). This is the answer.",
+      "Use the Euclidean algorithm for GCD and the identity LCM(x, y) = x × y ÷ GCD(x, y) for LCM.",
+      "Double-check: GCD must divide all three numbers; every number must divide LCM.",
+    ],
+    example:{
+      problemHTML:`Find GCD(6, 9, 12) and LCM(6, 9, 12).`,
+      solutionHTML:`GCD: GCD(6, 9) = 3. GCD(3, 12) = <strong>3</strong>.<br>
+        LCM: LCM(6, 9) = 18. LCM(18, 12) = 18×12÷GCD(18,12) = 216÷6 = <strong>36</strong>.<br>
+        Check: 3 divides 6, 9, 12 ✓; 6, 9, 12 all divide 36 ✓`,
+    },
+    misconception:"A common error is stopping after processing only the first two numbers. Always continue with the third: GCD(GCD(a,b), c) may differ from GCD(a, b).",
+    keyConcepts:[
+      {label:"Three-Number Step-by-Step", prompt:"Find LCM(4, 6, 9) step by step. First find LCM(4, 6), then LCM(that result, 9). Explain why you get a different answer from LCM(4, 6) alone."},
+      {label:"GCD Collapses Quickly", prompt:"Explain why GCD(6, 10, 15) = 1 even though no individual pair of these numbers has GCD = 1. Show the two-step GCD calculation."},
+    ],
+  },
+
+  word_both: {
+    name:"Level 4: Word Problems — GCD or LCM?", level:4, badgeClass:"badge-L4",
+    summary:"Word problems signal which operation to use. 'Equal sharing / no leftover / maximum groups' → GCD. 'Next time both happen together / minimum interval / synchronise' → LCM. The identity GCD × LCM = a × b connects the two.",
+    steps:[
+      "Read the problem. Look for the signal: sharing/dividing evenly → GCD; coincidence/meeting again → LCM.",
+      "Identify the two (or more) numbers involved.",
+      "Compute GCD or LCM as required. Use the method that fits the numbers.",
+      "Verify your answer makes sense in context.",
+      "If the problem asks for BOTH, use the identity: one gives the other via GCD × LCM = a × b.",
+    ],
+    example:{
+      problemHTML:`(a) A teacher has 24 pencils and 36 erasers to pack into identical gift bags with no leftovers. What is the maximum number of bags?<br>
+        (b) Bus A departs every 24 minutes; Bus B every 36 minutes. They both depart at 8:00 AM. When is the next time they depart together?`,
+      solutionHTML:`(a) Maximum bags = GCD(24, 36) = <strong>12</strong> bags (each bag: 2 pencils, 3 erasers).<br>
+        (b) Next joint departure = LCM(24, 36) = 24×36÷12 = <strong>72</strong> minutes later = 9:12 AM.<br>
+        Note: 12 × 72 = 864 = 24 × 36 ✓ (identity holds)`,
+    },
+    misconception:"Do not use GCD for timing problems or LCM for sharing problems. GCD gives the largest common divisor (for splitting); LCM gives the smallest common multiple (for coincidence timing).",
+    keyConcepts:[
+      {label:"GCD vs LCM Signal Words", prompt:"Give me three real-world word problem contexts where I use GCD, and three where I use LCM. For each, identify the key signal word or phrase that tells me which to use."},
+      {label:"Identity in Context", prompt:"A problem gives GCD(a,b) = 8 and the product a×b = 480. Without knowing a and b individually, find LCM(a,b). Then invent a word problem that uses this result."},
+    ],
+  },
+
+  relations: {
+    name:"Level 5: LCM/GCD Ratio and Sum Relations", level:5, badgeClass:"badge-L5",
+    summary:"The ratio LCM ÷ GCD and the sum LCM + GCD encode useful information. When LCM = k × GCD, then k = (a÷GCD) × (b÷GCD) = product of the coprime quotients. Combined with the identity LCM × GCD = a × b, you can recover GCD from just k and a×b.",
+    steps:[
+      "If LCM ÷ GCD = k and GCD = g, then LCM = k × g.",
+      "If LCM + GCD = S and GCD = g, then LCM = S − g.",
+      "If LCM = k × GCD and a × b = P (known), then LCM × GCD = P → k × GCD² = P → GCD = √(P ÷ k).",
+      "Always verify: LCM × GCD should equal a × b.",
+    ],
+    example:{
+      problemHTML:`LCM(a, b) = 6 × GCD(a, b). Their product a × b = 96. Find GCD and LCM.`,
+      solutionHTML:`Let GCD = g. Then LCM = 6g.<br>
+        LCM × GCD = a×b → 6g × g = 96 → 6g² = 96 → g² = 16 → g = 4.<br>
+        LCM = 6 × 4 = <strong>24</strong>. GCD = <strong>4</strong>.<br>
+        Check: 24 × 4 = 96 ✓ (could be the pair (8, 12): GCD=4, LCM=24 ✓)`,
+    },
+    misconception:"LCM ÷ GCD = k does NOT mean LCM = k and GCD = 1. You must find the actual GCD using the product constraint, then multiply by k for LCM.",
+    keyConcepts:[
+      {label:"Ratio Method", prompt:"LCM(a,b) / GCD(a,b) = 12 and GCD(a,b) = 3. Find LCM and a possible pair (a,b). Why are there multiple valid pairs?"},
+      {label:"Square Root Trick", prompt:"LCM = 5 × GCD and a×b = 180. Use the identity to write 5×GCD² = 180, solve for GCD, then find LCM. Why does a perfect-square quotient guarantee an integer GCD?"},
+    ],
+  },
+
+  competition: {
+    name:"Rule: Ratio + GCD/LCM Problems", level:0, badgeClass:"badge-rule",
+    summary:"Competition problems often give the ratio a : b = m : n (with gcd(m,n)=1). Then GCD(a,b) = a÷m = b÷n and LCM(a,b) = m × n × GCD. From ratio + LCM you can find GCD; from ratio + product you can find both.",
+    steps:[
+      "If a : b = m : n with gcd(m,n) = 1, set a = m·g and b = n·g where g = GCD(a,b).",
+      "Then LCM(a,b) = m × n × g (since gcd(m,n) = 1).",
+      "From ratio + GCD: LCM = m × n × GCD.",
+      "From ratio + LCM: GCD = LCM ÷ (m × n).",
+      "From ratio + product (a×b = P): g² = P ÷ (m × n) → g = √(P ÷ (m × n)).",
+    ],
+    example:{
+      problemHTML:`Two numbers are in the ratio 3 : 4 and their GCD is 5. Find their LCM and the two numbers.`,
+      solutionHTML:`Set a = 3×5 = 15, b = 4×5 = 20.<br>
+        LCM = 3 × 4 × 5 = <strong>60</strong>.<br>
+        Check: GCD(15,20) = 5 ✓, LCM(15,20) = 60 ✓, 60×5 = 300 = 15×20 ✓`,
+    },
+    misconception:"The ratio m:n must be in lowest terms (gcd(m,n)=1) for the formula LCM = m×n×GCD to work. If given ratio 4:6, reduce to 2:3 first before applying the formula.",
+    keyConcepts:[
+      {label:"Ratio to GCD and LCM", prompt:"Two numbers are in ratio 2:5 and their GCD is 4. Find the two numbers and their LCM. Explain why the formula LCM = m×n×GCD requires gcd(m,n) = 1."},
+      {label:"Ratio Plus Product", prompt:"Two numbers are in ratio 3:4. Their product is 300. Find GCD and LCM without knowing the individual numbers. Show the step where you take a square root."},
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA ARRAYS
+══════════════════════════════════════════════════════════════ */
+
+// [a, b, g, l]  where g=GCD(a,b), l=LCM(a,b), g*l = a*b
+const L1_IDENTITY = [
+  [4, 6, 2, 12],
+  [6, 8, 2, 24],
+  [9, 12, 3, 36],
+  [10, 15, 5, 30],
+  [12, 18, 6, 36],
+  [8, 12, 4, 24],
+  [14, 21, 7, 42],
+  [15, 20, 5, 60],
+  [6, 10, 2, 30],
+  [20, 30, 10, 60],
+];
+
+// [g, l, ca, cb, w1a, w1b, w2a, w2b, w3a, w3b]
+// (ca,cb) = valid pair; (wNa,wNb) = wrong pair
+const L2_PAIR = [
+  [2, 12,  4,  6,   3,  8,   6,  6,   4,  4],
+  [3, 18,  6,  9,   4,  9,   6,  6,   3,  9],
+  [4, 24,  8, 12,   6, 12,   8,  8,   4, 12],
+  [5, 30, 10, 15,   6, 15,  10, 10,   5, 15],
+  [6, 36, 12, 18,   9, 18,  12, 12,   6, 18],
+  [2, 20,  4, 10,   5,  8,   4,  8,   2, 10],
+  [3, 21,  3, 21,   6, 21,   9, 21,   3, 14],
+  [4, 28,  4, 28,   8, 28,   4, 14,   7, 16],
+];
+
+// [a, b, c, g_abc, l_abc, gcd_ab, lcm_ab]
+const L3_THREE = [
+  [ 4,  6, 10, 2, 60,  2, 12],
+  [ 6,  9, 12, 3, 36,  3, 18],
+  [ 4,  8, 12, 4, 24,  4,  8],
+  [ 5, 10, 15, 5, 30,  5, 10],
+  [ 6, 10, 15, 1, 30,  2, 30],
+  [ 4,  6,  9, 1, 36,  2, 12],
+  [ 8, 12, 18, 2, 72,  4, 24],
+  [ 6, 14, 21, 1, 42,  2, 42],
+];
+
+// [a, b, g, l]  for word problems
+const L4_WORD = [
+  [24, 36, 12,  72],
+  [16, 24,  8,  48],
+  [18, 24,  6,  72],
+  [20, 30, 10,  60],
+  [15, 20,  5,  60],
+  [12, 18,  6,  36],
+  [30, 45, 15,  90],
+  [24, 40,  8, 120],
+];
+
+// [a, b, g, l]  for relation problems — ratio l/g is clean
+const L5_REL = [
+  [ 4,  6, 2, 12],   // ratio=6
+  [ 9, 12, 3, 36],   // ratio=12
+  [10, 15, 5, 30],   // ratio=6
+  [ 8, 12, 4, 24],   // ratio=6
+  [ 6, 10, 2, 30],   // ratio=15
+  [ 4, 10, 2, 20],   // ratio=10
+  [ 6, 14, 2, 42],   // ratio=21
+  [ 6,  8, 2, 24],   // ratio=12
+];
+
+// [a, b, m, n, g, l]  where a=m*g, b=n*g, gcd(m,n)=1
+const L6_COMP = [
+  [ 8, 12, 2, 3, 4, 24],
+  [15, 20, 3, 4, 5, 60],
+  [ 6, 15, 2, 5, 3, 30],
+  [ 9, 12, 3, 4, 3, 36],
+  [12, 15, 4, 5, 3, 60],
+  [10, 15, 2, 3, 5, 30],
+  [12, 20, 3, 5, 4, 60],
+  [12, 18, 2, 3, 6, 36],
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Identity ──────────────────────────────────────────── */
+const POOL_IDENTITY = [
+  // P0: given a, b, GCD → find LCM
+  () => {
+    const [a, b, g, l] = math.pick(L1_IDENTITY);
+    const prod = a * b;
+    return {
+      promptHTML:`${mi(gcdOp(a,b))} = <strong>${g}</strong>. Given that ${mi(`${a}\\times${b}=${prod}`)}, use the identity ${mi(`\\operatorname{lcm}\\times\\gcd = a\\times b`)} to find ${mi(lcmOp(a,b))}.`,
+      correctLatex:`${prod} \\div ${g} = ${l}`,
+      decoyDefs:[
+        { eq:`${prod}`,              error:`${prod} = a×b itself — you still need to divide by GCD=${g} to get LCM` },
+        { eq:`${g} \\times ${a} = ${g*a}`,  error:`multiplying GCD×a gives ${g*a}, not LCM; use a×b÷GCD=${prod}÷${g}=${l}` },
+        { eq:`${a} + ${b} - ${g} = ${a+b-g}`, error:`${a+b-g} is not related to the identity; LCM = a×b÷GCD=${prod}÷${g}=${l}` },
+      ],
+      hint:`LCM = a×b ÷ GCD = ${prod} ÷ ${g} = ${l}.`,
+    };
+  },
+  // P1: given a, b, LCM → find GCD
+  () => {
+    const [a, b, g, l] = math.pick(L1_IDENTITY);
+    const prod = a * b;
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} = <strong>${l}</strong>. Given that ${mi(`${a}\\times${b}=${prod}`)}, use the identity to find ${mi(gcdOp(a,b))}.`,
+      correctLatex:`${prod} \\div ${l} = ${g}`,
+      decoyDefs:[
+        { eq:`${l} \\div ${a} = ${l/a}`, error:`${l/a} = LCM÷a = b÷GCD — that is not GCD; use a×b÷LCM=${prod}÷${l}=${g}` },
+        { eq:`${a}`,                     error:`${a} is one of the original numbers, not GCD; GCD = a×b÷LCM = ${g}` },
+        { eq:`${b}`,                     error:`${b} is one of the original numbers, not GCD; GCD = a×b÷LCM = ${g}` },
+      ],
+      hint:`GCD = a×b ÷ LCM = ${prod} ÷ ${l} = ${g}.`,
+    };
+  },
+  // P2: given GCD and LCM → find a×b
+  () => {
+    const [a, b, g, l] = math.pick(L1_IDENTITY);
+    return {
+      promptHTML:`${mi(gcdOp(a,b))} = <strong>${g}</strong> and ${mi(lcmOp(a,b))} = <strong>${l}</strong>. Use the identity to find ${mi(`${a}\\times${b}`)}.`,
+      correctLatex:`${g} \\times ${l} = ${g*l}`,
+      decoyDefs:[
+        { eq:`${g} + ${l} = ${g+l}`,   error:`${g+l} is the sum — a×b = GCD×LCM = ${g}×${l} = ${g*l}` },
+        { eq:`${l} \\div ${g} = ${l/g}`, error:`${l/g} = LCM÷GCD — the product a×b equals GCD×LCM = ${g*l}` },
+        { eq:`${l} - ${g} = ${l-g}`,   error:`${l-g} is the difference — multiply GCD and LCM: ${g}×${l} = ${g*l}` },
+      ],
+      hint:`a×b = GCD × LCM = ${g} × ${l} = ${g*l}.`,
+    };
+  },
+  // P3: given GCD, LCM, one number → find the other
+  () => {
+    const [a, b, g, l] = math.pick(L1_IDENTITY);
+    const prod = g * l;
+    return {
+      promptHTML:`${mi(gcdOp(a,b))} = ${g} and ${mi(lcmOp(a,b))} = ${l}. One of the numbers is <strong>${a}</strong>. Find the other number.`,
+      correctLatex:`${g} \\times ${l} \\div ${a} = ${b}`,
+      decoyDefs:[
+        { eq:`${g} \\times ${l} \\div ${b} = ${a}`, error:`${a} is the number already given, not the missing one; divide by ${a} to get ${b}` },
+        { eq:`${l} \\div ${a} = ${l/a}`,            error:`${l/a} = LCM÷a = b÷GCD — multiply by GCD first: GCD×LCM÷a = ${b}` },
+        { eq:`${g} \\times ${a} = ${g*a}`,           error:`multiplying GCD×a gives ${g*a}; use GCD×LCM÷a = ${prod}÷${a} = ${b}` },
+      ],
+      hint:`Other number = GCD × LCM ÷ known = ${g} × ${l} ÷ ${a} = ${b}.`,
+    };
+  },
+];
+
+/* ── L2: Find Pair ─────────────────────────────────────────── */
+const POOL_PAIR = [
+  // P0: which pair satisfies GCD=g and LCM=l?
+  () => {
+    const [g, l, ca, cb, w1a, w1b, w2a, w2b, w3a, w3b] = math.pick(L2_PAIR);
+    return {
+      promptHTML:`${mi(gcdOp("a","b"))} = <strong>${g}</strong> and ${mi(lcmOp("a","b"))} = <strong>${l}</strong>. Which pair <em>(a, b)</em> satisfies both conditions?`,
+      correctLatex:`(${ca},\\,${cb})`,
+      decoyDefs:[
+        { eq:`(${w1a},\\,${w1b})`, error:`GCD(${w1a},${w1b})≠${g} or LCM(${w1a},${w1b})≠${l}` },
+        { eq:`(${w2a},\\,${w2b})`, error:`GCD(${w2a},${w2b})≠${g} or LCM(${w2a},${w2b})≠${l}` },
+        { eq:`(${w3a},\\,${w3b})`, error:`GCD(${w3a},${w3b})≠${g} or LCM(${w3a},${w3b})≠${l}` },
+      ],
+      hint:`Write a = ${g}·m and b = ${g}·n with gcd(m,n)=1 and m·n = LCM÷GCD = ${l/g}. The valid coprime pair (m,n) = (${ca/g},${cb/g}) gives (${ca},${cb}).`,
+    };
+  },
+  // P1: sum of the pair — given unique pair, find a+b
+  () => {
+    const [g, l, ca, cb] = math.pick(L2_PAIR);
+    const s = ca + cb;
+    const wrong1 = g + l;
+    const wrong2 = ca * cb;
+    const wrong3 = l - g;
+    return {
+      promptHTML:`${mi(gcdOp("a","b"))} = <strong>${g}</strong> and ${mi(lcmOp("a","b"))} = <strong>${l}</strong> with a ≤ b. One valid pair is (a, b) = (${ca}, ${cb}). What is a + b?`,
+      correctLatex:`${ca} + ${cb} = ${s}`,
+      decoyDefs:[
+        { eq:`${wrong1}`, error:`${wrong1} = GCD+LCM — that is not a+b; here a+b = ${ca}+${cb} = ${s}` },
+        { eq:`${wrong2}`, error:`${wrong2} = a×b — but a+b = ${ca}+${cb} = ${s}` },
+        { eq:`${wrong3}`, error:`${wrong3} = LCM−GCD — that is not a+b = ${s}` },
+      ],
+      hint:`The pair is (${ca}, ${cb}), so a+b = ${ca}+${cb} = ${s}.`,
+    };
+  },
+  // P2: count valid pairs
+  () => {
+    const [g, l, ca, cb] = math.pick(L2_PAIR);
+    const R = l / g;
+    // count coprime factor pairs of R with m<=n
+    let count = 0;
+    for (let m = 1; m * m <= R; m++) {
+      if (R % m === 0) {
+        const n = R / m;
+        let gcmn = m, tmp = n;
+        while (tmp) { const r = gcmn % tmp; gcmn = tmp; tmp = r; }
+        if (gcmn === 1) count++;
+      }
+    }
+    const wrong1 = count + 1;
+    const wrong2 = count + 2;
+    const wrong3 = Math.ceil(R / 2);
+    return {
+      promptHTML:`${mi(gcdOp("a","b"))} = <strong>${g}</strong> and ${mi(lcmOp("a","b"))} = <strong>${l}</strong> with a ≤ b. How many valid integer pairs (a, b) satisfy both conditions?`,
+      correctLatex:`${count} \\text{ pair${count!==1?"s":""}}`,
+      decoyDefs:[
+        { eq:`${wrong1} \\text{ pairs}`, error:`${wrong1} is too many — R=${R}, list coprime factor pairs of ${R} to count correctly` },
+        { eq:`${wrong2} \\text{ pairs}`, error:`${wrong2} is too many — only coprime factor pairs of R=${R} are valid; non-coprime pairs would give a smaller GCD` },
+        { eq:`${wrong3} \\text{ pairs}`, error:`${wrong3} = total factor pairs of ${R}, but some are non-coprime and must be discarded` },
+      ],
+      hint:`R = LCM÷GCD = ${R}. Count coprime factor pairs (m,n) of ${R} with m≤n. Answer: ${count}.`,
+    };
+  },
+];
+
+/* ── L3: Three Numbers ─────────────────────────────────────── */
+const POOL_THREE = [
+  // P0: find GCD of three numbers (use entries where gcd_ab ≠ g_abc)
+  () => {
+    const row = math.pick(L3_THREE.filter(r => r[5] !== r[3]));
+    const [a, b, c, g, l, gab] = row;
+    return {
+      promptHTML:`Find ${mi(`\\gcd(${a},\\,${b},\\,${c})`)} step by step.`,
+      correctLatex:`\\gcd(${a},\\,${b},\\,${c}) = ${g}`,
+      decoyDefs:[
+        { eq:`\\gcd(${a},\\,${b},\\,${c}) = ${gab}`, error:`${gab} = GCD(${a},${b}) — you stopped after the first pair; must continue: GCD(${gab},${c}) = ${g}` },
+        { eq:`\\gcd(${a},\\,${b},\\,${c}) = ${Math.min(a,b,c)}`, error:`${Math.min(a,b,c)} is just the smallest number; GCD can be smaller (here GCD = ${g})` },
+        { eq:`\\gcd(${a},\\,${b},\\,${c}) = ${g+1}`, error:`${g+1} does not divide all three numbers; check: ${c}÷${g+1}=${(c/(g+1)).toFixed(2)}` },
+      ],
+      hint:`GCD(${a},${b})=${gab}. Then GCD(${gab},${c}) = ${g}.`,
+    };
+  },
+  // P1: find LCM of three numbers (use entries where lcm_ab ≠ l_abc)
+  () => {
+    const row = math.pick(L3_THREE.filter(r => r[6] !== r[4]));
+    const [a, b, c, g, l, gab, lab] = row;
+    return {
+      promptHTML:`Find ${mi(`\\operatorname{lcm}(${a},\\,${b},\\,${c})`)} step by step.`,
+      correctLatex:`\\operatorname{lcm}(${a},\\,${b},\\,${c}) = ${l}`,
+      decoyDefs:[
+        { eq:`\\operatorname{lcm}(${a},\\,${b},\\,${c}) = ${lab}`, error:`${lab} = LCM(${a},${b}) — you stopped after the first pair; LCM(${lab},${c}) = ${l}` },
+        { eq:`\\operatorname{lcm}(${a},\\,${b},\\,${c}) = ${l*2}`, error:`${l*2} is double the answer; ${l} is divisible by all three: ${a},${b},${c}` },
+        { eq:`\\operatorname{lcm}(${a},\\,${b},\\,${c}) = ${l+g}`, error:`${l+g} is not a multiple of every number in the set` },
+      ],
+      hint:`LCM(${a},${b})=${lab}. Then LCM(${lab},${c}) = ${l}.`,
+    };
+  },
+  // P2: find GCD + LCM of three numbers
+  () => {
+    const [a, b, c, g, l] = math.pick(L3_THREE);
+    return {
+      promptHTML:`For the three numbers ${a}, ${b}, ${c}: GCD = ${g} and LCM = ${l}. What is GCD + LCM?`,
+      correctLatex:`${g} + ${l} = ${g+l}`,
+      decoyDefs:[
+        { eq:`${l}`,          error:`${l} is just the LCM — add GCD: ${g}+${l} = ${g+l}` },
+        { eq:`${g} \\times ${l} = ${g*l}`, error:`${g*l} = GCD×LCM; the question asks for GCD+LCM = ${g+l}` },
+        { eq:`${l} \\div ${g} = ${l/g}`,  error:`${l/g} = LCM÷GCD; add them instead: ${g}+${l} = ${g+l}` },
+      ],
+      hint:`GCD(${a},${b},${c}) = ${g}. LCM(${a},${b},${c}) = ${l}. Sum = ${g+l}.`,
+    };
+  },
+];
+
+/* ── L4: Word Problems ─────────────────────────────────────── */
+const POOL_WORD = [
+  // P0: distribution → GCD
+  () => {
+    const [a, b, g, l] = math.pick(L4_WORD);
+    const [item1, item2] = math.pick([
+      ["apples","oranges"], ["pencils","erasers"], ["red cards","blue cards"],
+      ["stickers","stamps"], ["cookies","crackers"],
+    ]);
+    return {
+      promptHTML:`A teacher has <strong>${a} ${item1}</strong> and <strong>${b} ${item2}</strong> to pack into identical bags so that every bag has the same number of each item and there are no leftovers. What is the <em>maximum</em> number of bags?`,
+      correctLatex:`\\gcd(${a},\\,${b}) = ${g} \\text{ bags}`,
+      decoyDefs:[
+        { eq:`\\operatorname{lcm}(${a},\\,${b}) = ${l} \\text{ bags}`, error:`${l} = LCM — use GCD for equal sharing; LCM is for finding the next coincidence time` },
+        { eq:`${a} + ${b} = ${a+b} \\text{ bags}`, error:`${a+b} = total items — the number of bags divides both ${a} and ${b} evenly, so it is GCD(${a},${b}) = ${g}` },
+        { eq:`${Math.max(a,b)} \\text{ bags}`, error:`${Math.max(a,b)} bags would require >${Math.min(a,b)} of the other item per bag, but there are only ${Math.min(a,b)}` },
+      ],
+      hint:`Maximum equal bags = GCD(${a}, ${b}) = ${g}.`,
+    };
+  },
+  // P1: synchronisation → LCM
+  () => {
+    const [a, b, g, l] = math.pick(L4_WORD);
+    return {
+      promptHTML:`Train A departs every <strong>${a} minutes</strong>. Train B departs every <strong>${b} minutes</strong>. Both depart together at 6:00 AM. How many minutes later do they <em>next</em> depart together?`,
+      correctLatex:`\\operatorname{lcm}(${a},\\,${b}) = ${l} \\text{ minutes}`,
+      decoyDefs:[
+        { eq:`\\gcd(${a},\\,${b}) = ${g} \\text{ minutes}`, error:`${g} = GCD — use LCM for the next coincidence; GCD is for equal-division problems` },
+        { eq:`${a} \\times ${b} = ${a*b} \\text{ minutes}`, error:`${a*b} is a common departure time but NOT the smallest; LCM(${a},${b}) = ${l} < ${a*b}` },
+        { eq:`${a} + ${b} = ${a+b} \\text{ minutes}`, error:`${a+b} is the sum — list multiples of ${a} and ${b}; the first shared multiple is LCM = ${l}` },
+      ],
+      hint:`Next joint departure = LCM(${a}, ${b}) = ${l} minutes.`,
+    };
+  },
+  // P2: given GCD and LCM, find product
+  () => {
+    const [a, b, g, l] = math.pick(L4_WORD);
+    return {
+      promptHTML:`A carpenter has two boards. GCD of their lengths is <strong>${g} cm</strong> and LCM of their lengths is <strong>${l} cm</strong>. What is the <em>product</em> of their lengths in cm²?`,
+      correctLatex:`${g} \\times ${l} = ${g*l} \\text{ cm}^2`,
+      decoyDefs:[
+        { eq:`${g} + ${l} = ${g+l} \\text{ cm}^2`, error:`${g+l} is the sum — the product of the lengths = GCD×LCM = ${g}×${l} = ${g*l}` },
+        { eq:`${l} \\div ${g} = ${l/g} \\text{ cm}^2`, error:`${l/g} = LCM÷GCD — to get the product use GCD×LCM = ${g*l}` },
+        { eq:`${l} - ${g} = ${l-g} \\text{ cm}^2`, error:`${l-g} is the difference — the identity says length₁×length₂ = GCD×LCM = ${g*l}` },
+      ],
+      hint:`product of lengths = GCD × LCM = ${g} × ${l} = ${g*l} cm².`,
+    };
+  },
+];
+
+/* ── L5: Relations ─────────────────────────────────────────── */
+const POOL_REL = [
+  // P0: LCM/GCD ratio → find LCM given GCD
+  () => {
+    const [a, b, g, l] = math.pick(L5_REL);
+    const ratio = l / g;
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} ÷ ${mi(gcdOp(a,b))} = <strong>${ratio}</strong> and ${mi(gcdOp(a,b))} = <strong>${g}</strong>. Find ${mi(lcmOp(a,b))}.`,
+      correctLatex:`${g} \\times ${ratio} = ${l}`,
+      decoyDefs:[
+        { eq:`${ratio}`,          error:`${ratio} is the ratio — LCM = GCD × ratio = ${g} × ${ratio} = ${l}` },
+        { eq:`${g} + ${ratio} = ${g+ratio}`, error:`${g+ratio} = GCD+ratio — multiply: LCM = GCD × ratio = ${l}` },
+        { eq:`${g*2}`,            error:`${g*2} = 2×GCD — use the ratio: LCM = ${g} × ${ratio} = ${l}` },
+      ],
+      hint:`LCM = GCD × ratio = ${g} × ${ratio} = ${l}.`,
+    };
+  },
+  // P1: LCM+GCD = S, GCD known → find LCM
+  () => {
+    const [a, b, g, l] = math.pick(L5_REL);
+    const S = g + l;
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} + ${mi(gcdOp(a,b))} = <strong>${S}</strong> and ${mi(gcdOp(a,b))} = <strong>${g}</strong>. Find ${mi(lcmOp(a,b))}.`,
+      correctLatex:`${S} - ${g} = ${l}`,
+      decoyDefs:[
+        { eq:`${S}`,              error:`${S} = LCM+GCD — subtract GCD: LCM = ${S}−${g} = ${l}` },
+        { eq:`${S} + ${g} = ${S+g}`, error:`${S+g} = LCM+2·GCD — subtract GCD: LCM = ${S}−${g} = ${l}` },
+        { eq:`${S} \\div 2 = ${S/2}`, error:`${S/2} would only work if GCD=LCM — LCM = S−GCD = ${S}−${g} = ${l}` },
+      ],
+      hint:`LCM = (LCM+GCD) − GCD = ${S} − ${g} = ${l}.`,
+    };
+  },
+  // P2: LCM = k × GCD and a×b known → find GCD
+  () => {
+    // filter to entries where l/g × g² = a×b gives a perfect-square GCD
+    const valid = L5_REL.filter(([a,b,g,l]) => {
+      const ratio = l/g, prod = a*b;
+      const g2 = prod / ratio;
+      return Number.isInteger(g2) && Math.floor(Math.sqrt(g2))**2 === g2;
+    });
+    const [a, b, g, l] = math.pick(valid);
+    const ratio = l / g;
+    const prod = a * b;
+    return {
+      promptHTML:`${mi(lcmOp(a,b))} = <strong>${ratio}</strong> × ${mi(gcdOp(a,b))} and ${mi(`${a}\\times${b}`)} = <strong>${prod}</strong>. Find ${mi(gcdOp(a,b))}.`,
+      correctLatex:`\\gcd = \\sqrt{${prod} \\div ${ratio}} = ${g}`,
+      decoyDefs:[
+        { eq:`\\gcd = ${prod} \\div ${ratio} = ${prod/ratio}`, error:`${prod/ratio} = a×b÷ratio — you need a square root: GCD = √(${prod}÷${ratio}) = √${prod/ratio} = ${g}` },
+        { eq:`\\gcd = ${ratio}`,  error:`${ratio} is the ratio k, not GCD; set k×GCD² = ${prod}, so GCD = √(${prod}÷${ratio}) = ${g}` },
+        { eq:`\\gcd = ${g+1}`,    error:`${g+1}: check: (${g+1})² × ${ratio} = ${(g+1)*(g+1)*ratio} ≠ ${prod}` },
+      ],
+      hint:`LCM×GCD = a×b → ${ratio}×GCD²=${prod} → GCD = √(${prod}÷${ratio}) = ${g}.`,
+    };
+  },
+];
+
+/* ── Rule: Competition ─────────────────────────────────────── */
+const POOL_COMP = [
+  // P0: ratio m:n + GCD → find LCM
+  () => {
+    const [a, b, m, n, g, l] = math.pick(L6_COMP);
+    return {
+      promptHTML:`Two numbers are in ratio <strong>${m} : ${n}</strong> and their GCD is <strong>${g}</strong>. Find their LCM.`,
+      correctLatex:`${m} \\times ${n} \\times ${g} = ${l}`,
+      decoyDefs:[
+        { eq:`${m} \\times ${g} = ${m*g}`, error:`${m*g} = a, one of the numbers — LCM = m×n×GCD = ${m}×${n}×${g} = ${l}` },
+        { eq:`${n} \\times ${g} = ${n*g}`, error:`${n*g} = b, the other number — LCM = m×n×GCD = ${l}` },
+        { eq:`${m} \\times ${n} = ${m*n}`, error:`${m*n} = m×n — still need to multiply by GCD=${g}: LCM = ${m}×${n}×${g} = ${l}` },
+      ],
+      hint:`a = ${m}×${g}=${a}, b = ${n}×${g}=${b}. LCM = m×n×GCD = ${m}×${n}×${g} = ${l}.`,
+    };
+  },
+  // P1: ratio m:n + LCM → find GCD
+  () => {
+    const [a, b, m, n, g, l] = math.pick(L6_COMP);
+    return {
+      promptHTML:`Two numbers are in ratio <strong>${m} : ${n}</strong> and their LCM is <strong>${l}</strong>. Find their GCD.`,
+      correctLatex:`${l} \\div (${m} \\times ${n}) = ${g}`,
+      decoyDefs:[
+        { eq:`${l} \\div ${m} = ${l/m}`,   error:`${l/m} = LCM÷m = b (one number) — GCD = LCM÷(m×n) = ${l}÷${m*n} = ${g}` },
+        { eq:`${l} \\div ${n} = ${l/n}`,   error:`${l/n} = LCM÷n = a (one number) — GCD = LCM÷(m×n) = ${l}÷${m*n} = ${g}` },
+        { eq:`${m} + ${n} = ${m+n}`,       error:`${m+n} = m+n — GCD = LCM÷(m×n) = ${l}÷${m*n} = ${g}` },
+      ],
+      hint:`GCD = LCM ÷ (m×n) = ${l} ÷ (${m}×${n}) = ${l} ÷ ${m*n} = ${g}.`,
+    };
+  },
+  // P2: ratio m:n + product → find GCD (filter m*n ≠ g)
+  () => {
+    const [a, b, m, n, g, l] = math.pick(L6_COMP.filter(r => r[2]*r[3] !== r[4]));
+    const prod = a * b;
+    const mn = m * n;
+    return {
+      promptHTML:`Two numbers are in ratio <strong>${m} : ${n}</strong> and their product is <strong>${prod}</strong>. Find their GCD.`,
+      correctLatex:`\\gcd = \\sqrt{${prod} \\div ${mn}} = ${g}`,
+      decoyDefs:[
+        { eq:`${mn}`, error:`${mn} = m×n — that's the ratio product; GCD = √(product÷(m×n)) = √(${prod}÷${mn}) = √${prod/mn} = ${g}` },
+        { eq:`${prod} \\div ${mn} = ${prod/mn}`, error:`${prod/mn} = product÷(m×n) = GCD² — still need square root: GCD = √${prod/mn} = ${g}` },
+        { eq:`${g+2}`, error:`${g+2}: check: (${g+2})² × ${mn} = ${(g+2)*(g+2)*mn} ≠ ${prod}` },
+      ],
+      hint:`a×b = (m·g)(n·g) = m·n·g² = ${prod}. So g² = ${prod}÷${mn} = ${prod/mn}, g = ${g}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_identity(id)   { const t=math.pick(POOL_IDENTITY)(); return buildEqQ(id,"identity",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_findpair(id)   { const t=math.pick(POOL_PAIR)();     return buildEqQ(id,"find_pair", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_three(id)      { const t=math.pick(POOL_THREE)();    return buildEqQ(id,"three_nums",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_word(id)       { const t=math.pick(POOL_WORD)();     return buildEqQ(id,"word_both", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_rel(id)        { const t=math.pick(POOL_REL)();      return buildEqQ(id,"relations", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_comp(id)       { const t=math.pick(POOL_COMP)();     return buildEqQ(id,"competition",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  identity:    gen_identity,
+  find_pair:   gen_findpair,
+  three_nums:  gen_three,
+  word_both:   gen_word,
+  relations:   gen_rel,
+  competition: gen_comp,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of combined LCM &amp; GCD.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      { title:"Least Common Multiple (LCM)",
+        url:"../grade_5/lcm_grade5.html",
+        reason:"LCM is the direct prerequisite — master the listing and prime-factorisation methods for LCM before tackling combined identity and pair-reconstruction problems." },
+      { title:"Greatest Common Divisor (GCD)",
+        url:"../grade_5/gcd_grade5.html",
+        reason:"GCD underpins every skill here — the Euclidean algorithm, coprime pairs, and the LCM×GCD identity all build on solid GCD understanding." },
+    ],
+    challenge:[],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  if(list.length===0) return `<p class="text-muted">You have reached the top of the LCM &amp; GCD series — great work!</p>`;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about LCM and GCD combined.`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about LCM and GCD.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+applyName();
+</script>
+</body>
+</html>

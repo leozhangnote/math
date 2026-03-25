@@ -1,8 +1,8 @@
 {
   "_shard": "math_grade_5",
   "_description": "Math UEPG concepts at grade 5: fraction operations, decimal operations, intro to ratios, basic statistics, coordinate plane",
-  "_last_updated": "2026-03-21",
-  "_entry_count": 4,
+  "_last_updated": "2026-03-25",
+  "_entry_count": 7,
   "uepgs": [
     {
       "id": "smart_decimal_arithmetic_grade5",
@@ -97,6 +97,87 @@
       "file": "grade_5/counting_grade5.html",
       "status": "complete",
       "created": "2026-03-21"
+    }
+    ,{
+      "id": "gcd_grade5",
+      "title": "Greatest Common Divisor (GCD)",
+      "grade": 5,
+      "subject": "number_theory",
+      "concept_fingerprint": "finding the greatest common divisor using three methods — listing all factors, prime factorization (minimum exponents of common primes), and the Euclidean algorithm (repeated division with remainder) — plus GCD word problems and coprime properties",
+      "topics": [
+        "GCD", "greatest common divisor", "factors", "divisibility",
+        "factor pairs", "factor listing", "common factors",
+        "prime factorization", "prime powers", "minimum exponent",
+        "Euclidean algorithm", "remainder", "division algorithm",
+        "coprime", "relatively prime", "GCD properties",
+        "word problems", "equal pieces", "no waste", "largest tile",
+        "number theory", "competition math"
+      ],
+      "skills_summary": "factors and divisibility (factor pairs, factor count, largest proper factor), GCD by listing (list factors, find common, pick greatest), GCD by prime factorization (factor tree, take minimum exponent of each common prime), GCD by Euclidean algorithm (a=q×b+r, repeat until r=0), GCD word problems (ribbon, tile, distribution, plank contexts), coprime numbers and GCD properties (GCD=1, factor-out property, special values)",
+      "connections": {
+        "foundational": [
+          { "id": "smart_whole_number_arithmetic_grade4", "title": "Smart Whole Number Arithmetic", "file": "grade_4/smart_whole_number_arithmetic_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "lcm_grade5", "title": "Least Common Multiple (LCM)", "file": "grade_5/lcm_grade5.html" }
+        ]
+      },
+      "file": "grade_5/gcd_grade5.html",
+      "status": "complete",
+      "created": "2026-03-25"
+    }
+    ,{
+      "id": "lcm_grade5",
+      "title": "Least Common Multiple (LCM)",
+      "grade": 5,
+      "subject": "number_theory",
+      "concept_fingerprint": "finding the least common multiple using three methods — listing multiples, prime factorization (maximum exponents of all primes), and the GCD shortcut (LCM = a×b÷GCD) — plus the LCM×GCD identity, periodic word problems, and divisibility properties",
+      "topics": [
+        "LCM", "least common multiple", "multiples", "common multiples",
+        "multiple listing", "kth multiple", "prime factorization", "prime powers",
+        "maximum exponent", "GCD shortcut", "LCM GCD relationship",
+        "LCM times GCD equals product", "periodic problems", "word problems",
+        "bus timing", "blinking lights", "work cycle", "divisibility",
+        "number theory", "competition math"
+      ],
+      "skills_summary": "multiples and common multiples (kth multiple, NOT a multiple, first common multiple, count in range), LCM by listing (list multiples, find first common), LCM by prime factorization (factor tree, take maximum exponent of each prime), LCM via GCD shortcut (LCM = a×b÷GCD), LCM word problems (bus timing, lights, work cycles, recurring events), LCM properties (a|b→LCM=b, LCM×GCD=a×b identity, special value rules)",
+      "connections": {
+        "foundational": [
+          { "id": "gcd_grade5", "title": "Greatest Common Divisor (GCD)", "file": "grade_5/gcd_grade5.html" }
+        ],
+        "challenge": [
+          { "id": "lcm_gcd_grade5", "title": "LCM & GCD Combined", "file": "grade_5/lcm_gcd_grade5.html" }
+        ]
+      },
+      "file": "grade_5/lcm_grade5.html",
+      "status": "complete",
+      "created": "2026-03-25"
+    }
+    ,{
+      "id": "lcm_gcd_grade5",
+      "title": "LCM & GCD Combined",
+      "grade": 5,
+      "subject": "number_theory",
+      "concept_fingerprint": "competition-level integration of LCM and GCD — the identity LCM×GCD=a×b, reconstructing pairs from given GCD and LCM, extending to three numbers, word problems requiring both operations, ratio-based relationships, and ratio+GCD/LCM competition problems",
+      "topics": [
+        "LCM", "GCD", "identity", "LCM times GCD equals product",
+        "find pair", "coprime factorisation", "pair reconstruction",
+        "three numbers", "three-number GCD", "three-number LCM",
+        "word problems", "distribution", "synchronisation",
+        "LCM GCD ratio", "LCM GCD sum", "ratio problems",
+        "ratio m:n", "competition math", "number theory"
+      ],
+      "skills_summary": "LCM×GCD=a×b identity (find LCM, GCD, product, or missing number), pair reconstruction (write a=gm b=gn with gcd(m,n)=1, count coprime factorizations of L/g), three-number GCD and LCM (apply two at a time), word problems (GCD for sharing, LCM for synchronization), LCM/GCD ratio and sum relations (LCM=k×GCD, LCM+GCD=S, square-root trick), ratio+GCD/LCM competition (LCM=m×n×g, GCD=LCM÷(mn), g=sqrt(P/mn))",
+      "connections": {
+        "foundational": [
+          { "id": "lcm_grade5", "title": "Least Common Multiple (LCM)", "file": "grade_5/lcm_grade5.html" },
+          { "id": "gcd_grade5", "title": "Greatest Common Divisor (GCD)", "file": "grade_5/gcd_grade5.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/lcm_gcd_grade5.html",
+      "status": "complete",
+      "created": "2026-03-25"
     }
   ]
 }
