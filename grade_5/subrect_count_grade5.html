@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sub-Rectangle Counting — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#004d40,#00796b); }
+    .gw  { display:inline-flex;flex-direction:column; }
+    .gh  { display:flex;padding-left:24px; }
+    .gcl { width:44px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9e9e9e;font-weight:600; }
+    .gb  { display:flex; }
+    .gls { display:flex;flex-direction:column; }
+    .grl { width:24px;height:44px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9e9e9e;font-weight:600; }
+    .gg  { display:grid;border:2.5px solid #444; }
+    .gc  { width:44px;height:44px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;background:#fafafa;box-sizing:border-box; }
+    .gc-A { background:#bbdefb;color:#1565c0; }
+    .gc-B { background:#ffccbc;color:#bf360c; }
+    .gc-C { background:#c8e6c9;color:#1b5e20; }
+    .q-text { margin:8px 0 0;line-height:1.55; }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Sub-Rectangle Counting</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Competition &nbsp;·&nbsp; Single-point, both/one/neither, three-point inclusion-exclusion</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Single Point</span>
+      <span class="badge badge-L2">Both Points</span>
+      <span class="badge badge-L3">One Not Other</span>
+      <span class="badge badge-L4">Neither</span>
+      <span class="badge badge-L5">Three Points</span>
+      <span class="badge badge-rule">Competition</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Total sub-rectangles</strong> in an n×m grid: \(\frac{n(n+1)}{2} \times \frac{m(m+1)}{2}\).</li>
+        <li><strong>Single point A at (r, c):</strong> count = \(r \times (n-r+1) \times c \times (m-c+1)\). Choose a left wall ≤ c, right wall ≥ c, top wall ≤ r, bottom wall ≥ r.</li>
+        <li><strong>Both A and B:</strong> bounding-box formula — \(\min(r_A,r_B)\times(n-\max(r_A,r_B)+1)\times\min(c_A,c_B)\times(m-\max(c_A,c_B)+1)\).</li>
+        <li><strong>A but not B:</strong> contain(A) − contain(A∩B).</li>
+        <li><strong>Neither A nor B:</strong> Total − contain(A) − contain(B) + contain(A∩B).</li>
+        <li><strong>A or B, but not C:</strong> |A∪B| − |(A∪B)∩C| = (contA+contB−contAB) − (contAC+contBC−contABC).</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_subrect_count_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  single_point: {
+    name:"Level 1: Sub-Rectangles Containing One Point", level:1, badgeClass:"badge-L1",
+    summary:"A sub-rectangle in an n×m grid is defined by choosing a left wall, right wall, top wall, and bottom wall (all aligned to grid lines). It contains point A at (r, c) iff left ≤ c ≤ right and top ≤ r ≤ bottom. The count is r × (n−r+1) × c × (m−c+1).",
+    steps:[
+      "Label: A is at row r, column c in an n×m grid.",
+      "Left-wall choices: any column from 1 to c → c choices.",
+      "Right-wall choices: any column from c to m → m−c+1 choices.",
+      "Top-wall choices: any row from 1 to r → r choices.",
+      "Bottom-wall choices: any row from r to n → n−r+1 choices.",
+      "Multiply all four: r × (n−r+1) × c × (m−c+1).",
+    ],
+    example:{
+      problemHTML:`In a <strong>4×5</strong> grid, letter A is placed at row 2, column 3. How many sub-rectangles contain A?`,
+      solutionHTML:`Left wall: columns 1–3 → <strong>3</strong> choices.<br>
+        Right wall: columns 3–5 → <strong>3</strong> choices.<br>
+        Top wall: rows 1–2 → <strong>2</strong> choices.<br>
+        Bottom wall: rows 2–4 → <strong>3</strong> choices.<br>
+        Total = 3 × 3 × 2 × 3 = <strong>54</strong>.`,
+    },
+    misconception:"Students often forget the '+1' in (n−r+1) and (m−c+1). Remember: the bottom wall can be at row r itself (zero rows below A), so there are n−r+1 choices, not n−r.",
+    keyConcepts:[
+      {label:"Corner vs. Center", prompt:"In a 4×5 grid, compare contain(A) when A is at the corner (1,1) vs. the center (2,3). Compute both. Why does the center give a larger count?"},
+      {label:"Where is the Maximum?", prompt:"In an n×m grid, which position (r,c) maximizes the number of sub-rectangles containing A? Explain using the formula r×(n−r+1)×c×(m−c+1). What happens when n and m are even vs. odd?"},
+    ],
+  },
+
+  both_points: {
+    name:"Level 2: Sub-Rectangles Containing Both Points", level:2, badgeClass:"badge-L2",
+    summary:"A sub-rectangle contains both A and B iff it spans the entire bounding box of A and B: left wall ≤ min column, right wall ≥ max column, top wall ≤ min row, bottom wall ≥ max row. Count = min_r × (n−max_r+1) × min_c × (m−max_c+1).",
+    steps:[
+      "Find the bounding box: min_r = min(rA,rB), max_r = max(rA,rB), min_c = min(cA,cB), max_c = max(cA,cB).",
+      "Left wall must be ≤ min_c → min_c choices.",
+      "Right wall must be ≥ max_c → m−max_c+1 choices.",
+      "Top wall must be ≤ min_r → min_r choices.",
+      "Bottom wall must be ≥ max_r → n−max_r+1 choices.",
+      "Multiply: min_r × (n−max_r+1) × min_c × (m−max_c+1).",
+    ],
+    example:{
+      problemHTML:`In a <strong>4×5</strong> grid, A is at (1, 2) and B is at (3, 4). How many sub-rectangles contain both A and B?`,
+      solutionHTML:`min_r=1, max_r=3, min_c=2, max_c=4.<br>
+        Left ≤ 2: <strong>2</strong> choices. Right ≥ 4: <strong>5−4+1=2</strong> choices.<br>
+        Top ≤ 1: <strong>1</strong> choice. Bottom ≥ 3: <strong>4−3+1=2</strong> choices.<br>
+        Total = 2 × 2 × 1 × 2 = <strong>8</strong>.`,
+    },
+    misconception:"Do not multiply contain(A) × contain(B). That would double-count and assumes the two points are chosen independently, but they must both be inside the SAME rectangle.",
+    keyConcepts:[
+      {label:"Bounding Box Intuition", prompt:"Explain in your own words why a sub-rectangle must span the entire bounding box of A and B in order to contain both. Draw a 4×5 grid example and mark a rectangle that contains both — what are its minimum required dimensions?"},
+      {label:"Same Row or Column", prompt:"If A and B are in the same row (same r), how does the bounding-box formula simplify? Does the same insight apply when they share the same column? Write out both simplified formulas."},
+    ],
+  },
+
+  one_not_other: {
+    name:"Level 3: Containing One But Not the Other", level:3, badgeClass:"badge-L3",
+    summary:"Sub-rectangles containing A but not B = contain(A) − contain(A and B). The key idea: start with all rectangles containing A, then remove those that also contain B (which are exactly the rectangles containing the bounding box of A and B).",
+    steps:[
+      "Compute contain(A) = rA×(n−rA+1)×cA×(m−cA+1).",
+      "Compute contain(A∩B) using the bounding-box formula.",
+      "A but not B = contain(A) − contain(A∩B).",
+      "B but not A = contain(B) − contain(A∩B). (Symmetric, but usually different!)",
+    ],
+    example:{
+      problemHTML:`In a <strong>4×5</strong> grid, A is at (1, 2) and B is at (3, 4). How many sub-rectangles contain A but NOT B?`,
+      solutionHTML:`contain(A) = 1×4×2×4 = 32.<br>
+        contain(A∩B) = 1×2×2×2 = 8.<br>
+        A but not B = 32 − 8 = <strong>24</strong>.`,
+    },
+    misconception:"A but not B ≠ contain(A) − contain(B). You must subtract contain(A AND B), not contain(B) alone — otherwise you'd subtract rectangles that contain B but not A, which were never in your count.",
+    keyConcepts:[
+      {label:"Why Subtract A∩B, Not B?", prompt:"Explain why 'A but not B' = contain(A) − contain(A∩B), and NOT contain(A) − contain(B). Use a Venn diagram or a small example to show the difference."},
+      {label:"Asymmetry", prompt:"In a 4×5 grid with A at (1,2) and B at (3,4), compute both 'A but not B' and 'B but not A'. Are they equal? Why or why not?"},
+    ],
+  },
+
+  neither_point: {
+    name:"Level 4: Containing Neither Point", level:4, badgeClass:"badge-L4",
+    summary:"Sub-rectangles containing neither A nor B = Total − contain(A) − contain(B) + contain(A∩B). This is the inclusion-exclusion principle: subtracting A and B double-removes the overlap, so we must add it back once.",
+    steps:[
+      "Compute Total = n(n+1)/2 × m(m+1)/2.",
+      "Compute contain(A), contain(B), and contain(A∩B).",
+      "Neither = Total − contain(A) − contain(B) + contain(A∩B).",
+      "Check: Neither + A-only + B-only + Both = Total.",
+    ],
+    example:{
+      problemHTML:`In a <strong>4×5</strong> grid, A is at (1, 2) and B is at (3, 4). How many sub-rectangles contain neither A nor B?`,
+      solutionHTML:`Total = 10×15 = 150.<br>
+        contain(A)=32, contain(B)=48, contain(A∩B)=8.<br>
+        Neither = 150 − 32 − 48 + 8 = <strong>78</strong>.<br>
+        Check: 78 + (32−8) + (48−8) + 8 = 78+24+40+8 = 150 ✓`,
+    },
+    misconception:"Students often write Total − contain(A) − contain(B) and forget to add back contain(A∩B). This makes the answer too small by contain(A∩B), because those rectangles were subtracted twice.",
+    keyConcepts:[
+      {label:"Inclusion-Exclusion Explained", prompt:"Draw a Venn diagram for sets A and B inside a universe of Total rectangles. Show why subtracting |A| and |B| from Total gives Total−|A|−|B|+|A∩B| for 'neither'. Verify with the 4×5 grid example."},
+      {label:"Partition Check", prompt:"In the 4×5 grid (A at (1,2), B at (3,4)), compute all four parts: neither, A-only, B-only, both. Verify they sum to Total=150. This is a powerful check for any two-point problem."},
+    ],
+  },
+
+  three_union_excl: {
+    name:"Level 5: Three Points — A or B but Not C", level:5, badgeClass:"badge-L5",
+    summary:"With three marked points, use inclusion-exclusion in two stages. First compute |A∪B| = contA+contB−contAB. Then compute the part of A∪B that also hits C: |(A∪B)∩C| = contAC+contBC−contABC. Subtract: answer = |A∪B| − |(A∪B)∩C|.",
+    steps:[
+      "Compute contA, contB, contC (single-point formula for each).",
+      "Compute contAB, contAC, contBC (bounding-box formula for each pair).",
+      "Compute contABC (bounding-box of all three points).",
+      "|A∪B| = contA + contB − contAB.",
+      "|(A∪B)∩C| = contAC + contBC − contABC.",
+      "A or B but not C = |A∪B| − |(A∪B)∩C|.",
+    ],
+    example:{
+      problemHTML:`In a <strong>4×5</strong> grid: A at (1,2), B at (2,4), C at (3,3). How many sub-rectangles contain A or B (or both) but NOT C?`,
+      solutionHTML:`contA=1×4×2×4=32. contB=2×3×4×2=48. contC=3×2×3×3=54.<br>
+        contAB=1×3×2×2=12. contAC=1×2×2×3=12. contBC=2×2×3×2=24. contABC=1×2×2×2=8.<br>
+        |A∪B|=32+48−12=68.<br>
+        |(A∪B)∩C|=12+24−8=28.<br>
+        Answer = 68−28 = <strong>40</strong>.`,
+    },
+    misconception:"Don't forget contABC when computing |(A∪B)∩C|. The formula is contAC+contBC−contABC — without −contABC you'd overcount rectangles containing all three points.",
+    keyConcepts:[
+      {label:"Why Two Stages?", prompt:"Explain why we compute |A∪B| first, then subtract the part that also hits C, rather than trying to subtract C from each of A and B separately. What would go wrong if we computed (contA−contAC)+(contB−contBC)?"},
+      {label:"All Three vs. Exactly One", prompt:"For a 5×6 grid with A at (1,2), B at (2,5), C at (4,3), compute: (a) sub-rectangles containing all three, (b) sub-rectangles containing exactly one. Use the inclusion-exclusion formulas."},
+    ],
+  },
+
+  competition: {
+    name:"Rule: Competition — Exactly One, Same Row, Three-Point", level:0, badgeClass:"badge-rule",
+    summary:"Competition problems test sharper counting: 'exactly one of A or B' = contA+contB−2×contAB; when A and B are in the same row, the row-factor r×(n−r+1) factors out of all terms; 'exactly one of A,B,C' = contA+contB+contC − 2(contAB+contAC+contBC) + 3·contABC.",
+    steps:[
+      "Exactly one of A or B = (A only) + (B only) = (contA−contAB) + (contB−contAB) = contA+contB−2·contAB.",
+      "Same-row shortcut: if A=(r,c₁) and B=(r,c₂) with c₁<c₂, then contAB = r(n−r+1)·c₁·(m−c₂+1). The row factor r(n−r+1) appears in contA, contB, and contAB — factor it out for a cleaner calculation.",
+      "Exactly one of A,B,C = contA+contB+contC − 2(contAB+contAC+contBC) + 3·contABC.",
+      "Always verify with partition check: none + exactly-one + exactly-two + all-three = Total.",
+    ],
+    example:{
+      problemHTML:`In a <strong>3×4</strong> grid, A is at (1,1) and B is at (2,3). How many sub-rectangles contain <em>exactly one</em> of A or B?`,
+      solutionHTML:`contA=1×3×1×4=12. contB=2×2×3×2=24. contAB=1×2×1×2=4.<br>
+        Exactly one = 12+24−2×4 = 36−8 = <strong>28</strong>.<br>
+        Check: A-only=12−4=8, B-only=24−4=20, both=4, neither=60−12−24+4=28.<br>
+        8+20+4+28=60=Total ✓`,
+    },
+    misconception:"'Exactly one' is NOT contA+contB − contAB. That formula gives 'at least one'. You need to subtract 2×contAB (removing the overlap twice — once from each set) to isolate the exactly-one count.",
+    keyConcepts:[
+      {label:"Same-Row Factoring", prompt:"A is at (3,1) and B is at (3,4) in a 5×5 grid. Factor out the row term r×(n−r+1)=3×3=9 from contA, contB, and contAB. Compute 'A but not B' and 'B but not A' by factoring. How does this simplify the arithmetic?"},
+      {label:"Exactly-One Formula Derivation", prompt:"Derive the formula 'exactly one of A,B,C' using the inclusion-exclusion expansion. Start from |exactly-one| = |A|+|B|+|C| minus twice each pairwise intersection plus three times the triple intersection. Show all steps."},
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   DATA ARRAYS  (all pre-verified for integer results)
+══════════════════════════════════════════════════════════════ */
+
+// [n, m, r, c]  — cOne = r*(n-r+1)*c*(m-c+1)
+const L1_DATA = [
+  [4,5,2,3],  // 2*3*3*3=54
+  [3,4,2,2],  // 2*2*2*3=24
+  [4,4,2,3],  // 2*3*3*2=36
+  [5,5,3,3],  // 3*3*3*3=81
+  [4,5,3,2],  // 3*2*2*4=48
+  [5,6,2,3],  // 2*4*3*4=96
+  [3,5,2,4],  // 2*2*4*2=32
+  [4,6,3,4],  // 3*2*4*3=72
+];
+
+// edge: r=1 or r=n or c=1 or c=m
+const L1_EDGE = [
+  [4,5,1,3],  // 1*4*3*3=36
+  [4,5,4,2],  // 4*1*2*4=32
+  [3,5,2,1],  // 2*2*1*5=20
+  [5,4,2,4],  // 2*4*4*1=32
+  [3,4,3,2],  // 3*1*2*3=18
+  [4,6,1,4],  // 1*4*4*3=48
+  [5,5,5,3],  // 5*1*3*3=45
+  [4,6,2,6],  // 2*3*6*1=36
+];
+
+// [n, m, rA, cA, rB, cB]
+const L2_DATA = [
+  [4,5, 1,2, 3,4],  // cA=32,cB=48,cAB=8
+  [3,4, 1,1, 2,3],  // cA=12,cB=24,cAB=4
+  [4,6, 2,2, 3,5],  // cA=60,cB=60,cAB=16
+  [5,5, 2,2, 4,4],  // cA=64,cB=64,cAB=16
+  [4,5, 2,1, 3,4],  // cA=30,cB=48,cAB=8
+  [3,6, 1,3, 3,5],  // cA=36,cB=30,cAB=6
+  [5,6, 2,3, 4,5],  // cA=96,cB=80,cAB=24
+  [4,4, 1,2, 3,3],  // cA=24,cB=36,cAB=8
+];
+
+// same-row pairs: [n, m, r, c1, c2]  c1<c2
+const L2_SAMEROW = [
+  [4,5, 2, 1,4],  // cAnotB=2*3*1*(4-1)=18
+  [3,5, 2, 2,4],  // cAnotB=2*2*2*(4-2)=16
+  [4,6, 3, 2,5],  // cAnotB=3*2*2*(5-2)=36
+  [5,5, 3, 1,4],  // cAnotB=3*3*1*(4-1)=27
+  [4,6, 2, 1,5],  // cAnotB=2*3*1*(5-1)=24
+  [5,6, 2, 2,5],  // cAnotB=2*4*2*(5-2)=48
+];
+
+// three-point: [n,m, rA,cA, rB,cB, rC,cC]
+const L5_DATA = [
+  [5,6, 1,2, 2,5, 4,3],  // AuBnotC=82, allThree=8,  AnotBnotC=26
+  [4,5, 1,2, 2,4, 3,3],  // AuBnotC=40, allThree=8,  AnotBnotC=16
+  [5,5, 1,1, 3,4, 4,2],  // AuBnotC=63, allThree=4,  AnotBnotC=15
+  [4,6, 1,3, 3,5, 4,2],  // AuBnotC=80, allThree=4,  AnotBnotC=32
+  [4,5, 1,1, 2,4, 4,3],  // AuBnotC=49, allThree=2,  AnotBnotC=9
+];
+
+/* ══════════════════════════════════════════════════════════════
+   MATH HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function total(n, m) { return n*(n+1)/2 * m*(m+1)/2; }
+
+function cOne(n, m, r, c) { return r*(n-r+1)*c*(m-c+1); }
+
+function cTwo(n, m, r1,c1, r2,c2) {
+  const mr=Math.min(r1,r2), xr=Math.max(r1,r2);
+  const mc=Math.min(c1,c2), xc=Math.max(c1,c2);
+  return mr*(n-xr+1)*mc*(m-xc+1);
+}
+
+function cThree(n, m, r1,c1, r2,c2, r3,c3) {
+  const mr=Math.min(r1,r2,r3), xr=Math.max(r1,r2,r3);
+  const mc=Math.min(c1,c2,c3), xc=Math.max(c1,c2,c3);
+  return mr*(n-xr+1)*mc*(m-xc+1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GRID RENDERER
+══════════════════════════════════════════════════════════════ */
+
+function makeGrid(n, m, marks) {
+  const map = {};
+  for (const mk of marks) map[`${mk.r},${mk.c}`] = mk.label;
+  let h = '<div style="display:flex;justify-content:center;margin-bottom:4px"><div class="gw">';
+  h += '<div class="gh">';
+  for (let c=1;c<=m;c++) h += `<div class="gcl">${c}</div>`;
+  h += '</div><div class="gb"><div class="gls">';
+  for (let r=1;r<=n;r++) h += `<div class="grl">${r}</div>`;
+  h += `</div><div class="gg" style="grid-template-columns:repeat(${m},44px)">`;
+  for (let r=1;r<=n;r++)
+    for (let c=1;c<=m;c++) {
+      const lbl = map[`${r},${c}`] || '';
+      h += `<div class="gc${lbl ? ` gc-${lbl}` : ''}">${lbl}</div>`;
+    }
+  h += '</div></div></div></div>';
+  return h;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Single Point ────────────────────────────────────────*/
+const POOL_L1 = [
+  // P0: general interior — "how many contain A?"
+  () => {
+    const [n,m,r,c] = math.pick(L1_DATA);
+    const ans = cOne(n,m,r,c);
+    const w1 = r*c*(n-r)*(m-c);                  // off-by-one both dims
+    const w2 = r*(n-r+1)*(m*(m+1)/2);            // forgot column constraint
+    const w3 = total(n,m) - ans;                  // complement confusion
+    return {
+      promptHTML: makeGrid(n,m,[{r,c,label:'A'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, letter A is at row&nbsp;${r}, column&nbsp;${c}. How many sub-rectangles contain A?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`off-by-one in both dimensions — boundaries include the cell itself, so use (n−r+1) and (m−c+1)`},
+        {eq:`${w2}`, error:`forgets the column constraint; the right wall must be ≥ c, giving c×(m−c+1) column choices, not m(m+1)/2`},
+        {eq:`${w3}`, error:`this is Total−contain(A), the count of rectangles that do NOT contain A`},
+      ],
+      hint:`Left choices: ${c}. Right choices: ${m-c+1}. Top choices: ${r}. Bottom choices: ${n-r+1}. Multiply: ${r}×${n-r+1}×${c}×${m-c+1}=${ans}.`,
+    };
+  },
+  // P1: edge point — boundary factor is 1
+  () => {
+    const [n,m,r,c] = math.pick(L1_EDGE);
+    const ans = cOne(n,m,r,c);
+    const w1 = r*(n-r)*c*(m-c+1);              // off-by-one on row only
+    const w2 = r*(n-r+1)*c*(m-c);              // off-by-one on col only
+    const w3 = total(n,m) - ans;
+    return {
+      promptHTML: makeGrid(n,m,[{r,c,label:'A'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at row&nbsp;${r}, column&nbsp;${c}. How many sub-rectangles contain A?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`forgot +1 on the row dimension — bottom choices should be n−r+1=${n-r+1}, not n−r=${n-r}`},
+        {eq:`${w2}`, error:`forgot +1 on the column dimension — right-wall choices = m−c+1=${m-c+1}`},
+        {eq:`${w3}`, error:`that's the complement (rectangles NOT containing A)`},
+      ],
+      hint:`A is on the edge: row ${r} has bottom choices ${n-r+1}, column ${c} has right choices ${m-c+1}. Answer = ${r}×${n-r+1}×${c}×${m-c+1}=${ans}.`,
+    };
+  },
+  // P2: complement — "how many do NOT contain A?"
+  () => {
+    const [n,m,r,c] = math.pick(L1_DATA);
+    const T = total(n,m), cA = cOne(n,m,r,c), ans = T - cA;
+    return {
+      promptHTML: makeGrid(n,m,[{r,c,label:'A'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at row&nbsp;${r}, column&nbsp;${c}. How many sub-rectangles do <strong>NOT</strong> contain A?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${cA}`,  error:`${cA} is the count that DO contain A — negate: Total−contain(A)=${T}−${cA}=${ans}`},
+        {eq:`${T}`,   error:`${T} is the total; subtract those containing A to get the complement`},
+        {eq:`${ans-cA}`, error:`${ans-cA} subtracts contain(A) twice; once is enough: Total−contain(A)=${ans}`},
+      ],
+      hint:`Total = ${n}(${n}+1)/2×${m}(${m}+1)/2=${T}. Containing A=${cA}. Not containing A=${T}−${cA}=${ans}.`,
+    };
+  },
+];
+
+/* ── L2: Both Points ─────────────────────────────────────────*/
+const POOL_L2 = [
+  // P0: general — how many contain BOTH?
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const ans = cTwo(n,m,rA,cA,rB,cB);
+    const w1 = cA_ * cB_;        // wrong: product of individual counts
+    const w2 = Math.min(cA_,cB_); // wrong: minimum
+    const w3 = cA_ + cB_ - ans;   // wrong: inclusion-exclusion (gives "at least one")
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain <strong>both</strong> A and B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = contain(A)×contain(B) — wrong, this treats the two points as independent; both must be inside the SAME rectangle`},
+        {eq:`${w2}`, error:`${w2} = min(contain(A), contain(B)) — incorrect; use the bounding-box formula`},
+        {eq:`${w3}`, error:`${w3} = contain(A)+contain(B)−contain(both) counts rectangles with at least one, not both`},
+      ],
+      hint:`Bounding box: rows ${Math.min(rA,rB)}–${Math.max(rA,rB)}, cols ${Math.min(cA,cB)}–${Math.max(cA,cB)}. Count = ${Math.min(rA,rB)}×${n-Math.max(rA,rB)+1}×${Math.min(cA,cB)}×${m-Math.max(cA,cB)+1}=${ans}.`,
+    };
+  },
+  // P1: "at least one of A or B"  (union)
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = cA_ + cB_ - cAB;
+    const w1 = cA_ + cB_;        // forgot to subtract overlap
+    const w2 = total(n,m) - (total(n,m)-cA_-cB_+cAB); // = cA+cB-cAB... same as ans, let's use total-neither
+    const w3 = total(n,m) - ans; // neither
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain <strong>at least one</strong> of A or B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = contain(A)+contain(B) double-counts rectangles containing both — subtract contain(both)=${cAB}`},
+        {eq:`${cAB}`, error:`${cAB} is only the count containing BOTH; "at least one" includes A-only and B-only too`},
+        {eq:`${w3}`, error:`${w3} is the count containing NEITHER A nor B (the complement of "at least one")`},
+      ],
+      hint:`|A∪B| = contain(A)+contain(B)−contain(both) = ${cA_}+${cB_}−${cAB}=${ans}.`,
+    };
+  },
+  // P2: same-row A and B — how many contain both?
+  () => {
+    const [n,m,r,c1,c2] = math.pick(L2_SAMEROW);
+    const ans = cTwo(n,m,r,c1,r,c2);
+    const rowF = r*(n-r+1);
+    const cA_ = cOne(n,m,r,c1), cB_ = cOne(n,m,r,c2);
+    const w1 = cA_ * cB_;
+    const w2 = cOne(n,m,r,c1) + cOne(n,m,r,c2) - ans;
+    const w3 = rowF * c2 * (m-c2+1);  // wrong: uses B's column factor instead of bounding box
+    return {
+      promptHTML: makeGrid(n,m,[{r,c:c1,label:'A'},{r,c:c2,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A and B are <em>in the same row</em> (row&nbsp;${r}). A is at column&nbsp;${c1}, B is at column&nbsp;${c2}. How many sub-rectangles contain both?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = contain(A)×contain(B) — wrong product; both must be in the same rectangle`},
+        {eq:`${w2}`, error:`${w2} = contain(A)+contain(B)−contain(both) gives "at least one", not "both"`},
+        {eq:`${w3}`, error:`${w3} uses B's column span but forgets A forces the left wall ≤ c₁ — use min column = ${c1}`},
+      ],
+      hint:`Same row: row factor = ${r}×${n-r+1}=${rowF}. Column bounding box: left ≤ ${c1} (${c1} choices), right ≥ ${c2} (${m-c2+1} choices). Answer = ${rowF}×${c1}×${m-c2+1}=${ans}.`,
+    };
+  },
+];
+
+/* ── L3: One Not Other ───────────────────────────────────────*/
+const POOL_L3 = [
+  // P0: A but not B
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = cA_ - cAB;
+    const w1 = cA_ - cB_;   // subtracted contain(B) instead of contain(both)
+    const w2 = cAB;          // only the intersection
+    const w3 = cA_ + cAB;   // added instead of subtracted
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain A but <strong>NOT</strong> B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} subtracts contain(B)=${cB_} — wrong; subtract contain(A∩B)=${cAB} (only those that also contain B)`},
+        {eq:`${w2}`, error:`${w2} = contain(both), not A-only`},
+        {eq:`${w3}`, error:`${w3} adds the overlap; it should be subtracted: contain(A)−contain(A∩B)=${cA_}−${cAB}=${ans}`},
+      ],
+      hint:`contain(A)=${cA_}. contain(A and B)=${cAB}. A not B = ${cA_}−${cAB}=${ans}.`,
+    };
+  },
+  // P1: B but not A
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = cB_ - cAB;
+    const w1 = cA_ - cAB;   // correct for "A not B", wrong for "B not A"
+    const w2 = cAB;
+    const w3 = cB_ - cA_;
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain B but <strong>NOT</strong> A?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = contain(A)−contain(both) is "A but not B" — the question asks for B but not A`},
+        {eq:`${cAB}`, error:`${cAB} = contain(both), not B-only`},
+        {eq:`${Math.abs(w3)}`, error:`${Math.abs(w3)} = |contain(B)−contain(A)| — the correct formula is contain(B)−contain(A∩B)=${ans}`},
+      ],
+      hint:`contain(B)=${cB_}. contain(A and B)=${cAB}. B not A = ${cB_}−${cAB}=${ans}.`,
+    };
+  },
+  // P2: same-row, A not B (factoring insight)
+  () => {
+    const [n,m,r,c1,c2] = math.pick(L2_SAMEROW); // c1 < c2
+    const cA_=cOne(n,m,r,c1), cAB=cTwo(n,m,r,c1,r,c2);
+    const ans = cA_ - cAB;
+    const rowF = r*(n-r+1);
+    const w1 = cOne(n,m,r,c2) - cAB;  // B not A instead
+    const w2 = rowF * c1 * c2;         // wrong column factor
+    const w3 = cA_ - cOne(n,m,r,c2);
+    return {
+      promptHTML: makeGrid(n,m,[{r,c:c1,label:'A'},{r,c:c2,label:'B'}]) +
+        `<p class="q-text">A and B are in row&nbsp;${r} of this <strong>${n}×${m}</strong> grid: A at column&nbsp;${c1}, B at column&nbsp;${c2}. How many sub-rectangles contain A but not B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = contain(B)−contain(both) gives "B but not A", not "A but not B"`},
+        {eq:`${w2}`, error:`${w2} uses c₁×c₂ as the column factor — the correct column factor for "A not B" is c₁×(c₂−c₁)`},
+        {eq:`${Math.abs(w3)}`, error:`incorrect; use contain(A)−contain(A∩B) = ${cA_}−${cAB}=${ans}`},
+      ],
+      hint:`Row factor = ${rowF}. A-not-B column factor = c₁×(c₂−c₁) = ${c1}×${c2-c1}=${c1*(c2-c1)}. Answer = ${rowF}×${c1*(c2-c1)}=${ans}.`,
+    };
+  },
+];
+
+/* ── L4: Neither ─────────────────────────────────────────────*/
+const POOL_L4 = [
+  // P0: neither A nor B
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const T=total(n,m), cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = T - cA_ - cB_ + cAB;
+    const w1 = T - cA_ - cB_;          // forgot +cAB
+    const w2 = T - (cA_+cB_-cAB);      // subtracted "at least one" correctly, but same as ans? No: T-(cA+cB-cAB) = T-cA-cB+cAB = ans. Hmm same. Let me use different w2.
+    const w2b = T - cA_ - cB_ - cAB;   // subtracted cAB instead of adding
+    const w3 = cA_ + cB_ - cAB;        // "at least one" instead of "neither"
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain <strong>neither</strong> A nor B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} forgets to add back contain(A∩B)=${cAB} — double-counted rectangles must be restored: Total−cA−cB+cAB`},
+        {eq:`${w2b}`, error:`${w2b} subtracts cAB again instead of adding it — inclusion-exclusion requires +cAB`},
+        {eq:`${w3}`, error:`${w3} = contain(A)+contain(B)−contain(both) counts "at least one", the opposite of "neither"`},
+      ],
+      hint:`Neither = Total−cA−cB+cAB = ${T}−${cA_}−${cB_}+${cAB}=${ans}.`,
+    };
+  },
+  // P1: "at least one" = Total - neither
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const T=total(n,m), cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const neither = T - cA_ - cB_ + cAB;
+    const ans = T - neither; // = cA + cB - cAB
+    const w1 = cA_ + cB_;             // forgot to subtract overlap
+    const w2 = neither;               // confused at-least-one with neither
+    const w3 = T - cA_ - cB_;        // forgot +cAB in neither
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain <strong>at least one</strong> of A or B (or both)?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} double-counts rectangles with both A and B — subtract contain(both)=${cAB}: ${cA_}+${cB_}−${cAB}=${ans}`},
+        {eq:`${w2}`, error:`${w2} = "neither A nor B" — the question asks for "at least one", which is the complement`},
+        {eq:`${w3}`, error:`${w3} = Total−cA−cB (forgot +cAB in inclusion-exclusion); the correct "at least one" = Total−neither = ${T}−${neither}=${ans}`},
+      ],
+      hint:`At least one = contain(A)+contain(B)−contain(both) = ${cA_}+${cB_}−${cAB}=${ans}.`,
+    };
+  },
+  // P2: neither, different framing (verify with partition)
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA.filter(d=>d[0]>=4));
+    const T=total(n,m), cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = T - cA_ - cB_ + cAB;
+    const w1 = T - cA_ - cB_ + cAB*2;
+    const w2 = ans - cAB;
+    const w3 = T - (cA_+cB_-2*cAB);
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). The total number of sub-rectangles is ${T}. How many contain <strong>neither</strong> A nor B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} adds contain(both) twice — inclusion-exclusion adds it back exactly once`},
+        {eq:`${w2}`, error:`${w2} subtracts contain(both) an extra time — the formula ends with +contain(both), not −contain(both)`},
+        {eq:`${w3}`, error:`${w3} uses an incorrect "at least one" formula; at-least-one = cA+cB−cAB, so neither = Total−cA−cB+cAB=${ans}`},
+      ],
+      hint:`Partition check: neither+A-only+B-only+both=${ans}+${cA_-cAB}+${cB_-cAB}+${cAB}=${T} ✓`,
+    };
+  },
+];
+
+/* ── L5: Three Points ────────────────────────────────────────*/
+const POOL_L5 = [
+  // P0: A or B but not C
+  () => {
+    const [n,m,rA,cA,rB,cB,rC,cC] = math.pick(L5_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB), cAC=cTwo(n,m,rA,cA,rC,cC), cBC=cTwo(n,m,rB,cB,rC,cC);
+    const cABC=cThree(n,m,rA,cA,rB,cB,rC,cC);
+    const AuB = cA_+cB_-cAB;
+    const AuBandC = cAC+cBC-cABC;
+    const ans = AuB - AuBandC;
+    const w1 = AuB;                     // forgot to remove C
+    const w2 = AuB - cAC - cBC;         // forgot +cABC
+    const w3 = cA_+cB_-cAB-cAC-cBC;    // wrong sign on cABC
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'},{r:rC,c:cC,label:'C'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid: A at (${rA},${cA}), B at (${rB},${cB}), C at (${rC},${cC}). How many sub-rectangles contain A or B (or both) but <strong>NOT</strong> C?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = |A∪B| but doesn't exclude rectangles that also contain C`},
+        {eq:`${w2}`, error:`${w2} forgets to add back cABC=${cABC} — the formula for (A∪B)∩C is cAC+cBC−cABC`},
+        {eq:`${w3}`, error:`${w3} uses −cABC instead of +cABC; by inclusion-exclusion |(A∪B)∩C|=cAC+cBC−cABC`},
+      ],
+      hint:`|A∪B|=${cA_}+${cB_}−${cAB}=${AuB}. |(A∪B)∩C|=${cAC}+${cBC}−${cABC}=${AuBandC}. Answer=${AuB}−${AuBandC}=${ans}.`,
+    };
+  },
+  // P1: contain ALL THREE of A, B, C
+  () => {
+    const [n,m,rA,cA,rB,cB,rC,cC] = math.pick(L5_DATA);
+    const cAB=cTwo(n,m,rA,cA,rB,cB), cAC=cTwo(n,m,rA,cA,rC,cC), cBC=cTwo(n,m,rB,cB,rC,cC);
+    const ans=cThree(n,m,rA,cA,rB,cB,rC,cC);
+    const w1=Math.min(cAB,cAC,cBC);  // minimum pairwise — not correct
+    const w2=cOne(n,m,rA,cA);        // just contain(A)
+    const w3=ans+cAB;
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'},{r:rC,c:cC,label:'C'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid: A at (${rA},${cA}), B at (${rB},${cB}), C at (${rC},${cC}). How many sub-rectangles contain <strong>all three</strong> of A, B, and C?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = min of pairwise counts — use the three-point bounding box formula instead`},
+        {eq:`${w2}`, error:`${w2} = contain(A) alone; the three-point bounding box is tighter and gives ${ans}`},
+        {eq:`${w3}`, error:`${w3} adds a pairwise count incorrectly; all-three uses only the three-point bounding box`},
+      ],
+      hint:`Bounding box: rows ${Math.min(rA,rB,rC)}–${Math.max(rA,rB,rC)}, cols ${Math.min(cA,cB,cC)}–${Math.max(cA,cB,cC)}. Count=${ans}.`,
+    };
+  },
+  // P2: contain A but neither B nor C
+  () => {
+    const [n,m,rA,cA,rB,cB,rC,cC] = math.pick(L5_DATA);
+    const cA_=cOne(n,m,rA,cA);
+    const cAB=cTwo(n,m,rA,cA,rB,cB), cAC=cTwo(n,m,rA,cA,rC,cC);
+    const cABC=cThree(n,m,rA,cA,rB,cB,rC,cC);
+    const ans = cA_ - cAB - cAC + cABC;
+    const w1 = cA_ - cAB - cAC;         // forgot +cABC
+    const w2 = cA_ - cAB;               // only excluded B
+    const w3 = cA_ - cAB - cAC - cABC;  // subtracted instead of added
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'},{r:rC,c:cC,label:'C'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid: A at (${rA},${cA}), B at (${rB},${cB}), C at (${rC},${cC}). How many sub-rectangles contain A but <strong>neither</strong> B nor C?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} forgets to add back cABC=${cABC} — rectangles with all three were subtracted twice`},
+        {eq:`${w2}`, error:`${w2} only removes rectangles containing B; must also remove those containing C`},
+        {eq:`${w3}`, error:`${w3} subtracts cABC again — it should be +cABC (add back what was double-removed)`},
+      ],
+      hint:`A-only-no-B-no-C = cA−cAB−cAC+cABC = ${cA_}−${cAB}−${cAC}+${cABC}=${ans}.`,
+    };
+  },
+];
+
+/* ── Competition ─────────────────────────────────────────────*/
+const POOL_COMP = [
+  // P0: exactly one of A or B
+  () => {
+    const [n,m,rA,cA,rB,cB] = math.pick(L2_DATA);
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB);
+    const cAB=cTwo(n,m,rA,cA,rB,cB);
+    const ans = cA_ + cB_ - 2*cAB;
+    const w1 = cA_ + cB_ - cAB;      // "at least one", not exactly one
+    const w2 = cA_ + cB_;            // forgot overlap entirely
+    const w3 = Math.abs(cA_ - cB_);  // absolute difference
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid, A is at (${rA},${cA}) and B is at (${rB},${cB}). How many sub-rectangles contain <strong>exactly one</strong> of A or B (not both)?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = "at least one" (removes overlap once); "exactly one" removes it twice: cA+cB−2·cAB`},
+        {eq:`${w2}`, error:`${w2} double-counts rectangles with both A and B; subtract 2·cAB=${2*cAB}`},
+        {eq:`${w3}`, error:`${w3} = |cA−cB|; that's not the right operation — use cA+cB−2·cAB=${ans}`},
+      ],
+      hint:`Exactly one = (A-only)+(B-only) = (cA−cAB)+(cB−cAB) = cA+cB−2·cAB = ${cA_}+${cB_}−${2*cAB}=${ans}.`,
+    };
+  },
+  // P1: same-row A and B — "A but not B" with factoring insight
+  () => {
+    const [n,m,r,c1,c2] = math.pick(L2_SAMEROW); // c1 < c2
+    const rowF = r*(n-r+1);
+    const ans = rowF * c1 * (c2 - c1);     // A not B: row_factor × c1 × (c2-c1)
+    const BnotA = rowF * c2 * (m - c2 + 1) - rowF * c1 * (m - c2 + 1);  // = rowF*c2*(m-c2+1) - cAB
+    const w1 = rowF * c1 * c2;             // wrong: used c2 not (c2-c1)
+    const w2 = rowF * c1 * (m - c1 + 1);  // contain(A) alone
+    const w3 = rowF * (c2-c1) * (m-c2+1); // used (c2-c1) for left but (m-c2+1) for right — both wrong
+    return {
+      promptHTML: makeGrid(n,m,[{r,c:c1,label:'A'},{r,c:c2,label:'B'}]) +
+        `<p class="q-text">A and B are both in row&nbsp;${r} of this <strong>${n}×${m}</strong> grid: A at column&nbsp;${c1}, B at column&nbsp;${c2}. How many sub-rectangles contain A but not B?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} uses c₁×c₂ as the column factor — the right-wall must fall between columns c₁ and c₂−1 (strictly before c₂), giving c₁×(c₂−c₁)=${c1*(c2-c1)}`},
+        {eq:`${w2}`, error:`${w2} = contain(A) (all rectangles containing A, including those also containing B)`},
+        {eq:`${w3}`, error:`${w3} mixes up the column factors; for A-not-B: left ≤ c₁ (${c1} choices) and right ∈ [c₁, c₂−1] (${c2-c1} choices)`},
+      ],
+      hint:`Row factor ${r}×${n-r+1}=${rowF} is common. Left wall ≤ ${c1}: ${c1} choices. Right wall ∈ [${c1},${c2-1}]: ${c2-c1} choices. Answer = ${rowF}×${c1}×${c2-c1}=${ans}.`,
+    };
+  },
+  // P2: exactly one of A, B, C
+  () => {
+    const [n,m,rA,cA,rB,cB,rC,cC] = math.pick(L5_DATA.slice(0,3));
+    const cA_=cOne(n,m,rA,cA), cB_=cOne(n,m,rB,cB), cC_=cOne(n,m,rC,cC);
+    const cAB=cTwo(n,m,rA,cA,rB,cB), cAC=cTwo(n,m,rA,cA,rC,cC), cBC=cTwo(n,m,rB,cB,rC,cC);
+    const cABC=cThree(n,m,rA,cA,rB,cB,rC,cC);
+    const ans = cA_+cB_+cC_ - 2*(cAB+cAC+cBC) + 3*cABC;
+    const w1 = cA_+cB_+cC_ - (cAB+cAC+cBC) + cABC;  // |A∪B∪C|, not exactly-one
+    const w2 = cA_+cB_+cC_ - 2*(cAB+cAC+cBC);        // forgot +3·cABC
+    const w3 = cA_+cB_+cC_ - 2*(cAB+cAC+cBC) + cABC; // used +cABC not +3·cABC
+    return {
+      promptHTML: makeGrid(n,m,[{r:rA,c:cA,label:'A'},{r:rB,c:cB,label:'B'},{r:rC,c:cC,label:'C'}]) +
+        `<p class="q-text">In this <strong>${n}×${m}</strong> grid: A at (${rA},${cA}), B at (${rB},${cB}), C at (${rC},${cC}). How many sub-rectangles contain <strong>exactly one</strong> of A, B, or C?</p>`,
+      correctLatex: `${ans}`,
+      decoyDefs: [
+        {eq:`${w1}`, error:`${w1} = |A∪B∪C| (at least one) — for exactly one, subtract pairwise overlaps twice and add triple overlap three times`},
+        {eq:`${w2}`, error:`${w2} forgets +3·cABC; rectangles with all three were subtracted 3× and must be added back 3×`},
+        {eq:`${w3}`, error:`${w3} uses +1·cABC instead of +3·cABC; derivation: each all-three rectangle is subtracted 6× and needs 3 additions back`},
+      ],
+      hint:`Exactly one = cA+cB+cC − 2(cAB+cAC+cBC) + 3·cABC = ${cA_}+${cB_}+${cC_}−${2*(cAB+cAC+cBC)}+${3*cABC}=${ans}.`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_single(id) { const t=math.pick(POOL_L1)(); return buildEqQ(id,"single_point",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_both(id)   { const t=math.pick(POOL_L2)(); return buildEqQ(id,"both_points",    t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_one(id)    { const t=math.pick(POOL_L3)(); return buildEqQ(id,"one_not_other",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_neither(id){ const t=math.pick(POOL_L4)(); return buildEqQ(id,"neither_point",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_three(id)  { const t=math.pick(POOL_L5)(); return buildEqQ(id,"three_union_excl",t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_comp(id)   { const t=math.pick(POOL_COMP)();return buildEqQ(id,"competition",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  single_point:    gen_single,
+  both_points:     gen_both,
+  one_not_other:   gen_one,
+  neither_point:   gen_neither,
+  three_union_excl:gen_three,
+  competition:     gen_comp,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You can count sub-rectangles with any combination of marked squares.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[],
+    challenge:[],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  if(list.length===0){
+    return passed
+      ?`<p class="text-muted">Great work — you have mastered sub-rectangle counting!</p>`
+      :`<p class="text-muted">No prerequisite UEPGs — this topic builds on basic multiplication and counting.</p>`;
+  }
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about sub-rectangle counting in grids.`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about sub-rectangle counting in grids.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+
+(function init(){
+  applyName();
+  const saved=loadProgress();
+  if(saved){
+    state.diagnostic.results=saved.results||{};
+    state.weakSkills=saved.weakSkills||[];
+    if(saved.bestScore)state.mastery.bestScore=saved.bestScore;
+  }
+})();
+</script>
+</body>
+</html>

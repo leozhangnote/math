@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>River Boat Problems — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg,#01579b,#0288d1); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>River Boat Problems</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Competition &nbsp;·&nbsp; Upstream, downstream, round-trip, word problems, and water-frame trick</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Speed Model</span>
+      <span class="badge badge-L2">One Trip</span>
+      <span class="badge badge-L3">Two Equations</span>
+      <span class="badge badge-L4">Time Compare</span>
+      <span class="badge badge-L5">Word Probs</span>
+      <span class="badge badge-rule">Competition</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <div id="reference">
+    <div class="card">
+      <h2>Quick Reference</h2>
+      <ul>
+        <li><strong>Two unknowns:</strong> v = boat speed in still water, u = current speed (always u &lt; v).</li>
+        <li><strong>Downstream</strong> (with current): speed = v + u.</li>
+        <li><strong>Upstream</strong> (against current): speed = v − u.</li>
+        <li><strong>Recover v and u from two speeds:</strong> v = (v<sub>down</sub> + v<sub>up</sub>) ÷ 2, &nbsp; u = (v<sub>down</sub> − v<sub>up</sub>) ÷ 2.</li>
+        <li><strong>Two-trip system:</strong> same distance d, times t<sub>↓</sub> and t<sub>↑</sub> → v+u = d/t<sub>↓</sub>, v−u = d/t<sub>↑</sub>. Solve by adding/subtracting.</li>
+        <li><strong>Water-frame trick:</strong> in the river's reference frame the current disappears. A floating object is stationary; the boat's out-and-back times are equal. Distance drifted = current × total time.</li>
+        <li><strong>Same-time ratio:</strong> if x km downstream = y km upstream (same time), then v : u = (x+y) : (x−y).</li>
+      </ul>
+    </div>
+  </div>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_river_boat_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  speed_model: {
+    name:"Level 1: Downstream & Upstream Speed Model", level:1, badgeClass:"badge-L1",
+    summary:"Every river-boat problem has two unknowns: v (boat speed in still water) and u (current speed). Downstream speed = v + u (current helps); upstream speed = v − u (current hinders). Given any two of the four quantities, find the other two.",
+    steps:[
+      "Label: v = boat speed in still water, u = river current speed.",
+      "Downstream speed = v + u. Upstream speed = v − u.",
+      "To recover boat speed: v = (downstream + upstream) ÷ 2.",
+      "To recover current: u = (downstream − upstream) ÷ 2.",
+      "Always check: downstream > upstream (since u > 0).",
+    ],
+    example:{
+      problemHTML:`A boat's downstream speed is 14 km/h and upstream speed is 6 km/h. Find the boat speed in still water and the current speed.`,
+      solutionHTML:`v = (14 + 6) ÷ 2 = <strong>10 km/h</strong> (boat).<br>
+        u = (14 − 6) ÷ 2 = <strong>4 km/h</strong> (current).<br>
+        Check: 10+4=14 ✓ &nbsp; 10−4=6 ✓`,
+    },
+    misconception:"A very common error: students assume downstream speed = boat speed. Downstream speed is v + u (boat PLUS current), not v alone.",
+    keyConcepts:[
+      {label:"Why the Averages Work", prompt:"A boat's downstream speed is 14 and upstream speed is 6. Explain WHY v = (14+6)÷2 gives the boat speed. Show the algebra: start from v+u=14 and v−u=6, add the equations, then solve for v."},
+      {label:"When Current = 0", prompt:"What happens to the upstream and downstream formulas if the river has no current (u = 0)? What does that mean in the context of a still lake?"},
+    ],
+  },
+
+  one_direction: {
+    name:"Level 2: Single Trip Equation", level:2, badgeClass:"badge-L2",
+    summary:"When you know the distance, time, and one of {v, u}, set up one equation using d = speed × time. For a downstream trip: d = (v + u) × t; for upstream: d = (v − u) × t. Solve for the unknown.",
+    steps:[
+      "Identify the direction: downstream (speed = v+u) or upstream (speed = v−u).",
+      "Write the distance equation: d = speed × time.",
+      "Substitute the known values and isolate the unknown.",
+      "Downstream gives v = d/t − u. Upstream gives v = d/t + u.",
+    ],
+    example:{
+      problemHTML:`A boat travels <strong>60 km upstream</strong> in <strong>5 hours</strong>. The current speed is 3 km/h. Find the boat's speed in still water.`,
+      solutionHTML:`Upstream speed = d ÷ t = 60 ÷ 5 = 12 km/h.<br>
+        v − u = 12 → v = 12 + 3 = <strong>15 km/h</strong>.<br>
+        Check: (15−3)×5 = 12×5 = 60 ✓`,
+    },
+    misconception:"For an upstream trip, the boat speed is LARGER than the trip speed: v = trip speed + u (adding back the current the river took away). Many students subtract instead of add.",
+    keyConcepts:[
+      {label:"Downstream vs Upstream", prompt:"A boat covers 60 km downstream in 4 hours with current u = 3 km/h. Then a second trip: 45 km upstream in 5 hours with the same current. Find boat speed v for each trip. Are the answers the same? Why should they be?"},
+      {label:"Setting Up the Equation", prompt:"A boat covers d km downstream in t hours with current u. Write the equation step by step, then isolate v. Show the general formula v = d/t − u. Why does the minus sign appear for a downstream trip?"},
+    ],
+  },
+
+  two_equations: {
+    name:"Level 3: Two-Trip System of Equations", level:3, badgeClass:"badge-L3",
+    summary:"If the same distance d is covered downstream in t₁ hours and upstream in t₂ hours, you get two equations: v + u = d/t₁ and v − u = d/t₂. Add them to find v; subtract to find u.",
+    steps:[
+      "Compute downstream speed: A = d ÷ t₁ (= v + u).",
+      "Compute upstream speed: B = d ÷ t₂ (= v − u).",
+      "Add the two equations: 2v = A + B → v = (A + B) ÷ 2.",
+      "Subtract the two equations: 2u = A − B → u = (A − B) ÷ 2.",
+      "Check: v + u = A and v − u = B.",
+    ],
+    example:{
+      problemHTML:`A boat travels 48 km downstream in 4 hours and the same 48 km upstream in 6 hours. Find the boat speed and current speed.`,
+      solutionHTML:`Downstream speed = 48÷4 = 12 km/h = v+u.<br>
+        Upstream speed = 48÷6 = 8 km/h = v−u.<br>
+        v = (12+8)÷2 = <strong>10 km/h</strong>.<br>
+        u = (12−8)÷2 = <strong>2 km/h</strong>.<br>
+        Check: 10+2=12 ✓ &nbsp; 10−2=8 ✓`,
+    },
+    misconception:"Students sometimes divide d by (t₁ + t₂) to get the 'average trip speed', which is not v or u. Each leg gives its own speed equation — solve the system, don't average the times.",
+    keyConcepts:[
+      {label:"Why the System Works", prompt:"Explain why adding the equations v+u=A and v−u=B gives 2v=A+B. Then show why subtracting gives 2u=A−B. What property of algebra makes this work?"},
+      {label:"Different Distances", prompt:"What if the downstream and upstream trips cover different distances? How would you set up the system? Write equations for: downstream 60 km in 3 h, upstream 40 km in 5 h."},
+    ],
+  },
+
+  time_compare: {
+    name:"Level 4: Comparing Trip Times", level:4, badgeClass:"badge-L4",
+    summary:"Given the boat and current speeds, compute trip times precisely: t = distance ÷ speed. The upstream trip always takes longer than the downstream trip. Practice finding t_down, t_up, their difference, and the total round-trip time.",
+    steps:[
+      "Downstream time: t_down = d ÷ (v + u).",
+      "Upstream time:   t_up   = d ÷ (v − u).",
+      "Time difference: t_up − t_down.",
+      "Round-trip total: t_down + t_up.",
+      "Note: the upstream trip is always longer since v − u < v + u.",
+    ],
+    example:{
+      problemHTML:`Boat speed v = 12 km/h, current u = 3 km/h, distance d = 45 km each way. Find the downstream time, upstream time, their difference, and total round-trip time.`,
+      solutionHTML:`t_down = 45 ÷ (12+3) = 45÷15 = <strong>3 h</strong>.<br>
+        t_up   = 45 ÷ (12−3) = 45÷9  = <strong>5 h</strong>.<br>
+        Difference = 5 − 3 = <strong>2 h</strong> longer upstream.<br>
+        Total round trip = 3 + 5 = <strong>8 h</strong>.`,
+    },
+    misconception:"The round-trip time is NOT 2 × t_down. The two directions take different times because the current helps in one direction and hinders in the other.",
+    keyConcepts:[
+      {label:"Round Trip Always Slower", prompt:"A boat goes from A to B and back in a river (distance d each way). Show algebraically that the total time with current u is always MORE than 2d/v (the still-water round trip time). Hint: compare d/(v+u)+d/(v−u) with 2d/v."},
+      {label:"Finding Total Time", prompt:"Boat speed 10, current 4, distance 42 km each way. Find t_down, t_up, and total. Why is 2 × t_down not the correct total time?"},
+    ],
+  },
+
+  word_applied: {
+    name:"Level 5: Applied Word Problems", level:5, badgeClass:"badge-L5",
+    summary:"The river-boat model appears in many contexts: planes with headwinds, cyclists with tailwinds, two boats meeting. Recognise the model, assign variables, and apply the same system. Special insight: two identical boats travelling in OPPOSITE directions on the same river have combined speed 2v (current cancels).",
+    steps:[
+      "Identify the 'boat' (vehicle) speed and 'current' (wind/flow) speed.",
+      "Write downstream-equivalent and upstream-equivalent speeds.",
+      "For two identical boats meeting head-on: combined speed = 2v (currents cancel).",
+      "For 'travels T hours downstream then returns upstream': return time = (v+u)×T ÷ (v−u).",
+    ],
+    example:{
+      problemHTML:`A plane's airspeed is v. With a tailwind of u it covers 45 km in 3 hours. Against the same headwind it takes 5 hours. Find v and u.`,
+      solutionHTML:`Tailwind speed = 45÷3 = 15 km/h = v+u.<br>
+        Headwind speed = 45÷5 = 9 km/h = v−u.<br>
+        v = (15+9)÷2 = <strong>12 km/h</strong>, u = (15−9)÷2 = <strong>3 km/h</strong>.`,
+    },
+    misconception:"When two identical boats travel in opposite directions, the current helps one and hinders the other by equal amounts — they cancel. The meeting time is only determined by boat speed v, not current u.",
+    keyConcepts:[
+      {label:"Why Currents Cancel in a Meeting", prompt:"Boat A goes downstream at v+u; Boat B goes upstream at v−u. They travel toward each other. Show that their combined closing speed = (v+u)+(v−u) = 2v. What does this mean for the meeting time?"},
+      {label:"Return Trip Time", prompt:"A boatman rows downstream for 3 hours at speed v+u, then turns around. Show that the return time (upstream) is (v+u)×3 ÷ (v−u). If v=10 and u=2, what are both times?"},
+    ],
+  },
+
+  competition: {
+    name:"Rule: Competition Problems", level:0, badgeClass:"badge-rule",
+    summary:"Three competition techniques: (1) Water-frame trick — in the river's own reference frame a floating object is stationary, so the boat's outward and return trip times are equal; distance drifted = u × 2T. (2) Upstream-first return: rows up T hours, returns faster downstream; return time = (v−u)×T ÷ (v+u). (3) Same-time ratio: x km downstream same time as y km upstream → v : u = (x+y) : (x−y).",
+    steps:[
+      "Water-frame trick: total elapsed time = 2T. Distance drifted by floating object = u × 2T.",
+      "So u = (distance drifted) ÷ (2 × time before turning).",
+      "Upstream-first return: distance upstream = (v−u)×T; return speed downstream = v+u; return time = (v−u)×T ÷ (v+u).",
+      "Same-time ratio: v+u = x/t, v−u = y/t → v : u = (x+y) : (x−y).",
+    ],
+    example:{
+      problemHTML:`A boat passes a hat floating in the river at point A. It continues downstream for 3 hours, then turns back upstream. It meets the hat at point B, which is 6 km downstream of A. Find the river current speed.`,
+      solutionHTML:`Water-frame trick: in the river's frame the hat is stationary. The boat takes 3 h out and (by symmetry) 3 h back. Total = 6 h.<br>
+        The hat floated for 6 h, covering 6 km: u = 6 ÷ 6 = <strong>1 km/h</strong>.`,
+    },
+    misconception:"In the water-frame trick, the boat's speed v does NOT appear in the answer — only u = d ÷ (2T) matters. Many students try to use boat speed, but the key insight is that the round-trip times in the water frame are always equal.",
+    keyConcepts:[
+      {label:"Water-Frame Trick Proof", prompt:"Explain the water-frame trick step by step. Why are the out and return times equal in the river's reference frame? Why is the boat speed v irrelevant? Use the example: boat goes 3 h downstream, turns back, meets hat 6 km away."},
+      {label:"Same-Time Ratio Derivation", prompt:"A boat covers x km downstream and y km upstream in equal times t. Show that v+u = x/t and v−u = y/t. Then derive v:u = (x+y):(x−y) by adding and subtracting these equations."},
+    ],
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   PRE-VALIDATED DATA ARRAYS
+══════════════════════════════════════════════════════════════ */
+
+// [v, u, v_down, v_up]  where v_down=v+u, v_up=v-u
+const L1_SPEEDS = [
+  [10, 2, 12,  8],
+  [12, 3, 15,  9],
+  [ 8, 2, 10,  6],
+  [15, 5, 20, 10],
+  [ 9, 3, 12,  6],
+  [ 6, 2,  8,  4],
+  [10, 4, 14,  6],
+  [12, 4, 16,  8],
+  [ 8, 3, 11,  5],
+  [ 7, 3, 10,  4],
+];
+
+// [v, u, d, t]  downstream: (v+u)*t = d
+const L2_DOWN = [
+  [10, 2, 60, 5],
+  [12, 3, 60, 4],
+  [ 8, 2, 30, 3],
+  [15, 5, 60, 3],
+  [ 9, 3, 60, 5],
+  [ 6, 2, 40, 5],
+  [10, 4, 42, 3],
+  [12, 4, 48, 3],
+];
+
+// [v, u, d, t]  upstream: (v-u)*t = d
+const L2_UP = [
+  [10, 2, 40, 5],
+  [12, 3, 45, 5],
+  [ 8, 2, 30, 5],
+  [15, 5, 60, 6],
+  [ 9, 3, 30, 5],
+  [ 6, 2, 40,10],
+  [10, 4, 42, 7],
+  [12, 4, 48, 6],
+];
+
+// [v, u, d, t_down, t_up]  same distance both ways
+const L3_SYSTEM = [
+  [10, 2, 48, 4, 6],
+  [12, 3, 45, 3, 5],
+  [ 8, 2, 30, 3, 5],
+  [15, 5, 60, 3, 6],
+  [ 9, 3, 60, 5,10],
+  [ 6, 2, 40, 5,10],
+  [10, 4, 42, 3, 7],
+  [12, 4, 48, 3, 6],
+];
+
+// [d, T_meet, v, u]  two boats meet after T_meet hours; combined speed=2v
+const L5_MEETING = [
+  [120, 5, 12, 3],
+  [100, 5, 10, 2],
+  [ 90, 5,  9, 3],
+  [ 80, 4, 10, 2],
+  [ 60, 3, 10, 4],
+  [ 96, 4, 12, 4],
+];
+
+// [v, u, T_out, t_return]  downstream T_out hours then return upstream
+// d_out = (v+u)*T_out;  t_return = d_out/(v-u)
+const L5_RETURN = [
+  [10, 2, 4, 6],
+  [12, 3, 3, 5],
+  [ 8, 2, 3, 5],
+  [ 9, 3, 4, 8],
+  [ 6, 2, 4, 8],
+  [10, 4, 3, 7],
+  [12, 4, 3, 6],
+  [15, 5, 2, 4],
+];
+
+// [T_drop, d_drift, u]  boat goes T_drop hours downstream, turns back, meets hat
+// total time = 2*T_drop;  d_drift = u * 2 * T_drop
+const L6_DRIFT = [
+  [2,  8, 2],
+  [3,  6, 1],
+  [2, 12, 3],
+  [4, 16, 2],
+  [3, 18, 3],
+  [5, 20, 2],
+  [2, 20, 5],
+  [4, 24, 3],
+];
+
+// [v, u, T_up, t_return_down]  rows UPSTREAM T_up hours then returns downstream
+// d_up = (v-u)*T_up;  t_return = d_up/(v+u)
+const L6_UP_RETURN = [
+  [10, 2, 6, 4],
+  [12, 3, 5, 3],
+  [ 9, 3,10, 5],
+  [ 6, 2,10, 5],
+  [10, 4, 7, 3],
+  [15, 5, 6, 3],
+];
+
+// [x, y, vr]  x km downstream same time as y km upstream; v:u = (x+y):(x-y) = vr:1
+const L6_RATIO = [
+  [60, 40, 5],
+  [60, 20, 2],
+  [60, 30, 3],
+  [40, 24, 4],
+  [50, 30, 4],
+  [48, 32, 5],
+  [35, 25, 6],
+  [36, 12, 2],
+];
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Speed Model ─────────────────────────────────────────*/
+const POOL_L1 = [
+  // P0: given v_down and v_up → find boat speed v
+  () => {
+    const [v, u, vd, vu] = math.pick(L1_SPEEDS);
+    return {
+      promptHTML:`A boat's <strong>downstream speed is ${vd} km/h</strong> and its <strong>upstream speed is ${vu} km/h</strong>. What is the boat's speed in still water?`,
+      correctLatex:`v = (${vd} + ${vu}) \\div 2 = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${vd} \\text{ km/h}`, error:`${vd} is the downstream speed (v+u), not the boat speed alone` },
+        { eq:`v = ${vd} - ${vu} = ${vd-vu} \\text{ km/h}`, error:`${vd-vu} = v_down−v_up = 2u, not v; use the average (v_down+v_up)÷2` },
+        { eq:`v = ${vu} \\text{ km/h}`, error:`${vu} is the upstream speed (v−u), not the boat speed alone` },
+      ],
+      hint:`v = (downstream + upstream) ÷ 2 = (${vd}+${vu})÷2 = ${v}.`,
+    };
+  },
+  // P1: given v_down and v_up → find current speed u
+  () => {
+    const [v, u, vd, vu] = math.pick(L1_SPEEDS);
+    return {
+      promptHTML:`A boat's <strong>downstream speed is ${vd} km/h</strong> and its <strong>upstream speed is ${vu} km/h</strong>. What is the river current speed?`,
+      correctLatex:`u = (${vd} - ${vu}) \\div 2 = ${u} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`u = ${vd} - ${vu} = ${vd-vu} \\text{ km/h}`, error:`${vd-vu} = v_down−v_up = 2u (forgot to halve); current = (v_down−v_up)÷2 = ${u}` },
+        { eq:`u = (${vd} + ${vu}) \\div 2 = ${v} \\text{ km/h}`, error:`${v} is the boat speed formula (v_down+v_up)÷2; current uses minus: (v_down−v_up)÷2 = ${u}` },
+        { eq:`u = ${vu} \\text{ km/h}`, error:`${vu} is the upstream speed (v−u), not the current alone` },
+      ],
+      hint:`u = (downstream − upstream) ÷ 2 = (${vd}−${vu})÷2 = ${u}.`,
+    };
+  },
+  // P2: given v and u → find downstream speed
+  () => {
+    const [v, u, vd] = math.pick(L1_SPEEDS);
+    return {
+      promptHTML:`Boat speed in still water: <strong>v = ${v} km/h</strong>. Current speed: <strong>u = ${u} km/h</strong>. What is the <em>downstream</em> speed?`,
+      correctLatex:`v + u = ${v} + ${u} = ${vd} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`${v} - ${u} = ${v-u} \\text{ km/h}`, error:`${v-u} = v−u is the upstream speed; downstream adds the current: v+u = ${vd}` },
+        { eq:`${v} \\text{ km/h}`, error:`${v} is the still-water speed; in a current the boat goes faster downstream: v+u = ${vd}` },
+        { eq:`${v} \\times ${u} = ${v*u} \\text{ km/h}`, error:`${v*u} = v×u (product) — speed adds, not multiplies: downstream = v+u = ${vd}` },
+      ],
+      hint:`Downstream = boat speed + current = v+u = ${v}+${u} = ${vd} km/h.`,
+    };
+  },
+  // P3: given v and v_down → find current u
+  () => {
+    const [v, u, vd] = math.pick(L1_SPEEDS);
+    return {
+      promptHTML:`A boat's still-water speed is <strong>${v} km/h</strong>. When going downstream its speed is <strong>${vd} km/h</strong>. Find the current speed.`,
+      correctLatex:`u = ${vd} - ${v} = ${u} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`u = ${v} + ${vd} = ${v+vd} \\text{ km/h}`, error:`${v+vd} = v+v_down — the current is the DIFFERENCE: v_down−v = ${vd}−${v} = ${u}` },
+        { eq:`u = ${vd} \\div ${v} = ${(vd/v).toFixed(1)} \\text{ km/h}`, error:`division is wrong here; current = downstream − still-water = ${vd}−${v} = ${u}` },
+        { eq:`u = ${v} - ${vd} = ${v-vd} \\text{ km/h}`, error:`${v-vd} is negative — downstream is faster than still-water, so u = ${vd}−${v} = ${u} > 0` },
+      ],
+      hint:`Downstream = v+u, so u = downstream−v = ${vd}−${v} = ${u}.`,
+    };
+  },
+];
+
+/* ── L2: Single Trip ─────────────────────────────────────────*/
+const POOL_L2 = [
+  // P0: downstream trip, find boat speed v
+  () => {
+    const [v, u, d, t] = math.pick(L2_DOWN);
+    const spd = d / t;
+    return {
+      promptHTML:`A boat travels <strong>${d} km downstream</strong> in <strong>${t} hours</strong>. The current speed is <strong>u = ${u} km/h</strong>. Find the boat's still-water speed.`,
+      correctLatex:`v = ${d} \\div ${t} - ${u} = ${spd} - ${u} = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${spd} \\text{ km/h}`, error:`${spd} = d÷t is the downstream speed (v+u), not the boat speed; subtract current: ${spd}−${u} = ${v}` },
+        { eq:`v = ${d} \\div ${t} + ${u} = ${spd+u} \\text{ km/h}`, error:`${spd+u}: you added current but should subtract — downstream speed includes current, so v = d/t − u = ${v}` },
+        { eq:`v = ${d} \\div ${t} \\div ${u} = ${(spd/u).toFixed(1)} \\text{ km/h}`, error:`division is wrong; current adds to boat speed in d=vt form: v = d/t − u = ${v}` },
+      ],
+      hint:`Downstream speed = ${d}÷${t} = ${spd} = v+u. Solve: v = ${spd}−${u} = ${v}.`,
+    };
+  },
+  // P1: upstream trip, find boat speed v
+  () => {
+    const [v, u, d, t] = math.pick(L2_UP);
+    const spd = d / t;
+    return {
+      promptHTML:`A boat travels <strong>${d} km upstream</strong> in <strong>${t} hours</strong>. The current speed is <strong>u = ${u} km/h</strong>. Find the boat's still-water speed.`,
+      correctLatex:`v = ${d} \\div ${t} + ${u} = ${spd} + ${u} = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${spd} \\text{ km/h}`, error:`${spd} = d÷t is the upstream speed (v−u), not the boat speed; ADD back the current: ${spd}+${u} = ${v}` },
+        { eq:`v = ${d} \\div ${t} - ${u} = ${spd-u} \\text{ km/h}`, error:`${spd-u}: for upstream you must ADD current back (river slows the boat), not subtract: v = d/t+u = ${v}` },
+        { eq:`v = ${d} \\times ${t} = ${d*t} \\text{ km/h}`, error:`${d*t} = d×t — use division: upstream speed = d÷t = ${spd}, then v = ${spd}+u = ${v}` },
+      ],
+      hint:`Upstream speed = ${d}÷${t} = ${spd} = v−u. Solve: v = ${spd}+${u} = ${v}.`,
+    };
+  },
+  // P2: given both trip speeds, find v
+  () => {
+    const [v, u, vd, vu] = math.pick(L1_SPEEDS);
+    return {
+      promptHTML:`A boat can travel at <strong>${vd} km/h</strong> going downstream and <strong>${vu} km/h</strong> going upstream. Which expression gives the boat's still-water speed?`,
+      correctLatex:`(${vd} + ${vu}) \\div 2 = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`(${vd} - ${vu}) \\div 2 = ${u} \\text{ km/h}`, error:`${u} = (v_down−v_up)÷2 is the current speed, not the boat speed` },
+        { eq:`${vd} - ${vu} = ${vd-vu} \\text{ km/h}`, error:`${vd-vu} = v_down−v_up = 2u (double the current); boat speed = average = (${vd}+${vu})÷2 = ${v}` },
+        { eq:`${vd} \\text{ km/h}`, error:`${vd} is the downstream speed (boat + current), not the boat speed alone` },
+      ],
+      hint:`Boat speed = average = (downstream+upstream)÷2 = (${vd}+${vu})÷2 = ${v}.`,
+    };
+  },
+];
+
+/* ── L3: Two-Equation System ─────────────────────────────────*/
+const POOL_L3 = [
+  // P0: given d, t_down, t_up → find boat speed v
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const spd = d/td, spu = d/tu;
+    return {
+      promptHTML:`A boat covers <strong>${d} km downstream in ${td} hours</strong> and the same <strong>${d} km upstream in ${tu} hours</strong>. Find the boat's still-water speed.`,
+      correctLatex:`v = \\frac{${d}/${td} + ${d}/${tu}}{2} = \\frac{${spd}+${spu}}{2} = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${spd} \\text{ km/h}`, error:`${spd} is the downstream speed (v+u); boat speed = (downstream+upstream)÷2 = ${v}` },
+        { eq:`v = ${spu} \\text{ km/h}`, error:`${spu} is the upstream speed (v−u); boat speed = (downstream+upstream)÷2 = ${v}` },
+        { eq:`v = \\frac{${spd}-${spu}}{2} = ${u} \\text{ km/h}`, error:`${u} = (${spd}−${spu})÷2 is the current speed; boat speed uses the PLUS sign: (${spd}+${spu})÷2 = ${v}` },
+      ],
+      hint:`v_down=${spd}, v_up=${spu}. v = (${spd}+${spu})÷2 = ${v}.`,
+    };
+  },
+  // P1: given d, t_down, t_up → find current speed u
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const spd = d/td, spu = d/tu;
+    return {
+      promptHTML:`A boat covers <strong>${d} km downstream in ${td} hours</strong> and the same <strong>${d} km upstream in ${tu} hours</strong>. Find the river current speed.`,
+      correctLatex:`u = \\frac{${spd}-${spu}}{2} = ${u} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`u = \\frac{${spd}+${spu}}{2} = ${v} \\text{ km/h}`, error:`${v} = (v_down+v_up)÷2 is the boat speed; current uses MINUS: (${spd}−${spu})÷2 = ${u}` },
+        { eq:`u = ${spd} - ${spu} = ${spd-spu} \\text{ km/h}`, error:`${spd-spu} = v_down−v_up = 2u (forgot to halve); current = (${spd}−${spu})÷2 = ${u}` },
+        { eq:`u = ${spd} \\text{ km/h}`, error:`${spd} is the downstream speed (v+u), not the current alone` },
+      ],
+      hint:`v_down=${spd}, v_up=${spu}. u = (${spd}−${spu})÷2 = ${u}.`,
+    };
+  },
+  // P2: given the two speeds directly → find v (step inside the system)
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const A = d/td, B = d/tu;
+    return {
+      promptHTML:`After computing trip speeds, a student has: <strong>v + u = ${A}</strong> and <strong>v − u = ${B}</strong>. Which expression gives the boat speed v?`,
+      correctLatex:`v = (${A} + ${B}) \\div 2 = ${v}`,
+      decoyDefs:[
+        { eq:`v = (${A} - ${B}) \\div 2 = ${u}`, error:`${u} = (A−B)÷2 is the current speed; boat speed uses the PLUS sign: (A+B)÷2 = ${v}` },
+        { eq:`v = ${A}`, error:`${A} = v+u is the downstream speed, not v alone; solve: (${A}+${B})÷2 = ${v}` },
+        { eq:`v = ${A} + ${B} = ${A+B}`, error:`${A+B} = (v+u)+(v−u) = 2v; you still need to halve: ${A+B}÷2 = ${v}` },
+      ],
+      hint:`Add both equations: 2v = ${A}+${B} = ${A+B}. Halve: v = ${v}.`,
+    };
+  },
+];
+
+/* ── L4: Time Comparison ─────────────────────────────────────*/
+const POOL_L4 = [
+  // P0: find downstream time t_down
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    return {
+      promptHTML:`Boat speed v = <strong>${v} km/h</strong>, current u = <strong>${u} km/h</strong>, distance = <strong>${d} km</strong>. How long does the <em>downstream</em> trip take?`,
+      correctLatex:`${d} \\div (${v}+${u}) = ${d} \\div ${v+u} = ${td} \\text{ h}`,
+      decoyDefs:[
+        { eq:`${d} \\div (${v}-${u}) = ${tu} \\text{ h}`, error:`${tu} is the UPSTREAM time; downstream divides by v+u = ${v+u}, not v−u` },
+        { eq:`${d} \\div ${v} = ${(d/v).toFixed(1)} \\text{ h}`, error:`dividing by v ignores the current; downstream speed = v+u = ${v+u}, so time = ${d}÷${v+u} = ${td}` },
+        { eq:`${td+tu} \\text{ h}`, error:`${td+tu} is the total round-trip time; downstream alone = ${d}÷(${v}+${u}) = ${td} h` },
+      ],
+      hint:`Downstream time = d ÷ (v+u) = ${d} ÷ ${v+u} = ${td} h.`,
+    };
+  },
+  // P1: find time difference (upstream − downstream)
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const diff = tu - td;
+    return {
+      promptHTML:`Boat speed v = <strong>${v} km/h</strong>, current u = <strong>${u} km/h</strong>, distance = <strong>${d} km</strong> each way. How much <em>longer</em> does the upstream trip take than the downstream trip?`,
+      correctLatex:`${tu} - ${td} = ${diff} \\text{ h longer}`,
+      decoyDefs:[
+        { eq:`${tu} \\text{ h}`, error:`${tu} is the upstream time, not the difference; difference = t_up−t_down = ${tu}−${td} = ${diff}` },
+        { eq:`${td+tu} \\text{ h}`, error:`${td+tu} is the total round-trip time; the question asks for the EXTRA time: t_up−t_down = ${diff}` },
+        { eq:`${td} \\text{ h}`, error:`${td} is the downstream time; the question asks how much LONGER the upstream trip takes: ${tu}−${td} = ${diff}` },
+      ],
+      hint:`t_down = ${d}÷${v+u} = ${td}h. t_up = ${d}÷${v-u} = ${tu}h. Difference = ${diff}h.`,
+    };
+  },
+  // P2: find total round-trip time
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const total = td + tu;
+    return {
+      promptHTML:`Boat speed v = <strong>${v} km/h</strong>, current u = <strong>${u} km/h</strong>. The boat travels <strong>${d} km downstream and ${d} km back upstream</strong>. What is the total round-trip time?`,
+      correctLatex:`${td} + ${tu} = ${total} \\text{ h}`,
+      decoyDefs:[
+        { eq:`${td} \\times 2 = ${td*2} \\text{ h}`, error:`${td*2} assumes both legs take ${td} h — but upstream takes ${tu} h (slower); total = ${td}+${tu} = ${total}` },
+        { eq:`${tu} \\text{ h}`, error:`${tu} is only the upstream leg; add downstream: total = ${td}+${tu} = ${total}` },
+        { eq:`${2*d} \\div ${v} = ${2*d/v} \\text{ h}`, error:`${2*d/v} = 2d÷v ignores the current; actual total = ${td}+${tu} = ${total} (always more than still-water time ${2*d/v})` },
+      ],
+      hint:`t_down = ${td}, t_up = ${tu}. Total = ${td}+${tu} = ${total} h.`,
+    };
+  },
+];
+
+/* ── L5: Applied Word Problems ───────────────────────────────*/
+const POOL_L5 = [
+  // P0: wind + plane context (same algebra as L3)
+  () => {
+    const [v, u, d, td, tu] = math.pick(L3_SYSTEM);
+    const spd = d/td, spu = d/tu;
+    return {
+      promptHTML:`A plane's airspeed is v km/h. With a <strong>tailwind of u km/h</strong> it flies <strong>${d} km in ${td} hours</strong>. Against the same headwind the same distance takes <strong>${tu} hours</strong>. Find the plane's airspeed.`,
+      correctLatex:`v = \\frac{${spd}+${spu}}{2} = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${spd} \\text{ km/h}`, error:`${spd} = ${d}÷${td} is the tailwind speed (v+u), not airspeed alone` },
+        { eq:`v = ${spu} \\text{ km/h}`, error:`${spu} = ${d}÷${tu} is the headwind speed (v−u), not airspeed alone` },
+        { eq:`v = ${u} \\text{ km/h}`, error:`${u} = (${spd}−${spu})÷2 is the wind speed; airspeed = (${spd}+${spu})÷2 = ${v}` },
+      ],
+      hint:`Tailwind speed=${spd}, headwind speed=${spu}. Airspeed = (${spd}+${spu})÷2 = ${v}.`,
+    };
+  },
+  // P1: two identical boats meeting head-on
+  () => {
+    const [d, T, v, u] = math.pick(L5_MEETING);
+    return {
+      promptHTML:`Two boats start simultaneously from opposite ends of a <strong>${d} km</strong> river. Both have the <strong>same engine speed v km/h</strong>. Boat A travels downstream; Boat B travels upstream. They meet after <strong>${T} hours</strong>. Find the engine speed v.`,
+      correctLatex:`v = ${d} \\div (2 \\times ${T}) = ${v} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`v = ${d} \\div ${T} = ${d/T} \\text{ km/h}`, error:`${d/T} forgets that TWO boats are closing the gap; combined speed = 2v, so v = ${d}÷(2×${T}) = ${v}` },
+        { eq:`v = ${v+u} \\text{ km/h}`, error:`${v+u} is the downstream speed (v+u); the closing speed 2v already cancels the current` },
+        { eq:`v = ${v-u} \\text{ km/h}`, error:`${v-u} is the upstream speed (v−u); the closing speed 2v already cancels the current` },
+      ],
+      hint:`Combined closing speed = (v+u)+(v−u) = 2v (current cancels). So v = ${d}÷(2×${T}) = ${v}.`,
+    };
+  },
+  // P2: downstream T hours then return upstream — find return time
+  () => {
+    const [v, u, Tout, tret] = math.pick(L5_RETURN);
+    const d_out = (v+u)*Tout;
+    return {
+      promptHTML:`A boatman rows <em>downstream</em> for <strong>${Tout} hours</strong> then turns around. Boat speed v = <strong>${v} km/h</strong>, current u = <strong>${u} km/h</strong>. How long does the <em>return trip</em> upstream take?`,
+      correctLatex:`${d_out} \\div (${v}-${u}) = ${d_out} \\div ${v-u} = ${tret} \\text{ h}`,
+      decoyDefs:[
+        { eq:`${Tout} \\text{ h}`, error:`${Tout} assumes equal trip times — but upstream is slower; d_out=${d_out}, return = ${d_out}÷${v-u} = ${tret} h` },
+        { eq:`${Tout*2} \\text{ h}`, error:`${Tout*2} = 2×T_out is not correct; return time = d_out÷(v−u) = ${d_out}÷${v-u} = ${tret}` },
+        { eq:`${d_out} \\div (${v}+${u}) = ${d_out/(v+u)} \\text{ h}`, error:`${d_out/(v+u)} divides by v+u (downstream speed) again; the return is upstream at v−u = ${v-u}` },
+      ],
+      hint:`Distance downstream = (${v}+${u})×${Tout} = ${d_out} km. Return time = ${d_out}÷(${v}−${u}) = ${d_out}÷${v-u} = ${tret} h.`,
+    };
+  },
+];
+
+/* ── Rule: Competition ───────────────────────────────────────*/
+const POOL_COMP = [
+  // P0: water-frame drift — find current speed
+  () => {
+    const [T, d, u] = math.pick(L6_DRIFT);
+    return {
+      promptHTML:`A boat passes a floating log at point A and continues downstream for <strong>${T} hours</strong>. It then turns around and travels upstream until it meets the log again at point B. Point B is <strong>${d} km downstream of A</strong>. Find the river current speed.`,
+      correctLatex:`u = ${d} \\div (2 \\times ${T}) = ${u} \\text{ km/h}`,
+      decoyDefs:[
+        { eq:`u = ${d} \\div ${T} = ${d/T} \\text{ km/h}`, error:`${d/T} forgets the water-frame trick: the boat takes ${T} h out AND ${T} h back, so total time = ${2*T} h; u = ${d}÷${2*T} = ${u}` },
+        { eq:`u = ${d} \\div (${T} \\times 3) = ${(d/(T*3)).toFixed(2)} \\text{ km/h}`, error:`${T}×3 is not the right total time; in the water frame, out-time = back-time = ${T} h, total = ${2*T} h` },
+        { eq:`u = ${d+T} \\text{ km/h}`, error:`${d+T} has no meaning here; use the water-frame trick: the log floated for 2T=${2*T} h covering ${d} km, so u = ${d}÷${2*T} = ${u}` },
+      ],
+      hint:`Water-frame: out-time = return-time = ${T} h. Log drifted for ${2*T} h: u = ${d}÷${2*T} = ${u}.`,
+    };
+  },
+  // P1: rows upstream T hours then returns downstream — find return time
+  () => {
+    const [v, u, Tup, tret] = math.pick(L6_UP_RETURN);
+    const d_up = (v-u)*Tup;
+    return {
+      promptHTML:`A boatman rows <em>upstream</em> for <strong>${Tup} hours</strong>, then turns around. Boat speed v = <strong>${v} km/h</strong>, current u = <strong>${u} km/h</strong>. How long does the <em>downstream return</em> take?`,
+      correctLatex:`${d_up} \\div (${v}+${u}) = ${d_up} \\div ${v+u} = ${tret} \\text{ h}`,
+      decoyDefs:[
+        { eq:`${Tup} \\text{ h}`, error:`${Tup} assumes equal times — but the downstream return is faster; d_up=${d_up}, return = ${d_up}÷${v+u} = ${tret} h` },
+        { eq:`${d_up} \\div (${v}-${u}) = ${d_up/(v-u)} \\text{ h}`, error:`${d_up/(v-u)} divides by v−u (upstream speed) again; the return is downstream at v+u = ${v+u}` },
+        { eq:`${Tup+1} \\text{ h}`, error:`${Tup+1} is not correct; distance upstream = (${v}−${u})×${Tup} = ${d_up} km, return time = ${d_up}÷${v+u} = ${tret} h` },
+      ],
+      hint:`Distance upstream = (${v}−${u})×${Tup} = ${d_up} km. Return = ${d_up}÷(${v}+${u}) = ${d_up}÷${v+u} = ${tret} h.`,
+    };
+  },
+  // P2: x km downstream same time as y km upstream → find v:u ratio
+  () => {
+    const [x, y, vr] = math.pick(L6_RATIO);
+    const g = math.gcd(x, y);
+    const sx = x/g, sy = y/g;
+    const w3 = (vr + 1 === sx && sy === 1) ? vr + 2 : vr + 1;
+    return {
+      promptHTML:`A boat covers <strong>${x} km downstream</strong> in the same time it covers <strong>${y} km upstream</strong>. What is the ratio of boat speed to current speed?`,
+      correctLatex:`v : u = ${x+y} : ${x-y} = ${vr} : 1`,
+      decoyDefs:[
+        { eq:`v : u = ${sx} : ${sy}`, error:`${sx}:${sy} is the simplified DISTANCE ratio ${x}:${y} — not the boat:current ratio; use (x+y):(x−y) = ${x+y}:${x-y} = ${vr}:1` },
+        { eq:`v : u = 1 : ${vr}`, error:`inverted — boat is faster than current, so v:u = ${vr}:1 not 1:${vr}` },
+        { eq:`v : u = ${w3} : 1`, error:`${w3}:1 is off — apply the formula: v:u = (x+y):(x−y) = (${x}+${y}):(${x}−${y}) = ${x+y}:${x-y} = ${vr}:1` },
+      ],
+      hint:`v:u = (x+y):(x−y) = ${x+y}:${x-y} = ${vr}:1. (same time t → v+u=x/t, v−u=y/t → add/subtract)`,
+    };
+  },
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_speed(id)  { const t=math.pick(POOL_L1)();   return buildEqQ(id,"speed_model",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_one(id)    { const t=math.pick(POOL_L2)();   return buildEqQ(id,"one_direction",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_sys(id)    { const t=math.pick(POOL_L3)();   return buildEqQ(id,"two_equations",  t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_time(id)   { const t=math.pick(POOL_L4)();   return buildEqQ(id,"time_compare",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_word(id)   { const t=math.pick(POOL_L5)();   return buildEqQ(id,"word_applied",   t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_comp(id)   { const t=math.pick(POOL_COMP)(); return buildEqQ(id,"competition",    t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  speed_model:   gen_speed,
+  one_direction: gen_one,
+  two_equations: gen_sys,
+  time_compare:  gen_time,
+  word_applied:  gen_word,
+  competition:   gen_comp,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: |Rule: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">${sk.level>0?"L"+sk.level:"Rule"}</span> ${sk.name.replace(/Level \d+: |Rule: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    const label=`${sk.level>0?"L"+sk.level:"R"}: ${sk.name.replace(/Level \d+: |Rule: /,"")}`;
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">${label}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of river boat problems.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      { title:"System of Two Linear Equations",
+        url:"../grade_5/system_2eq_2var_grade5.html",
+        reason:"River boat problems reduce to a 2×2 linear system — master the elimination and substitution methods here before tackling speed contexts." },
+    ],
+    challenge:[],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  if(list.length===0) return `<p class="text-muted">Great work completing the river boat series!</p>`;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about river boat problems (upstream and downstream).`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about upstream and downstream river boat problems.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+applyName();
+</script>
+</body>
+</html>

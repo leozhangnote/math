@@ -1,8 +1,8 @@
 {
   "_shard": "math_grade_5",
   "_description": "Math UEPG concepts at grade 5: fraction operations, decimal operations, intro to ratios, basic statistics, coordinate plane",
-  "_last_updated": "2026-03-25",
-  "_entry_count": 7,
+  "_last_updated": "2026-03-27",
+  "_entry_count": 9,
   "uepgs": [
     {
       "id": "smart_decimal_arithmetic_grade5",
@@ -178,6 +178,51 @@
       "file": "grade_5/lcm_gcd_grade5.html",
       "status": "complete",
       "created": "2026-03-25"
+    }
+    ,{
+      "id": "river_boat_grade5",
+      "title": "River Boat Problems",
+      "grade": 5,
+      "subject": "arithmetic",
+      "concept_fingerprint": "solving river boat (moving water) problems using the upstream/downstream speed model — setting up and solving one- and two-equation systems, comparing times, applying the water-frame trick, and using ratio relationships between speeds",
+      "topics": [
+        "river boat", "upstream", "downstream", "current speed", "boat speed",
+        "still water speed", "speed model", "linear equation", "system of equations",
+        "two unknowns", "time comparison", "round trip", "water frame",
+        "floating object", "drift", "two boats meeting", "closing speed",
+        "wind problem", "plane speed", "ratio", "competition math"
+      ],
+      "skills_summary": "upstream/downstream model (v_down=v+u, v_up=v−u; recover v=(v_d+v_u)/2, u=(v_d−v_u)/2), one-direction equations (find v or u from distance and time), two-equation system (set up and solve for both v and u), time comparison (faster downstream, round-trip total), applied word problems (plane/wind context, two boats meeting at 2v closing speed, downstream-then-return time), competition tricks (water-frame drift u=d/(2T), upstream-then-return, same-time ratio v:u=(x+y):(x−y))",
+      "connections": {
+        "foundational": [
+          { "id": "system_2eq_2var_grade5", "title": "System of Two Linear Equations", "file": "grade_5/system_2eq_2var_grade5.html" }
+        ],
+        "challenge": []
+      },
+      "file": "grade_5/river_boat_grade5.html",
+      "status": "complete",
+      "created": "2026-03-25"
+    }
+    ,{
+      "id": "subrect_count_grade5",
+      "title": "Sub-Rectangle Counting",
+      "grade": 5,
+      "subject": "combinatorics",
+      "concept_fingerprint": "counting axis-aligned sub-rectangles in an n×m grid that contain one or more marked squares, using the boundary-choice formula and inclusion-exclusion for two- and three-point constraints",
+      "topics": [
+        "sub-rectangle", "grid", "counting", "combinatorics", "inclusion-exclusion",
+        "boundary choice", "bounding box", "single point", "two points", "three points",
+        "contains A", "contains both", "A but not B", "neither", "at least one",
+        "exactly one", "same row", "competition math"
+      ],
+      "skills_summary": "single-point containment (r×(n-r+1)×c×(m-c+1)), both points via bounding box, A-not-B via subtraction, neither via inclusion-exclusion (Total-cA-cB+cAB), three-point A∪B-not-C via two-stage inclusion-exclusion, competition: exactly-one (cA+cB-2cAB), same-row factoring, three-point exactly-one formula",
+      "connections": {
+        "foundational": [],
+        "challenge": []
+      },
+      "file": "grade_5/subrect_count_grade5.html",
+      "status": "complete",
+      "created": "2026-03-27"
     }
   ]
 }
