@@ -35,9 +35,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Multiple:</strong> n × k for any positive integer k. Multiples of 4: 4, 8, 12, 16, …</li>
         <li><strong>LCM by listing:</strong> list multiples of each number; the first value appearing in both lists is the LCM.</li>
@@ -47,7 +50,8 @@
         <li><strong>Properties:</strong> LCM(a, b) × GCD(a, b) = a × b. If a divides b, then LCM(a, b) = b. LCM(n, n) = n.</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">

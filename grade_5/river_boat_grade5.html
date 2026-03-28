@@ -35,9 +35,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Two unknowns:</strong> v = boat speed in still water, u = current speed (always u &lt; v).</li>
         <li><strong>Downstream</strong> (with current): speed = v + u.</li>
@@ -48,7 +51,8 @@
         <li><strong>Same-time ratio:</strong> if x km downstream = y km upstream (same time), then v : u = (x+y) : (x−y).</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">

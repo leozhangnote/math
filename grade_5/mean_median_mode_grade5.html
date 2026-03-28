@@ -35,9 +35,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Mode:</strong> most frequent value. Two values tie → both are modes (bimodal). All values different → no mode.</li>
         <li><strong>Median:</strong> sort values first. Odd count → middle value. Even count → (lower middle + upper middle) ÷ 2.</li>
@@ -48,7 +51,8 @@
         <li><strong>Choose:</strong> mean for balanced data, median for skewed/outliers, mode for categories.</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">

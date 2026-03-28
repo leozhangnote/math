@@ -47,9 +47,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Total sub-rectangles</strong> in an n×m grid: \(\frac{n(n+1)}{2} \times \frac{m(m+1)}{2}\).</li>
         <li><strong>Single point A at (r, c):</strong> count = \(r \times (n-r+1) \times c \times (m-c+1)\). Choose a left wall ≤ c, right wall ≥ c, top wall ≤ r, bottom wall ≥ r.</li>
@@ -59,7 +62,8 @@
         <li><strong>A or B, but not C:</strong> |A∪B| − |(A∪B)∩C| = (contA+contB−contAB) − (contAC+contBC−contABC).</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">

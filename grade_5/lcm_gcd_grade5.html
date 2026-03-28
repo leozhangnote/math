@@ -35,9 +35,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Identity:</strong> LCM(a, b) × GCD(a, b) = a × b. Always.</li>
         <li><strong>Find the pair:</strong> GCD = g, LCM = L → write a = g·m, b = g·n where gcd(m, n) = 1 and m·n = L ÷ g. Each coprime factorisation of L÷g gives one valid pair.</li>
@@ -47,7 +50,8 @@
         <li><strong>LCM ÷ GCD:</strong> LCM(a,b) ÷ GCD(a,b) = (a÷GCD) × (b÷GCD) = the product of the coprime quotients.</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">

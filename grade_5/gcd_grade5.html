@@ -35,9 +35,12 @@
     <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
   </section>
 
-  <div id="reference">
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
     <div class="card">
-      <h2>Quick Reference</h2>
       <ul>
         <li><strong>Factor:</strong> a divides b evenly (no remainder). List factor pairs from 1 up to √b.</li>
         <li><strong>GCD by listing:</strong> list all factors of each number, find common ones, pick the largest.</li>
@@ -47,7 +50,8 @@
         <li><strong>Coprime:</strong> GCD(a, b) = 1. After dividing both by GCD d, the quotients m and n satisfy GCD(m, n) = 1.</li>
       </ul>
     </div>
-  </div>
+    </div>
+  </section>
 
   <section id="section-diagnostic" class="hidden">
     <div class="card">
