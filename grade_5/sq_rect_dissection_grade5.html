@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Square &amp; Rectangle Dissection — Grade 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="../shared/uepg.css">
+  <style>
+    #hero { background: linear-gradient(135deg, #00695c, #00897b); }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <section id="hero">
+    <a href="../index.html" style="color:rgba(255,255,255,.75);font-size:.85rem;text-decoration:none;display:inline-block;margin-bottom:.6rem">← Back to Library</a>
+    <h1>Square &amp; Rectangle Dissection</h1>
+    <p style="margin:.25rem 0 .6rem;opacity:.85;font-size:.95rem">Grade 5 &nbsp;·&nbsp; Geometry &nbsp;·&nbsp; Feasibility, minimum sizes, and optimal splits</p>
+    <div class="hero-tags">
+      <span class="badge badge-L1">Feasibility</span>
+      <span class="badge badge-L2">Rectangles</span>
+      <span class="badge badge-L3">Min Side N</span>
+      <span class="badge badge-L4">Min Rect</span>
+      <span class="badge badge-L5">Optimize</span>
+    </div>
+    <div class="name-row">
+      <input id="name-input" type="text" placeholder="Your name (optional)"
+             onchange="saveSiteName(this.value);applyName()" />
+      <button class="btn btn-primary" onclick="startCheckup()">Start Checkup</button>
+      <button class="btn btn-secondary" onclick="resetProgress()">Reset Progress</button>
+    </div>
+    <div id="greeting-msg"></div>
+    <div class="progress-wrap mt-2"><div class="progress-bar" id="progress-bar"></div></div>
+  </section>
+
+  <section id="reference">
+    <button class="ref-toggle" onclick="this.nextElementSibling.classList.toggle('hidden')">
+      📖 Quick Reference &amp; Guide ▾
+    </button>
+    <div class="ref-body hidden">
+    <div class="card">
+      <ul>
+        <li><strong>Square impossible values:</strong> k = 2, 3, 5 are impossible for any square. k = 4 and all k ≥ 6 are possible.</li>
+        <li><strong>+3 trick:</strong> from any valid k-split, replace one small square with 4 even smaller ones → a (k+3)-split.</li>
+        <li><strong>Rectangle minimums:</strong> 1:2 → min k = 2 &nbsp;|&nbsp; 2:3 → min k = 3 &nbsp;|&nbsp; 3:4 → min k = 4.</li>
+        <li><strong>Integer area formula:</strong> if using 2×2 and 1×1 pieces in an N×N square: 3p = N² − k (p = number of 2×2 pieces). Must be a non-negative integer.</li>
+        <li><strong>Min N table:</strong> k=4→N=2 &nbsp;|&nbsp; k=6,9→N=3 &nbsp;|&nbsp; k=7,8,10→N=4 &nbsp;|&nbsp; k=11→N=5.</li>
+        <li><strong>Level 5 fractions:</strong> largest piece as fraction of A = (piece side) ÷ N. E.g. k=6: N=3, largest=2×2, fraction = (2/3)A.</li>
+      </ul>
+    </div>
+    </div>
+  </section>
+
+  <section id="section-diagnostic" class="hidden">
+    <div class="card">
+      <h2>Step 1 — Check Knowledge</h2>
+      <p class="text-muted">Answer all questions, then press <strong>Submit</strong>.</p>
+      <div id="diagnostic-questions"></div>
+      <button class="btn btn-primary mt-2" onclick="submitDiagnostic()">Submit Checkup</button>
+    </div>
+  </section>
+
+  <section id="section-results" class="hidden">
+    <div class="card">
+      <h2>Step 2 — Checkup Results</h2>
+      <div id="results-summary"></div>
+    </div>
+    <div class="card">
+      <h2>Step 3 — Target Weak Spots</h2>
+      <p class="text-muted">Read each lesson carefully, especially the highlighted ones.</p>
+      <div id="lesson-cards"></div>
+      <button class="btn btn-primary mt-2" onclick="openPractice()">Go to Practice ▶</button>
+    </div>
+  </section>
+
+  <section id="section-practice" class="hidden">
+    <div class="card">
+      <h2>Step 4 — Practice with Feedback</h2>
+      <p class="text-muted">Select a topic, then practice as many questions as you like.</p>
+      <div id="topic-buttons" class="mb-1"></div>
+      <div id="practice-area"></div>
+      <button class="btn btn-success mt-2" onclick="openMastery()">Ready for Mastery Test ▶</button>
+    </div>
+  </section>
+
+  <section id="section-mastery" class="hidden">
+    <div class="card">
+      <h2>Step 5 — Mastery Test</h2>
+      <p class="text-muted">10 questions mixing all levels. Score ≥80% = Mastery.</p>
+      <div id="mastery-questions"></div>
+      <button id="mastery-submit-btn" class="btn btn-primary mt-2" onclick="submitMastery()">Submit Mastery Test</button>
+    </div>
+    <div id="mastery-results" style="display:none"></div>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="../shared/math_helper.js"></script>
+<script>
+"use strict";
+
+const PAGE_KEY = "uepg_sq_rect_dissection_g5";
+const NAME_KEY = "uepg_site_name";
+const MASTERY_THRESHOLD = 80;
+const WEAK_THRESHOLD    = 75;
+
+const mi = s => math.inline(s);
+
+function buildEqQ(id, skillId, promptHTML, correctLatex, decoyDefs, hint) {
+  const allLatex = [correctLatex, ...decoyDefs.map(d => d.eq)];
+  const shuffled = math.shuffle([...allLatex]);
+  const cidx     = shuffled.indexOf(correctLatex);
+  const rendered = shuffled.map(e => mi(e));
+  const explainSteps = [
+    `Correct: ${mi(correctLatex)}`,
+    ...decoyDefs.map(d => `${mi(d.eq)} — ✗ ${d.error}`),
+  ];
+  return { id, type:"mc", skills:[skillId], promptHTML, answer:{correctIdx:cidx}, choices:rendered, explainSteps, hint };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SVG SHAPE HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function sqSVG() {
+  return `<div style="margin:.4rem 0 .7rem;text-align:center">
+    <svg width="72" height="72" viewBox="0 0 72 72">
+      <rect x="4" y="4" width="64" height="64" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2.5" rx="2"/>
+      <text x="36" y="41" text-anchor="middle" font-size="13" fill="#1b5e20" font-weight="bold">A × A</text>
+    </svg></div>`;
+}
+
+function rectSVG(ratio) {
+  const map = {'1:2':[44,88], '2:3':[52,78], '3:4':[58,77]};
+  const [w, h] = map[ratio] || [52, 78];
+  return `<div style="margin:.4rem 0 .7rem;text-align:center">
+    <svg width="${w+16}" height="${h+16}" viewBox="0 0 ${w+16} ${h+16}">
+      <rect x="8" y="8" width="${w}" height="${h}" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="2.5" rx="2"/>
+      <text x="${(w+16)/2}" y="${(h+16)/2+5}" text-anchor="middle" font-size="12" fill="#4a148c" font-weight="bold">${ratio}</text>
+    </svg></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SKILL LIBRARY
+══════════════════════════════════════════════════════════════ */
+
+const skillLibrary = {
+
+  feasibility: {
+    name:"Level 1: Square Feasibility", level:1, badgeClass:"badge-L1",
+    summary:"A square can be divided into n smaller squares for n = 4 and all n ≥ 6. The values n = 2, 3, 5 are impossible. Key trick: from any valid k-split, replace one small square with 4 even smaller ones to get a (k+3)-split.",
+    steps:[
+      "Only k = 2, 3, 5 are impossible — for any square and any size.",
+      "k = 4: always possible — divide into 4 equal quarters.",
+      "k = 6: possible — in a 3×3 grid (9 unit squares), merge a 2×2 block of four 1×1 squares into one 2×2 square.",
+      "+3 trick: replace any one square with 4 smaller squares of equal size. Count goes from k to k+3.",
+      "All k ≥ 6 are reachable by starting from k=4 or k=6 and applying the +3 trick repeatedly.",
+    ],
+    example:{
+      problemHTML:`Which values of k are possible when splitting a square into smaller squares: k = 4, 5, 6, 7?`,
+      solutionHTML:`k=4 ✓ (four equal quarters).<br>k=5 ✗ (impossible — one of the forbidden values).<br>k=6 ✓ (one 2×2 + five 1×1 in a 3×3 grid).<br>k=7 ✓ (from k=4, apply +3 trick once: 4→7).`,
+    },
+    misconception:"Students think only perfect-square k values (4, 9, 16…) are possible. In fact, all k ≥ 6 work, plus k=4. Only k=2, 3, 5 are impossible.",
+    keyConcepts:[
+      {label:"Why k=5 is Impossible", prompt:"I am a Grade 5 student. Explain why you can never divide a square into exactly 5 smaller squares. I heard there is a corner argument — please explain it simply with an example."},
+      {label:"The +3 Trick", prompt:"I am a Grade 5 student. Explain why splitting one small square into 4 increases the total piece count by exactly 3. Show me a step-by-step example starting from k=4."},
+    ],
+  },
+
+  rect_feasibility: {
+    name:"Level 2: Rectangle Feasibility", level:2, badgeClass:"badge-L2",
+    summary:"Any rectangle can be tiled with squares. The minimum number of squares depends on the ratio: 1:2 → min 2, 2:3 → min 3, 3:4 → min 4. The +3 trick still applies — split any one square into 4 to add 3 to the total count.",
+    steps:[
+      "1:2 rectangle: cut in half → two equal squares. Minimum k = 2.",
+      "2:3 rectangle: place a 2×2 square (full width, 2 units tall) → remaining 2×1 strip → two 1×1 squares. Minimum k = 3.",
+      "3:4 rectangle: place a 3×3 square (full width) → remaining 3×1 strip → three 1×1 squares. Minimum k = 4.",
+      "From any valid split, apply the +3 trick (split one square into 4) to get more pieces.",
+      "Sequence: 1:2 → 2, 5, 8, 11, … &nbsp;|&nbsp; 2:3 → 3, 6, 9, 12, … &nbsp;|&nbsp; 3:4 → 4, 7, 10, 13, …",
+    ],
+    example:{
+      problemHTML:`A 2:3 rectangle is split into 3 squares (minimum). Apply the +3 trick twice. How many squares does it contain?`,
+      solutionHTML:`Start: k = 3.<br>After first +3 trick: k = 3 + 3 = <strong>6</strong>.<br>After second +3 trick: k = 6 + 3 = <strong>9</strong>.`,
+    },
+    misconception:"Intermediate values between minimum and minimum+3 may not be reachable. For a 2:3 rectangle, k=4 and k=5 are not achievable from the minimum split.",
+    keyConcepts:[
+      {label:"Why 2:3 Minimum is 3", prompt:"I am a Grade 5 student. Explain step by step why a 2:3 rectangle needs at least 3 squares. Why can't just 2 squares cover it perfectly?"},
+      {label:"The +3 Trick for Rectangles", prompt:"I am a Grade 5 student. Show how to go from 3 squares in a 2:3 rectangle to 6 squares using the +3 trick. Describe where each square goes."},
+    ],
+  },
+
+  min_square: {
+    name:"Level 3: Minimum Integer Side (Square)", level:3, badgeClass:"badge-L3",
+    summary:"When all pieces must have integer edge lengths, find the smallest integer N such that an N×N square can be split into exactly k integer squares. Key formula: 3p = N² − k gives the number of 2×2 pieces (must be a non-negative integer). Also check 3×3 pieces when 2×2 alone fail.",
+    steps:[
+      "Try N = 2, 3, 4, 5, … in order — stop at the first N that works.",
+      "For only 2×2 and 1×1 pieces: solve 3p = N² − k. Need p ≥ 0 and integer.",
+      "If that fails, try including one 3×3 piece: solve 3p = N² − k − 6 (area 9 adds, count 1 subtracts).",
+      "Verify the pieces can actually tile the square geometrically.",
+      "Min N table: k=4→2, k=6→3, k=9→3, k=7→4, k=8→4, k=10→4, k=11→5.",
+    ],
+    example:{
+      problemHTML:`Find the minimum integer N for a square split into exactly k = 7 integer squares.`,
+      solutionHTML:`N=3: 3p = 9−7 = 2 → not integer ✗<br>N=4: 3p = 16−7 = 9 → p=3, q=4. Three 2×2 + four 1×1 = 12+4=16 ✓<br>Minimum <strong>N = 4</strong>.`,
+    },
+    misconception:"Try N values from smallest upward — don't skip around. Also remember that when 2×2 pieces alone give a non-integer, one 3×3 piece might save the case.",
+    keyConcepts:[
+      {label:"Why the Formula 3p = N²−k", prompt:"I am a Grade 5 student. Explain why the formula 3p = N²−k gives the number of 2×2 pieces. Start from: area equation 4p+q=N² and count equation p+q=k. Show me how subtracting gives 3p=N²−k."},
+      {label:"Adding a 3×3 Piece", prompt:"I am a Grade 5 student. Show an example where only 2×2 and 1×1 pieces do not work, but adding one 3×3 piece solves it. Use k=8, N=4 as the example and walk through the check."},
+    ],
+  },
+
+  min_rect: {
+    name:"Level 4: Minimum Integer Rectangle Size", level:4, badgeClass:"badge-L4",
+    summary:"Given a rectangle ratio (e.g. 2:3) and target k, find the smallest integer dimensions W×L with W:L equal to that ratio. Try n=1, 2, 3, … where W=n·p, L=n·q, and check if the area n²·pq can be tiled with exactly k integer squares.",
+    steps:[
+      "Write W = n·p, L = n·q for the ratio p:q. Try n = 1, 2, 3, … in order.",
+      "Area = n²·pq. Check if a valid integer-square tiling of that area exists with exactly k pieces.",
+      "Use 3p = area − k (with p=# of 2×2 pieces) as a quick filter — must be non-negative integer.",
+      "For larger n, bigger piece sizes (3×3, 4×4, …) become available, giving more flexibility.",
+      "Min size table: 1:2 k=2→1×2, k=5→2×4 &nbsp;|&nbsp; 2:3 k=3→2×3, k=9→4×6 &nbsp;|&nbsp; 3:4 k=4→3×4, k=7→6×8.",
+    ],
+    example:{
+      problemHTML:`Find the minimum size of a 1:2 rectangle (integer edges) that can be split into exactly 5 integer squares.`,
+      solutionHTML:`n=1 → 1×2: only 1×1 pieces fit → max k=2 ✗<br>n=2 → 2×4: one 2×2 + four 1×1 = 4+4=8 ✓, count=5 ✓<br>Minimum: <strong>2×4</strong>.`,
+    },
+    misconception:"Don't assume n=1 always works. A 1×2 rectangle only fits 1×1 pieces (max k=2), so to reach k=5 you need n=2 (2×4).",
+    keyConcepts:[
+      {label:"Why 1×2 Can't Give k=5", prompt:"I am a Grade 5 student. Explain why a 1×2 rectangle cannot be split into 5 integer squares. Show that only 1×1 pieces fit in this rectangle, giving at most k=2 pieces."},
+      {label:"Min 3:4 Rectangle for k=7", prompt:"I am a Grade 5 student. Work through finding the minimum 3:4 rectangle for k=7. Why does 3×4 fail? How does 6×8 succeed? Describe the arrangement of pieces in the 6×8 case."},
+    ],
+  },
+
+  min_largest: {
+    name:"Level 5: Minimize the Largest Piece", level:5, badgeClass:"badge-L5",
+    summary:"Given an A×A square split into exactly k integer squares, find the smallest possible size of the largest piece, expressed as a fraction of A. Find the minimum N (Level 3), identify all valid piece compositions, and the largest piece in the only valid composition gives the answer.",
+    steps:[
+      "Find minimum N for the given k using the Level 3 method.",
+      "List all valid piece compositions: solve 3p = N²−k; also try with one 3×3 piece if needed.",
+      "The largest piece in the (often unique) valid composition is the unavoidable minimum.",
+      "Express as fraction: (largest piece side) ÷ N = fraction of A.",
+      "Key results: k=6→(2/3)A, k=7→(1/2)A, k=9→(1/3)A, k=10→(1/2)A, k=11→(3/5)A.",
+    ],
+    example:{
+      problemHTML:`An A×A square is split into exactly 6 integer squares. What is the smallest possible size of the largest piece?`,
+      solutionHTML:`Min N=3. Only valid split: 3p=9−6=3 → p=1, q=5. One 2×2 + five 1×1.<br>Largest piece = 2. Fraction: 2÷3 = <strong>(2/3)A</strong>.<br>Can we avoid the 2×2? Six 1×1 have total area 6 ≠ 9. Impossible — the 2×2 is required.`,
+    },
+    misconception:"A larger original square does not reduce the fraction — piece sizes scale proportionally with N, so the fraction (largest/N) stays the same regardless of which valid N you choose.",
+    keyConcepts:[
+      {label:"Why (2/3)A is Unavoidable for k=6", prompt:"I am a Grade 5 student. Prove that when an A×A square is split into 6 integer squares, the largest piece must be at least (2/3)A. Show that all-1×1 pieces give 9 pieces (not 6), so the 2×2 piece cannot be avoided."},
+      {label:"Fraction vs Absolute Size", prompt:"I am a Grade 5 student. If the original square has side A=6, and the answer is (2/3)A, what is the actual size of the largest piece? What if A=9? Explain why expressing the answer as a fraction of A is more useful than an absolute number."},
+    ],
+  },
+
+};
+
+/* ══════════════════════════════════════════════════════════════
+   QUESTION POOLS
+══════════════════════════════════════════════════════════════ */
+
+/* ── L1: Square Feasibility ──────────────────────────────────*/
+const POOL_L1 = [
+  // P0: impossible among {3,4,6,7}
+  () => ({
+    promptHTML:`${sqSVG()}A square is split into smaller squares. Which value of <em>k</em> (number of pieces) is <strong>impossible</strong>?`,
+    correctLatex:`k = 3`,
+    decoyDefs:[
+      {eq:`k = 4`, error:`k=4 is possible — four equal quarter-squares always work`},
+      {eq:`k = 6`, error:`k=6 is possible — one 2×2 and five 1×1 in a 3×3 grid`},
+      {eq:`k = 7`, error:`k=7 is possible — three 2×2 and four 1×1 in a 4×4`},
+    ],
+    hint:`Only k=2, 3, 5 are impossible. Among {3,4,6,7} only k=3 is impossible.`,
+  }),
+  // P1: impossible among {4,5,6,9}
+  () => ({
+    promptHTML:`${sqSVG()}A square is split into smaller squares. Which value of <em>k</em> is <strong>impossible</strong>?`,
+    correctLatex:`k = 5`,
+    decoyDefs:[
+      {eq:`k = 4`, error:`k=4 is possible — four equal quarters`},
+      {eq:`k = 6`, error:`k=6 is possible — one 2×2 and five 1×1 in a 3×3 grid`},
+      {eq:`k = 9`, error:`k=9 is possible — nine equal 1×1 squares in a 3×3`},
+    ],
+    hint:`Only k=2, 3, 5 are impossible. Among {4,5,6,9} only k=5 is impossible.`,
+  }),
+  // P2: smallest k > 4
+  () => ({
+    promptHTML:`${sqSVG()}After k = 4, what is the <strong>smallest</strong> number of pieces a square can be split into?`,
+    correctLatex:`k = 6`,
+    decoyDefs:[
+      {eq:`k = 5`, error:`k=5 is one of the three impossible values — no square can ever be split into exactly 5 pieces`},
+      {eq:`k = 7`, error:`k=7 is possible, but k=6 comes first (k=5 is impossible, k=6 is the next valid value)`},
+      {eq:`k = 8`, error:`k=8 is possible, but not the smallest after 4 — k=6 is achievable and comes first`},
+    ],
+    hint:`k=5 is impossible. k=6 works: one 2×2 + five 1×1 in a 3×3 grid.`,
+  }),
+  // P3: both possible
+  () => ({
+    promptHTML:`${sqSVG()}Which pair of values are <strong>both possible</strong> numbers of pieces when splitting a square?`,
+    correctLatex:`k=4 \\text{ and } k=6`,
+    decoyDefs:[
+      {eq:`k=3 \\text{ and } k=6`, error:`k=3 is impossible — you cannot split any square into exactly 3 pieces`},
+      {eq:`k=5 \\text{ and } k=9`, error:`k=5 is one of the three impossible values`},
+      {eq:`k=2 \\text{ and } k=7`, error:`k=2 is impossible — two squares cannot tile a square`},
+    ],
+    hint:`Impossible values: k=2, 3, 5. Both k=4 ✓ and k=6 ✓ are achievable.`,
+  }),
+  // P4: can you split into 5?
+  () => ({
+    promptHTML:`${sqSVG()}Can a square be divided into exactly <strong>5</strong> smaller squares?`,
+    correctLatex:`\\text{No — impossible for any square}`,
+    decoyDefs:[
+      {eq:`\\text{Yes, always}`, error:`k=5 is one of the three impossible values (k=2, 3, 5)`},
+      {eq:`\\text{Yes, if the square is large enough}`, error:`No size increase helps — k=5 is impossible regardless of the square's dimensions`},
+      {eq:`\\text{Yes, but only into unequal squares}`, error:`k=5 is impossible whether pieces are equal or unequal`},
+    ],
+    hint:`k=2, 3, 5 are the only impossible values — for any square, any size.`,
+  }),
+  // P5: how many of {6,7,8,9,10} possible
+  () => ({
+    promptHTML:`${sqSVG()}How many of the values <strong>k = 6, 7, 8, 9, 10</strong> allow a square to be split into that many pieces?`,
+    correctLatex:`\\text{All 5 are possible}`,
+    decoyDefs:[
+      {eq:`\\text{4 out of 5}`, error:`All 5 are possible — k=2, 3, 5 are the only impossible values, and none appear in this list`},
+      {eq:`\\text{3 out of 5}`, error:`All 5 are possible — k=6 through 10 are all achievable`},
+      {eq:`\\text{2 out of 5}`, error:`All 5 are possible — every k ≥ 6 is achievable`},
+    ],
+    hint:`Only k=2, 3, 5 are impossible. All of 6, 7, 8, 9, 10 are ≥ 6, so all are possible.`,
+  }),
+];
+
+/* ── L2: Rectangle Feasibility ───────────────────────────────*/
+const POOL_L2 = [
+  // P0: min k for 1:2
+  () => ({
+    promptHTML:`${rectSVG('1:2')}What is the <strong>minimum</strong> number of squares a <strong>1:2 rectangle</strong> can be split into?`,
+    correctLatex:`k = 2`,
+    decoyDefs:[
+      {eq:`k = 1`, error:`k=1 would mean the rectangle is itself a square — a 1:2 rectangle is not a square`},
+      {eq:`k = 3`, error:`k=3 is possible, but k=2 is the minimum — cut the 1:2 rectangle in half to get two equal squares`},
+      {eq:`k = 4`, error:`k=4 is possible, but k=2 is the minimum`},
+    ],
+    hint:`Cut the 1:2 rectangle down the middle: two equal squares. Minimum k=2.`,
+  }),
+  // P1: min k for 2:3
+  () => ({
+    promptHTML:`${rectSVG('2:3')}What is the <strong>minimum</strong> number of squares a <strong>2:3 rectangle</strong> can be split into?`,
+    correctLatex:`k = 3`,
+    decoyDefs:[
+      {eq:`k = 2`, error:`k=2 is not achievable for a 2:3 rectangle — two squares cannot tile it`},
+      {eq:`k = 4`, error:`k=4 is possible but not minimum — place a 2×2 square then two 1×1 in the remaining strip: that is k=3`},
+      {eq:`k = 6`, error:`k=6 is possible but not minimum — k=3 is smaller`},
+    ],
+    hint:`One 2×2 square fills the 2×2 bottom portion; two 1×1 fill the remaining 2×1 strip. Minimum k=3.`,
+  }),
+  // P2: min k for 3:4
+  () => ({
+    promptHTML:`${rectSVG('3:4')}What is the <strong>minimum</strong> number of squares a <strong>3:4 rectangle</strong> can be split into?`,
+    correctLatex:`k = 4`,
+    decoyDefs:[
+      {eq:`k = 2`, error:`k=2 is not achievable for a 3:4 rectangle`},
+      {eq:`k = 3`, error:`k=3 is not achievable for a 3:4 rectangle — the smallest valid split needs 4 squares`},
+      {eq:`k = 6`, error:`k=6 is possible but not minimum — one 3×3 + three 1×1 squares already gives k=4`},
+    ],
+    hint:`Place a 3×3 square (full width 3), leaving a 3×1 strip → three 1×1 squares. Minimum k=4.`,
+  }),
+  // P3: +3 trick from 2:3
+  () => ({
+    promptHTML:`${rectSVG('2:3')}A 2:3 rectangle is split into 3 squares. One square is then split into 4 smaller squares. How many squares does the rectangle now contain?`,
+    correctLatex:`k = 6`,
+    decoyDefs:[
+      {eq:`k = 4`, error:`Replacing 1 piece with 4 nets +3, not +1: total = 3+3 = 6`},
+      {eq:`k = 7`, error:`3+4=7 counts the 4 new pieces without removing the 1 replaced: net is −1+4=+3, so total = 3+3=6`},
+      {eq:`k = 12`, error:`12 would mean splitting all 3 pieces — only one is split here: 3−1+4=6`},
+    ],
+    hint:`Remove 1, add 4: net +3. Total = 3+3 = 6.`,
+  }),
+  // P4: +3 trick twice from 1:2
+  () => ({
+    promptHTML:`${rectSVG('1:2')}A 1:2 rectangle starts with its minimum split (2 squares). The "+3 trick" is applied <strong>twice</strong>. How many squares result?`,
+    correctLatex:`k = 8`,
+    decoyDefs:[
+      {eq:`k = 5`, error:`One application gives 2+3=5; two applications give 5+3=8`},
+      {eq:`k = 6`, error:`Each application adds exactly +3: 2→5→8, not 2→4→6`},
+      {eq:`k = 10`, error:`Three applications would give 2→5→8→11; two applications give 8`},
+    ],
+    hint:`First: 2+3=5. Second: 5+3=8.`,
+  }),
+  // P5: +3 trick once from 3:4
+  () => ({
+    promptHTML:`${rectSVG('3:4')}A 3:4 rectangle starts with its minimum split (4 squares). After one "+3 trick", how many squares?`,
+    correctLatex:`k = 7`,
+    decoyDefs:[
+      {eq:`k = 16`, error:`16 would mean all 4 squares are each split into 4 — only one is split here: 4−1+4=7`},
+      {eq:`k = 6`, error:`The trick adds +3 (not +2): 4+3=7`},
+      {eq:`k = 8`, error:`The trick replaces 1 with 4, netting +3 (not +4): 4+3=7`},
+    ],
+    hint:`Replace one of the 4 squares with 4 smaller ones: 4−1+4 = 7.`,
+  }),
+];
+
+/* ── L3: Minimum integer N for square ────────────────────────*/
+const POOL_L3 = [
+  // P0: k=4, N=2
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square that can be split into exactly <strong>k = 4</strong> integer squares?`,
+    correctLatex:`N = 2`,
+    decoyDefs:[
+      {eq:`N = 1`, error:`A 1×1 square cannot be split into 4 integer pieces`},
+      {eq:`N = 3`, error:`N=3 works but is not minimum — N=2 already gives four 1×1 squares in a 2×2`},
+      {eq:`N = 4`, error:`N=4 works but is not minimum — N=2 already works`},
+    ],
+    hint:`A 2×2 square splits perfectly into four 1×1 squares. N=2 is minimum.`,
+  }),
+  // P1: k=6, N=3
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square split into exactly <strong>k = 6</strong> integer squares?`,
+    correctLatex:`N = 3`,
+    decoyDefs:[
+      {eq:`N = 2`, error:`N=2: 3p=4−6=−2 < 0 — no valid split exists`},
+      {eq:`N = 4`, error:`N=4 works but is not minimum — N=3 gives one 2×2+five 1×1: 4+5=9 ✓`},
+      {eq:`N = 6`, error:`N=6 works but is far from minimum`},
+    ],
+    hint:`N=3: 3p=9−6=3 → p=1, q=5. One 2×2+five 1×1=4+5=9 ✓. Minimum N=3.`,
+  }),
+  // P2: k=9, N=3
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square split into exactly <strong>k = 9</strong> integer squares?`,
+    correctLatex:`N = 3`,
+    decoyDefs:[
+      {eq:`N = 2`, error:`N=2: area=4, need 9 pieces each at least 1×1 (area≥9). Impossible`},
+      {eq:`N = 4`, error:`N=4 works but is not minimum — N=3 gives nine 1×1 squares ✓`},
+      {eq:`N = 9`, error:`N=9 works but is far from minimum — nine 1×1 in a 3×3 already works`},
+    ],
+    hint:`Nine 1×1 squares tile a 3×3 exactly. Minimum N=3.`,
+  }),
+  // P3: k=7, N=4
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square split into exactly <strong>k = 7</strong> integer squares?`,
+    correctLatex:`N = 4`,
+    decoyDefs:[
+      {eq:`N = 2`, error:`N=2: area=4, max 4 pieces. Cannot reach k=7`},
+      {eq:`N = 3`, error:`N=3: 3p=9−7=2 → not integer. No valid 2×2+1×1 split exists`},
+      {eq:`N = 5`, error:`N=5 works but not minimum — N=4 gives three 2×2+four 1×1: 12+4=16 ✓`},
+    ],
+    hint:`N=4: 3p=16−7=9 → p=3, q=4. Three 2×2+four 1×1=12+4=16 ✓. Minimum N=4.`,
+  }),
+  // P4: k=10, N=4
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square split into exactly <strong>k = 10</strong> integer squares?`,
+    correctLatex:`N = 4`,
+    decoyDefs:[
+      {eq:`N = 3`, error:`N=3: area=9, need 10 pieces each ≥1×1 (area≥10 > 9). Impossible`},
+      {eq:`N = 5`, error:`N=5 works but not minimum — N=4 gives two 2×2+eight 1×1: 8+8=16 ✓`},
+      {eq:`N = 6`, error:`N=6 works but far from minimum`},
+    ],
+    hint:`N=4: 3p=16−10=6 → p=2, q=8. Two 2×2+eight 1×1=8+8=16 ✓. Minimum N=4.`,
+  }),
+  // P5: k=11, N=5
+  () => ({
+    promptHTML:`${sqSVG()}What is the <strong>minimum integer</strong> side length N for a square split into exactly <strong>k = 11</strong> integer squares?`,
+    correctLatex:`N = 5`,
+    decoyDefs:[
+      {eq:`N = 3`, error:`N=3: area=9, need 11 pieces each ≥1 (area≥11 > 9). Impossible`},
+      {eq:`N = 4`, error:`N=4: 3p=16−11=5 → not integer. With 3×3 piece: 3p=5−6<0. Impossible`},
+      {eq:`N = 6`, error:`N=6 works but not minimum — N=5 gives one 3×3+two 2×2+eight 1×1: 9+8+8=25 ✓`},
+    ],
+    hint:`N=5: one 3×3+two 2×2+eight 1×1=9+8+8=25 ✓, count=11 ✓. Minimum N=5.`,
+  }),
+];
+
+/* ── L4: Minimum integer rectangle size ──────────────────────*/
+const POOL_L4 = [
+  // P0: 1:2, k=2 → 1×2
+  () => ({
+    promptHTML:`${rectSVG('1:2')}What is the <strong>minimum size</strong> of a <strong>1:2 rectangle</strong> (integer edges) split into exactly <strong>2</strong> integer squares?`,
+    correctLatex:`1 \\times 2`,
+    decoyDefs:[
+      {eq:`2 \\times 4`, error:`2×4 works but not minimum — 1×2 already gives two 1×1 squares ✓`},
+      {eq:`3 \\times 6`, error:`3×6 works but not minimum`},
+      {eq:`4 \\times 8`, error:`4×8 works but far from minimum`},
+    ],
+    hint:`A 1×2 splits into two 1×1 squares. Minimum = 1×2.`,
+  }),
+  // P1: 2:3, k=3 → 2×3
+  () => ({
+    promptHTML:`${rectSVG('2:3')}What is the <strong>minimum size</strong> of a <strong>2:3 rectangle</strong> (integer edges) split into exactly <strong>3</strong> integer squares?`,
+    correctLatex:`2 \\times 3`,
+    decoyDefs:[
+      {eq:`4 \\times 6`, error:`4×6 works but not minimum — 2×3 already gives one 2×2+two 1×1 ✓`},
+      {eq:`6 \\times 9`, error:`6×9 works but not minimum`},
+      {eq:`8 \\times 12`, error:`8×12 works but far from minimum`},
+    ],
+    hint:`A 2×3: one 2×2+two 1×1 = 4+2=6 ✓. Minimum = 2×3.`,
+  }),
+  // P2: 3:4, k=4 → 3×4
+  () => ({
+    promptHTML:`${rectSVG('3:4')}What is the <strong>minimum size</strong> of a <strong>3:4 rectangle</strong> (integer edges) split into exactly <strong>4</strong> integer squares?`,
+    correctLatex:`3 \\times 4`,
+    decoyDefs:[
+      {eq:`6 \\times 8`, error:`6×8 works but not minimum — 3×4 already gives one 3×3+three 1×1 ✓`},
+      {eq:`9 \\times 12`, error:`9×12 works but not minimum`},
+      {eq:`12 \\times 16`, error:`12×16 works but far from minimum`},
+    ],
+    hint:`A 3×4: one 3×3+three 1×1=9+3=12 ✓. Minimum = 3×4.`,
+  }),
+  // P3: 1:2, k=5 → 2×4
+  () => ({
+    promptHTML:`${rectSVG('1:2')}What is the <strong>minimum size</strong> of a <strong>1:2 rectangle</strong> (integer edges) split into exactly <strong>5</strong> integer squares?`,
+    correctLatex:`2 \\times 4`,
+    decoyDefs:[
+      {eq:`1 \\times 2`, error:`In a 1×2 only 1×1 pieces fit → max k=2. Cannot reach k=5`},
+      {eq:`3 \\times 6`, error:`3×6 works but not minimum — 2×4 gives one 2×2+four 1×1: 4+4=8 ✓`},
+      {eq:`4 \\times 8`, error:`4×8 works but not minimum`},
+    ],
+    hint:`A 2×4: one 2×2+four 1×1=4+4=8 ✓, count=5 ✓. Minimum = 2×4.`,
+  }),
+  // P4: 2:3, k=9 → 4×6
+  () => ({
+    promptHTML:`${rectSVG('2:3')}What is the <strong>minimum size</strong> of a <strong>2:3 rectangle</strong> (integer edges) split into exactly <strong>9</strong> integer squares?`,
+    correctLatex:`4 \\times 6`,
+    decoyDefs:[
+      {eq:`2 \\times 3`, error:`In a 2×3 the maximum k is 6 (six 1×1). Cannot reach k=9`},
+      {eq:`6 \\times 9`, error:`6×9 works but not minimum — 4×6 gives five 2×2+four 1×1: 20+4=24 ✓`},
+      {eq:`8 \\times 12`, error:`8×12 works but not minimum`},
+    ],
+    hint:`A 4×6: five 2×2+four 1×1=20+4=24 ✓, count=9 ✓. Minimum = 4×6.`,
+  }),
+  // P5: 3:4, k=7 → 6×8
+  () => ({
+    promptHTML:`${rectSVG('3:4')}What is the <strong>minimum size</strong> of a <strong>3:4 rectangle</strong> (integer edges) split into exactly <strong>7</strong> integer squares?`,
+    correctLatex:`6 \\times 8`,
+    decoyDefs:[
+      {eq:`3 \\times 4`, error:`In a 3×4 only k=4 or k=12 (all 1×1) are achievable. Cannot reach k=7`},
+      {eq:`9 \\times 12`, error:`9×12 works but not minimum — 6×8 gives one 6×6+two 2×2+four 1×1: 36+8+4=48 ✓`},
+      {eq:`12 \\times 16`, error:`12×16 works but far from minimum`},
+    ],
+    hint:`A 6×8: one 6×6+two 2×2+four 1×1=36+8+4=48 ✓, count=7 ✓. Minimum = 6×8.`,
+  }),
+];
+
+/* ── L5: Minimize largest piece ──────────────────────────────*/
+const POOL_L5 = [
+  // P0: k=6 → (2/3)A
+  () => ({
+    promptHTML:`${sqSVG()}An <strong>A×A</strong> square is split into exactly <strong>k = 6</strong> integer squares. What is the <strong>smallest possible size</strong> of the <strong>largest</strong> piece?`,
+    correctLatex:`\\tfrac{2}{3}A`,
+    decoyDefs:[
+      {eq:`\\tfrac{1}{3}A`, error:`(1/3)A means all six pieces are 1×1, but area would be 6 ≠ 9. Impossible`},
+      {eq:`\\tfrac{1}{2}A`, error:`(1/2)A is not an integer multiple of the minimum N=3; the required 2×2 piece gives (2/3)A`},
+      {eq:`A`, error:`A means one piece fills the whole square (k=1), not k=6`},
+    ],
+    hint:`Min N=3. Only split: one 2×2+five 1×1. Largest=2=(2/3)·3=(2/3)A.`,
+  }),
+  // P1: k=7 → (1/2)A
+  () => ({
+    promptHTML:`${sqSVG()}An <strong>A×A</strong> square is split into exactly <strong>k = 7</strong> integer squares. What is the <strong>smallest possible size</strong> of the <strong>largest</strong> piece?`,
+    correctLatex:`\\tfrac{1}{2}A`,
+    decoyDefs:[
+      {eq:`\\tfrac{1}{4}A`, error:`(1/4)A requires N=4 with all 1×1 pieces → k=16, not 7`},
+      {eq:`\\tfrac{1}{3}A`, error:`(1/3)A requires N=3, but N=3 cannot give k=7: 3p=9−7=2, not integer`},
+      {eq:`\\tfrac{2}{3}A`, error:`(2/3)A is the answer for k=6; for k=7 with N=4, largest=2=(1/2)A`},
+    ],
+    hint:`Min N=4. Only split: three 2×2+four 1×1. Largest=2=(1/2)·4=(1/2)A.`,
+  }),
+  // P2: k=9 → (1/3)A
+  () => ({
+    promptHTML:`${sqSVG()}An <strong>A×A</strong> square is split into exactly <strong>k = 9</strong> integer squares. What is the <strong>smallest possible size</strong> of the <strong>largest</strong> piece?`,
+    correctLatex:`\\tfrac{1}{3}A`,
+    decoyDefs:[
+      {eq:`\\tfrac{1}{9}A`, error:`(1/9)A is smaller than any integer square in a 3×3 grid`},
+      {eq:`\\tfrac{2}{3}A`, error:`(2/3)A is the answer for k=6; for k=9 (nine 1×1 in a 3×3), each piece=(1/3)A`},
+      {eq:`A`, error:`A means one piece is the whole square (k=1), not k=9`},
+    ],
+    hint:`Min N=3. Nine 1×1 tile a 3×3 exactly. Each=1=(1/3)·3=(1/3)A.`,
+  }),
+  // P3: k=10 → (1/2)A
+  () => ({
+    promptHTML:`${sqSVG()}An <strong>A×A</strong> square is split into exactly <strong>k = 10</strong> integer squares. What is the <strong>smallest possible size</strong> of the <strong>largest</strong> piece?`,
+    correctLatex:`\\tfrac{1}{2}A`,
+    decoyDefs:[
+      {eq:`\\tfrac{1}{4}A`, error:`(1/4)A: all 1×1 in a 4×4 gives k=16, not 10`},
+      {eq:`\\tfrac{1}{3}A`, error:`(1/3)A needs N=3, but N=3 allows at most k=9. Cannot reach k=10`},
+      {eq:`\\tfrac{3}{4}A`, error:`(3/4)A is too large; valid split is two 2×2+eight 1×1 in 4×4, largest=2=(1/2)A`},
+    ],
+    hint:`Min N=4. Split: two 2×2+eight 1×1. Largest=2=(1/2)·4=(1/2)A.`,
+  }),
+  // P4: k=11 → (3/5)A
+  () => ({
+    promptHTML:`${sqSVG()}An <strong>A×A</strong> square is split into exactly <strong>k = 11</strong> integer squares. What is the <strong>smallest possible size</strong> of the <strong>largest</strong> piece?`,
+    correctLatex:`\\tfrac{3}{5}A`,
+    decoyDefs:[
+      {eq:`\\tfrac{1}{5}A`, error:`(1/5)A: all 1×1 in a 5×5 gives k=25, not 11`},
+      {eq:`\\tfrac{2}{5}A`, error:`(2/5)A would mean the largest is a 2×2 in a 5×5 — but the required 3×3 piece gives (3/5)A`},
+      {eq:`\\tfrac{4}{5}A`, error:`(4/5)A would mean a 4×4 piece in a 5×5 — the valid split uses a 3×3 as largest`},
+    ],
+    hint:`Min N=5. Split: one 3×3+two 2×2+eight 1×1. Largest=3=(3/5)·5=(3/5)A.`,
+  }),
+];
+
+/* ══════════════════════════════════════════════════════════════
+   GENERATORS
+══════════════════════════════════════════════════════════════ */
+
+function gen_feas(id)    { const t=math.pick(POOL_L1)(); return buildEqQ(id,"feasibility",      t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_rect(id)    { const t=math.pick(POOL_L2)(); return buildEqQ(id,"rect_feasibility", t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_minsq(id)   { const t=math.pick(POOL_L3)(); return buildEqQ(id,"min_square",       t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_minrect(id) { const t=math.pick(POOL_L4)(); return buildEqQ(id,"min_rect",         t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+function gen_minlg(id)   { const t=math.pick(POOL_L5)(); return buildEqQ(id,"min_largest",      t.promptHTML,t.correctLatex,t.decoyDefs,t.hint); }
+
+const generators = {
+  feasibility:      gen_feas,
+  rect_feasibility: gen_rect,
+  min_square:       gen_minsq,
+  min_rect:         gen_minrect,
+  min_largest:      gen_minlg,
+};
+
+/* ══════════════════════════════════════════════════════════════
+   STATE & PERSISTENCE
+══════════════════════════════════════════════════════════════ */
+
+const state = {
+  studentName:"",
+  diagnostic:{ questions:[], answers:{}, results:{} },
+  weakSkills:[],
+  practice:{ topic:null, currentQ:null },
+  mastery:{ questions:[], answers:{}, score:null, bestScore:null },
+};
+
+function saveProgress() {
+  localStorage.setItem(PAGE_KEY, JSON.stringify({
+    results:state.diagnostic.results, weakSkills:state.weakSkills, bestScore:state.mastery.bestScore
+  }));
+}
+function loadProgress() { const s=localStorage.getItem(PAGE_KEY); return s?JSON.parse(s):null; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAME / GREETING
+══════════════════════════════════════════════════════════════ */
+
+function getGreeting() { const h=new Date().getHours(); return h<12?"Good morning":h<17?"Good afternoon":"Good evening"; }
+function applyName() {
+  const saved=localStorage.getItem(NAME_KEY)||"";
+  if(saved){
+    state.studentName=saved;
+    document.getElementById("name-input").value=saved;
+    document.getElementById("greeting-msg").textContent=`${getGreeting()}, ${saved}! Ready to practice?`;
+  }
+}
+function saveSiteName(name){ localStorage.setItem(NAME_KEY,name.trim()); state.studentName=name.trim(); }
+
+/* ══════════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════════ */
+
+function setProgress(pct){ const b=document.getElementById("progress-bar"); b.style.width=pct+"%"; b.setAttribute("aria-label",pct+"% complete"); }
+function showSection(id){ document.getElementById(id).classList.remove("hidden"); }
+function hideSection(id){ document.getElementById(id).classList.add("hidden"); }
+
+/* ══════════════════════════════════════════════════════════════
+   START / RESET
+══════════════════════════════════════════════════════════════ */
+
+function startCheckup(){
+  const v=document.getElementById("name-input").value.trim();
+  if(v){saveSiteName(v);applyName();}
+  state.diagnostic.questions=buildDiagnosticQuestions();
+  renderDiagnostic();
+  showSection("section-diagnostic");
+  setProgress(5);
+  document.getElementById("section-diagnostic").scrollIntoView({behavior:"smooth"});
+}
+function resetProgress(){
+  if(!confirm("Reset all progress for this page?"))return;
+  localStorage.removeItem(PAGE_KEY);
+  state.diagnostic={questions:[],answers:{},results:{}};
+  state.weakSkills=[];
+  state.practice={topic:null,currentQ:null};
+  state.mastery={questions:[],answers:{},score:null,bestScore:null};
+  setProgress(0);
+  ["section-diagnostic","section-results","section-practice","section-mastery"].forEach(hideSection);
+  document.getElementById("mastery-results").style.display="none";
+  document.getElementById("mastery-submit-btn").style.display="";
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 1 — DIAGNOSTIC
+══════════════════════════════════════════════════════════════ */
+
+function buildDiagnosticQuestions(){ return Object.keys(skillLibrary).map((sid,i)=>generators[sid](`diag_${i+1}`)); }
+function renderDiagnostic(){ document.getElementById("diagnostic-questions").innerHTML=state.diagnostic.questions.map(q=>renderMCCard(q,"diag")).join(""); }
+
+function renderMCCard(q,ns){
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="${ns}_${q.id}" value="${i}"/>${c}</label></li>`).join("");
+  return `<div class="question-card" id="qcard_${q.id}"><div class="question-prompt">${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+}
+
+function submitDiagnostic(){
+  Object.keys(skillLibrary).forEach(sid=>{ state.diagnostic.results[sid]={correct:0,total:0}; });
+  let allAnswered=true;
+  state.diagnostic.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="diag_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    q.skills.forEach(sid=>{ state.diagnostic.results[sid].total++; if(isCorrect)state.diagnostic.results[sid].correct++; });
+    state.diagnostic.answers[q.id]={chosen,isCorrect};
+  });
+  if(!allAnswered){alert("Please answer all questions before submitting.");return;}
+  state.weakSkills=Object.entries(state.diagnostic.results)
+    .filter(([,r])=>r.total>0&&r.correct/r.total<WEAK_THRESHOLD/100).map(([sid])=>sid);
+  saveProgress(); renderResults(); showSection("section-results"); setProgress(30);
+  document.getElementById("section-results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 2 — RESULTS & LESSONS
+══════════════════════════════════════════════════════════════ */
+
+function renderResults(){
+  const skillIds=Object.keys(skillLibrary);
+  const rows=skillIds.map(sid=>{
+    const sk=skillLibrary[sid],r=state.diagnostic.results[sid]||{correct:0,total:1};
+    const pct=r.total>0?Math.round(100*r.correct/r.total):0, isWeak=state.weakSkills.includes(sid);
+    return `<div class="skill-result">
+      <span class="badge ${sk.badgeClass}" style="min-width:2.5rem;text-align:center">${sk.level||"R"}</span>
+      <span style="min-width:9rem;font-size:.88rem">${sk.name.replace(/Level \d+: /,"")}</span>
+      <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+      <span class="${isWeak?"result-weak":"result-pass"}">${pct}%${isWeak?" ⚠":" ✓"}</span>
+    </div>`;
+  }).join("");
+  const msg=state.weakSkills.length===0
+    ?`<p style="color:#2e7d32;font-weight:700;margin-bottom:.8rem">All skills look strong! Review the lessons then try the Mastery Test.</p>`
+    :`<p class="text-muted" style="margin-bottom:.8rem">${state.weakSkills.length} skill(s) need work — focus on the red-bordered lessons below.</p>`;
+  document.getElementById("results-summary").innerHTML=msg+rows;
+  renderLessonCards();
+}
+
+function renderLessonCards(){
+  document.getElementById("lesson-cards").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], isWeak=state.weakSkills.includes(sid), border=isWeak?"#c62828":"#e8eaf6";
+    const stepsHTML=sk.steps.map(s=>`<li>${s}</li>`).join("");
+    const conceptBtns=sk.keyConcepts.map((kc,i)=>`<button class="btn btn-sm btn-ai-concept" onclick="askAIConcept('${sid}',${i})">Ask: ${kc.label}</button>`).join(" ");
+    return `<div class="lesson-card" style="border-color:${border}">
+      <div class="lesson-title"><span class="badge ${sk.badgeClass}">L${sk.level}</span> ${sk.name.replace(/Level \d+: /,"")}</div>
+      <p class="text-muted">${sk.summary}</p>
+      <ol>${stepsHTML}</ol>
+      <div class="lesson-example"><strong>Example:</strong><br>${sk.example.problemHTML}<br><br><strong>Solution:</strong><br>${sk.example.solutionHTML}</div>
+      <div class="lesson-warning">⚠ Common mistake: ${sk.misconception}</div>
+      <div class="question-actions mt-2">
+        <button class="btn btn-sm btn-primary" onclick="openPractice('${sid}')">Practice this level ▶</button>
+        <button class="btn btn-sm btn-ai" onclick="askAI('${sid}')">Ask AI 🤖</button>
+        ${conceptBtns}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 4 — PRACTICE
+══════════════════════════════════════════════════════════════ */
+
+function openPractice(topicId){
+  const tid=topicId||state.weakSkills[0]||Object.keys(skillLibrary)[0];
+  showSection("section-practice"); setProgress(55);
+  renderTopicButtons(tid); selectTopic(tid);
+  document.getElementById("section-practice").scrollIntoView({behavior:"smooth"});
+}
+function renderTopicButtons(activeTid){
+  document.getElementById("topic-buttons").innerHTML=Object.keys(skillLibrary).map(sid=>{
+    const sk=skillLibrary[sid], active=sid===activeTid?" active":"", weak=state.weakSkills.includes(sid)?"border-color:#c62828;color:#c62828;":"";
+    return `<button class="btn btn-sm btn-outline btn-topic${active}" style="${weak}" onclick="selectTopic('${sid}')">L${sk.level}: ${sk.name.replace(/Level \d+: /,"")}</button>`;
+  }).join("");
+}
+function selectTopic(sid){ state.practice.topic=sid; renderTopicButtons(sid); nextPracticeQuestion(); }
+function nextPracticeQuestion(){
+  const sid=state.practice.topic, q=generators[sid](`prac_${Date.now()}`);
+  state.practice.currentQ=q;
+  const choices=q.choices.map((c,i)=>`<li><label><input type="radio" name="pq" value="${i}"/>${c}</label></li>`).join("");
+  document.getElementById("practice-area").innerHTML=`
+    <div class="question-card" id="prac-card">
+      <div class="question-prompt">${q.promptHTML}</div>
+      <ul class="mc-choices">${choices}</ul>
+      <div class="question-actions" id="prac-actions">
+        <button class="btn btn-sm btn-primary" onclick="submitPracticeAnswer()">Check Answer</button>
+        <button class="btn btn-sm btn-outline" onclick="showPracticeHint()">Hint</button>
+      </div>
+      <div id="prac-hint" style="display:none" class="text-muted mt-1"></div>
+      <div id="prac-feedback" style="display:none"></div>
+    </div>`;
+}
+function showPracticeHint(){ const h=document.getElementById("prac-hint"); h.style.display="block"; h.textContent="💡 "+state.practice.currentQ.hint; }
+function submitPracticeAnswer(){
+  const q=state.practice.currentQ, sel=document.querySelector('input[name="pq"]:checked');
+  if(!sel){alert("Please select an answer.");return;}
+  const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+  document.querySelectorAll('input[name="pq"]').forEach(r=>r.disabled=true);
+  document.getElementById("prac-actions").style.display="none";
+  const stepsHTML=q.explainSteps.map(s=>`<li>${s}</li>`).join("");
+  const fb=document.getElementById("prac-feedback");
+  fb.style.display="block";
+  fb.className="feedback-msg "+(isCorrect?"feedback-correct":"feedback-wrong");
+  fb.innerHTML=`${isCorrect?"✓ Correct!":"✗ Not quite — here's how:"}<ul class="explain-steps">${stepsHTML}</ul><button class="btn btn-sm btn-primary mt-2" onclick="nextPracticeQuestion()">Next Question ▶</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STEP 5 — MASTERY TEST
+══════════════════════════════════════════════════════════════ */
+
+function openMastery(){
+  state.mastery.questions=buildMasteryQuestions(); state.mastery.answers={};
+  renderMastery(); showSection("section-mastery");
+  document.getElementById("mastery-submit-btn").style.display="";
+  document.getElementById("mastery-results").style.display="none";
+  setProgress(80);
+  document.getElementById("section-mastery").scrollIntoView({behavior:"smooth"});
+}
+function buildMasteryQuestions(){
+  const skillIds=Object.keys(skillLibrary);
+  const qs=skillIds.map((sid,i)=>generators[sid](`mast_base_${i}`));
+  const pool=[...skillIds,...state.weakSkills,...state.weakSkills];
+  while(qs.length<10){ const sid=math.pick(pool); qs.push(generators[sid](`mast_extra_${qs.length}`)); }
+  return math.shuffle(qs).slice(0,10);
+}
+function renderMastery(){
+  document.getElementById("mastery-questions").innerHTML=state.mastery.questions.map((q,i)=>{
+    const choices=q.choices.map((c,ci)=>`<li><label><input type="radio" name="mq_${q.id}" value="${ci}"/>${c}</label></li>`).join("");
+    return `<div class="question-card" id="mqcard_${q.id}"><div class="question-prompt"><strong>Q${i+1}.</strong> ${q.promptHTML}</div><ul class="mc-choices">${choices}</ul></div>`;
+  }).join("");
+}
+function submitMastery(){
+  let correct=0, allAnswered=true;
+  state.mastery.questions.forEach(q=>{
+    const sel=document.querySelector(`input[name="mq_${q.id}"]:checked`);
+    if(!sel){allAnswered=false;return;}
+    const chosen=parseInt(sel.value), isCorrect=chosen===q.answer.correctIdx;
+    if(isCorrect)correct++;
+    state.mastery.answers[q.id]={chosen,isCorrect};
+    const card=document.getElementById(`mqcard_${q.id}`);
+    if(card)card.style.background=isCorrect?"#d4edda":"#f8d7da";
+  });
+  if(!allAnswered){alert("Please answer all 10 questions.");return;}
+  const score=Math.round(100*correct/state.mastery.questions.length);
+  state.mastery.score=score;
+  if(!state.mastery.bestScore||score>state.mastery.bestScore)state.mastery.bestScore=score;
+  saveProgress(); setProgress(score>=MASTERY_THRESHOLD?100:88);
+  document.getElementById("mastery-submit-btn").style.display="none";
+  const passed=score>=MASTERY_THRESHOLD, scoreColor=passed?"#2e7d32":"#c62828";
+  const resultsDiv=document.getElementById("mastery-results");
+  resultsDiv.style.display="block";
+  resultsDiv.innerHTML=`<div class="card">
+    <h2>Mastery Test Results</h2>
+    <p style="font-size:2rem;font-weight:800;color:${scoreColor};margin:.3rem 0">${score}%</p>
+    <p>${passed?"🎉 Mastery achieved! You have a strong command of square and rectangle dissection.":"Keep practicing — review the lesson cards and try again."}</p>
+    <p class="text-muted">Best score: ${state.mastery.bestScore}%</p>
+    <div class="mt-2" style="display:flex;gap:.7rem;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="openPractice()">More Practice</button>
+      <button class="btn btn-primary" onclick="openMastery()">Try Again</button>
+    </div>
+    <div class="mt-3"><h3 style="margin-bottom:.6rem">Connections</h3>${renderConnections(passed)}</div>
+  </div>`;
+  resultsDiv.scrollIntoView({behavior:"smooth"});
+}
+
+function renderConnections(passed){
+  const connections={
+    foundational:[
+      { title:"Smart Whole Number Arithmetic", url:"../grade_4/smart_whole_number_arithmetic_grade4.html",
+        reason:"Fluent integer arithmetic underpins all the area equations and dimension calculations in this topic." },
+    ],
+    challenge:[
+      { title:"Combinatorial Counting", url:"../grade_5/counting_grade5.html",
+        reason:"Counting distinct dissection configurations uses the same combinatorial thinking as this topic." },
+    ],
+  };
+  const list=passed?connections.challenge:connections.foundational;
+  if(list.length===0) return `<p class="text-muted">Great work completing the dissection series!</p>`;
+  return list.map(c=>`<div class="connection-card"><a href="${c.url}">${c.title}</a><span class="connection-reason">${c.reason}</span></div>`).join("");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AI HELP
+══════════════════════════════════════════════════════════════ */
+
+function askAI(skillId){
+  const sk=skillLibrary[skillId], name=state.studentName?`My name is ${state.studentName}. `:"";
+  const steps=sk.steps.map((s,i)=>`  ${i+1}. ${s}`).join("\n");
+  const prompt=[`${name}I am a Grade 5 student learning about square and rectangle dissection.`,``,`I need extra help with: ${sk.name}.`,``,`What this is about: ${sk.summary}`,``,`Steps:`,steps,``,`Common mistake to avoid: ${sk.misconception}`,``,`Please explain clearly and give me 3 practice problems with full solutions.`].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+function askAIConcept(skillId,idx){
+  const sk=skillLibrary[skillId], concept=sk.keyConcepts[idx];
+  const name=state.studentName?`My name is ${state.studentName}. `:"";
+  const prompt=[`${name}I am a Grade 5 student learning about square and rectangle dissection.`,``,`I have a specific question about: ${concept.label}.`,``,concept.prompt].join("\n");
+  window.open(`https://chat.openai.com/?q=${encodeURIComponent(prompt)}`,"_blank");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════════ */
+applyName();
+</script>
+</body>
+</html>

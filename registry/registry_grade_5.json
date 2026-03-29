@@ -1,8 +1,8 @@
 {
   "_shard": "math_grade_5",
   "_description": "Math UEPG concepts at grade 5: fraction operations, decimal operations, intro to ratios, basic statistics, coordinate plane",
-  "_last_updated": "2026-03-27",
-  "_entry_count": 9,
+  "_last_updated": "2026-03-28",
+  "_entry_count": 10,
   "uepgs": [
     {
       "id": "smart_decimal_arithmetic_grade5",
@@ -223,6 +223,31 @@
       "file": "grade_5/subrect_count_grade5.html",
       "status": "complete",
       "created": "2026-03-27"
+    },
+    {
+      "id": "sq_rect_dissection_grade5",
+      "title": "Square & Rectangle Dissection",
+      "grade": 5,
+      "subject": "geometry",
+      "concept_fingerprint": "dividing squares and rectangles into smaller squares — feasibility (which k are possible), rectangle minimums, minimum integer side length for a square, minimum integer rectangle size, and minimizing the largest piece expressed as a fraction of the original side",
+      "topics": [
+        "square dissection", "rectangle dissection", "split into squares",
+        "feasibility", "impossible k", "k=2 k=3 k=5 impossible",
+        "plus-3 trick", "minimum pieces", "minimum side", "minimum rectangle",
+        "integer edges", "largest piece fraction", "optimize", "geometry"
+      ],
+      "skills_summary": "square feasibility (k=2,3,5 impossible; k=4 and k≥6 possible), rectangle minimums (1:2→2, 2:3→3, 3:4→4), +3 trick, minimum N for integer square (3p=N²−k formula), minimum integer rectangle size by ratio and k, minimize largest piece as fraction of A",
+      "connections": {
+        "foundational": [
+          { "id": "smart_whole_number_arithmetic_grade4", "title": "Smart Whole Number Arithmetic", "file": "grade_4/smart_whole_number_arithmetic_grade4.html" }
+        ],
+        "challenge": [
+          { "id": "counting_grade5", "title": "Combinatorial Counting", "file": "grade_5/counting_grade5.html" }
+        ]
+      },
+      "file": "grade_5/sq_rect_dissection_grade5.html",
+      "status": "complete",
+      "created": "2026-03-28"
     }
   ]
 }
