@@ -315,17 +315,17 @@ const skillLibrary = {
       "Verify: all three counts add up to total heads AND all quantities add up to total.",
     ],
     example: {
-      problemHTML: `There are <strong>18 animals</strong> (birds: 2 legs, cats: 4 legs, dogs: 4 legs). There are <strong>4 dogs</strong>. Total legs: <strong>56</strong>. How many cats?`,
+      problemHTML: `A depot has <strong>18 vehicles</strong> (bicycles: 2 wheels, tricycles: 3 wheels, cars: 4 wheels). There are <strong>4 cars</strong>. Total wheels: <strong>54</strong>. How many tricycles?`,
       solutionHTML:
-        `Remove dogs: 18 − 4 = 14 animals; 56 − 4×4 = 40 legs.<br>
-         Two-type: 14 birds &amp; cats, 40 legs.<br>
-         Assume all birds: 14×2 = 28. Gap = 40 − 28 = 12.<br>
-         Cats = 12 ÷ 2 = <strong>6</strong>. Birds = 14 − 6 = 8.<br>
-         Check: 8×2 + 6×4 + 4×4 = 16 + 24 + 16 = 56 ✓`,
+        `Remove cars: 18 − 4 = 14 vehicles; 54 − 4×4 = 38 wheels.<br>
+         Two-type: 14 bicycles &amp; tricycles, 38 wheels.<br>
+         Assume all bicycles: 14×2 = 28. Gap = 38 − 28 = 10.<br>
+         Tricycles = 10 ÷ 1 = <strong>10</strong>. Bicycles = 14 − 10 = 4.<br>
+         Check: 4×2 + 10×3 + 4×4 = 8 + 30 + 16 = 54 ✓`,
     },
     misconception: "Subtracting the known count from heads but forgetting to subtract its quantity from the total — you must update BOTH sides.",
     keyConcepts: [
-      { label: "Reducing to Two Types", prompt: "In a three-type problem (like birds, dogs, and spiders), how do we reduce it to a two-type problem? What exactly do we subtract, and why must we subtract from BOTH the total count AND the total quantity?" },
+      { label: "Reducing to Two Types", prompt: "In a three-type problem (like bicycles, tricycles, and cars), how do we reduce it to a two-type problem? What exactly do we subtract, and why must we subtract from BOTH the total count AND the total quantity?" },
       { label: "Two-Step Verification", prompt: "After solving a three-type chicken-rabbit problem, what two checks must I do to verify my answer? Why is it important to check both the count sum and the quantity sum?" },
     ],
   },

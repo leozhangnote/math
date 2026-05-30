@@ -419,14 +419,14 @@ function gen_paren_first(prefix = "q") {
     const c = randInt(1,8), d = randInt(1,8);
     const op = pick(["+", "−"]);
     if (op === "−" && b >= a) { [a, b] = [b, a]; }
-    const num = a+b, den = c+d;
+    const den = c+d;
     if (den === 0) continue;
-    const g = gcd(num, den);
-    if (g === 1) continue; // not reducible, try again
-    const en = num/g, ed = den/g;
     const realB = op === "+" ? b : -b;
     const finalNum = a + realB;
     if (finalNum <= 0) continue;
+    const g = gcd(finalNum, den); // use actual numerator, not a+b
+    if (g === 1) continue; // not reducible, try again
+    const en = finalNum/g, ed = den/g;
     return {
       id: prefix + "_paren_" + Date.now(),
       type: "input",
