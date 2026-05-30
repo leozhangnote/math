@@ -316,6 +316,31 @@ function resetProgress() {
      hint: string,
      choices: [string]  // MC only
    }
+
+   ── ANTI-COLLISION RULE FOR MC QUESTIONS ─────────────────────
+   buildEqQ() uses shuffled.indexOf(correctLatex) to find the
+   correct answer index. If any decoy eq === correctLatex, the
+   wrong choice gets marked correct.
+
+   BEFORE SHIPPING, verify every buildEqQ call:
+   1. Static pools: read each entry and confirm no decoyDefs[i].eq
+      is equal to the correctLatex string (even if it looks different
+      at a glance — watch for identical template literals).
+   2. Dynamic pools (factory functions with math.pick / math.randInt):
+      mentally walk through every data row and check that no
+      combination of picked values makes a decoy string equal to
+      correctLatex. Safe patterns:
+        ✓ wrong operator  (\\div 4  vs  \\times 4)
+        ✓ wrong count     (\\div 3  vs  \\div 4)
+        ✓ missing a term  (a+b+c   vs  a+b+c+d)  — safe unless d=0 AND
+                          the decoy also omits the "+0" from the string
+      Risky patterns that need extra care:
+        ✗ decoy uses a computed number that could equal correct's number
+        ✗ decoy uses the same formula but with variables swapped when
+          the swapped result equals the original for symmetric data
+   3. Run /tmp/check_dynamic5.mjs after adding new pools to get an
+      automated check across all data rows for all files.
+   ─────────────────────────────────────────────────────────────
 ══════════════════════════════════════════════════════════════ */
 
 function generate_skill_L1_question(idPrefix = "q") {
