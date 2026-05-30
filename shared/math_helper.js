@@ -205,6 +205,16 @@ const math = (() => {
     return a;
   }
 
+  /**
+   * Inline math with an ARIA label for screen readers.
+   * @param {string} latex - LaTeX string to render
+   * @param {string} label - Plain-text description (e.g., "12 over 18")
+   * @returns {string} HTML string with aria-label
+   */
+  function inlineWithLabel(latex, label) {
+    return `<span aria-label="${label}">${inline(latex)}</span>`;
+  }
+
   /* ── Public API ──────────────────────────────────────────────────────────── */
-  return { inline, block, frac, latexPow, autoRender, gcd, lcm, reduce, pick, randInt, shuffle };
+  return { inline, block, frac, latexPow, autoRender, inlineWithLabel, gcd, lcm, reduce, pick, randInt, shuffle };
 })();

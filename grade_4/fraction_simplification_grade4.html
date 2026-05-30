@@ -415,14 +415,15 @@ function gen_paren_first(prefix = "q") {
   // Numerator and denominator each have two addends; result is reducible
   let tries = 0;
   while (tries++ < 50) {
-    const a = randInt(1,8), b = randInt(1,8);
+    let a = randInt(1,8), b = randInt(1,8);
     const c = randInt(1,8), d = randInt(1,8);
+    const op = pick(["+", "−"]);
+    if (op === "−" && b >= a) { [a, b] = [b, a]; }
     const num = a+b, den = c+d;
     if (den === 0) continue;
     const g = gcd(num, den);
     if (g === 1) continue; // not reducible, try again
     const en = num/g, ed = den/g;
-    const op = pick(["+", "−"]);
     const realB = op === "+" ? b : -b;
     const finalNum = a + realB;
     if (finalNum <= 0) continue;

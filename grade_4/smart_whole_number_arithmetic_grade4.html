@@ -573,7 +573,8 @@ function gen_ratio_shortcut(prefix = "q") {
       choices: ["128", "64", "192", "160"],
       explainSteps: [
         `64 ÷ 16 = 4, so 64 = 4 × 16.`,
-        `Rewrite: ${mi("16 \\times 4 \\times 5 - 16 \\times 12 = 16 \\times (20 - 12)")}.`,
+        `Rewrite 64 × 5 as 4 × 16 × 5. Since 4 × 5 = 20, this becomes 16 × 20.`,
+        `Rewrite: ${mi("16 \\times 20 - 16 \\times 12 = 16 \\times (20 - 12)")}.`,
         `${mi("16 \\times 8 = 128")}.`
       ],
       hint: "64 ÷ 16 = 4. Rewrite 64 × 5 as 16 × 20, then factor out 16."

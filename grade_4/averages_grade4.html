@@ -236,16 +236,16 @@ const skillLibrary = {
       "Overlap element = Sum₁ + Sum₂ − Total Sum. (The shared element was counted twice in Sum₁+Sum₂, so subtracting the total removes the double-count.)",
     ],
     example: {
-      problemHTML: `7 numbers in a row. First 4 average 8. Last 4 average 13. All 7 average 11. Let x = the 4th number. Which equation is correct?`,
+      problemHTML: `7 numbers in a row. First 4 average 8. Last 4 average 13. All 7 average 11. Let x = the number in position 4 (the only number that appears in both groups). Which equation is correct?`,
       solutionHTML: `Sum₁ = 4×8 = 32. Sum₂ = 4×13 = 52. Total = 7×11 = 77.<br>
-        The 4th number is in both segments — counted twice!<br>
+        The number in position 4 is in both segments — counted twice!<br>
         Correct: ${mi('x = 4 \\times 8 + 4 \\times 13 - 7 \\times 11')}.<br>
         x = 32 + 52 − 77 = 7.`,
     },
     misconception: "The overlap element is not the average of the two segment averages. Compare the segment sums against the total sum.",
     keyConcepts: [
       { label: "Why the Shared Element Is Double-Counted", prompt: "In the 7-number example, list which positions belong to the 'first 4' and which to the 'last 4'. Which position appears in both? Why does Sum₁ + Sum₂ count it twice?" },
-      { label: "Setting Up as an Equation", prompt: "Let x = the 4th number. First 4 sum to 32, last 4 sum to 52. Write: (32 − x) + x + (52 − x) = 77. Solve for x. Verify it equals 4×8 + 4×13 − 7×11." },
+      { label: "Setting Up as an Equation", prompt: "Let x = the number in position 4. First 4 sum to 32, last 4 sum to 52. Write: (32 − x) + x + (52 − x) = 77. Solve for x. Verify it equals 4×8 + 4×13 − 7×11." },
     ],
   },
 
@@ -255,6 +255,7 @@ const skillLibrary = {
     steps: [
       "Speed trap: let the one-way distance = d. Time₁ = d÷v₁, Time₂ = d÷v₂.",
       "Average speed = 2d ÷ (d÷v₁ + d÷v₂) = 2v₁v₂ ÷ (v₁ + v₂).",
+      "Key insight: You spend MORE time at the slower speed, so the average is pulled toward the slower speed — not the midpoint.",
       "Group trap: if n₁ ≠ n₂, always use (n₁×A₁ + n₂×A₂) ÷ (n₁+n₂), never (A₁+A₂)÷2.",
       "Quick check: when speeds or group sizes differ, the simple average will be wrong.",
     ],
@@ -625,7 +626,7 @@ const POOL_L5 = [
     const pos = n1;
     const correctLatex = `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} - ${N} \\times ${avgT}`;
     return {
-      promptHTML: `There are <strong>${N} numbers</strong> in a row. The first <strong>${n1}</strong> have an average of <strong>${avg1}</strong>. The last <strong>${n2}</strong> have an average of <strong>${avg2}</strong>. All <strong>${N}</strong> together have an average of <strong>${avgT}</strong>. Let x = the <strong>${pos}th number</strong> (shared by both groups). Which equation is correct?`,
+      promptHTML: `There are <strong>${N} numbers</strong> in a row. The first <strong>${n1}</strong> have an average of <strong>${avg1}</strong>. The last <strong>${n2}</strong> have an average of <strong>${avg2}</strong>. All <strong>${N}</strong> together have an average of <strong>${avgT}</strong>. Let x = the number in <strong>position ${pos}</strong> (the only number that appears in both groups). Which equation is correct?`,
       correctLatex,
       decoyDefs: [
         { eq: `x = ${n1} \\times ${avg1} + ${n2} \\times ${avg2} + ${N} \\times ${avgT}`, error: `Subtract the total sum — the shared element is double-counted in Sum₁+Sum₂, so subtract (not add) the total` },

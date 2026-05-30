@@ -200,6 +200,8 @@ const skillLibrary = {
       "If r = 0, stop: GCD = b.",
       "Otherwise replace: a ← b, b ← r. Repeat from Step 1.",
       "The GCD is the value of b just before the remainder becomes 0.",
+      "Why it works: GCD(a, b) = GCD(b, r) because any common divisor of a and b must also divide r = a − q·b.",
+      "The algorithm reduces the problem until the remainder is 0; the divisor at that point is the greatest common divisor.",
     ],
     example:{
       problemHTML:`Find ${mi('\\gcd(48, 18)')} using the Euclidean algorithm.`,

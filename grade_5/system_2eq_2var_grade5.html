@@ -633,8 +633,8 @@ function gen_elimination_scale(id) {
     } while (attempts < 80);
   }
 
-  // Fallback: if loops exhausted without building steps, retry with scale-one
-  if (!steps) return gen_elimination_scale(id);
+  // Fallback: if loops exhausted without building steps, use direct elimination
+  if (!steps) return gen_elimination_direct(id);
 
   const ask_x = Math.random() < 0.5;
   const correct = ask_x ? xv : yv;
@@ -655,7 +655,8 @@ const WORD_POOL = [
     const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
     const ask_x = Math.random() < 0.5;
     return {
-      prompt: `${a1} ${a1 === 1 ? 'pen' : 'pens'} and ${b1} erasers cost <strong>¥${c1}</strong>. ` +
+      prompt: `(All prices are whole numbers of yuan.) ` +
+              `${a1} ${a1 === 1 ? 'pen' : 'pens'} and ${b1} erasers cost <strong>¥${c1}</strong>. ` +
               `1 pen and ${b2} erasers cost <strong>¥${c2}</strong>. ` +
               `What is the price of <strong>one ${ask_x ? 'pen' : 'eraser'}</strong>?`,
       correct: ask_x ? xv : yv,
@@ -678,7 +679,8 @@ const WORD_POOL = [
     const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
     const ask_x = Math.random() < 0.5;
     return {
-      prompt: `${a1} adult tickets and ${b1} child tickets cost <strong>¥${c1}</strong>. ` +
+      prompt: `(All prices are whole numbers of yuan.) ` +
+              `${a1} adult tickets and ${b1} child tickets cost <strong>¥${c1}</strong>. ` +
               `${a2} adult and ${b2} child tickets cost <strong>¥${c2}</strong>. ` +
               `What is the price of one <strong>${ask_x ? 'adult' : 'child'} ticket</strong>?`,
       correct: ask_x ? xv : yv,
@@ -740,7 +742,8 @@ const WORD_POOL = [
     const c1 = a1 * xv + b1 * yv, c2 = a2 * xv + b2 * yv;
     const ask_x = Math.random() < 0.5;
     return {
-      prompt: `${a1}&thinsp;kg of apples and ${b1}&thinsp;kg of oranges cost <strong>¥${c1}</strong>. ` +
+      prompt: `(All prices are whole numbers of yuan.) ` +
+              `${a1}&thinsp;kg of apples and ${b1}&thinsp;kg of oranges cost <strong>¥${c1}</strong>. ` +
               `${a2}&thinsp;kg of apples and ${b2}&thinsp;kg of oranges cost <strong>¥${c2}</strong>. ` +
               `What is the price per kg of <strong>${ask_x ? 'apples' : 'oranges'}</strong>?`,
       correct: ask_x ? xv : yv,

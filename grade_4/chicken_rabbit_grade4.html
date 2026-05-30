@@ -315,13 +315,13 @@ const skillLibrary = {
       "Verify: all three counts add up to total heads AND all quantities add up to total.",
     ],
     example: {
-      problemHTML: `There are <strong>18 animals</strong> (birds: 2 legs, dogs: 4 legs, spiders: 8 legs). There are <strong>4 spiders</strong>. Total legs: <strong>72</strong>. How many dogs?`,
+      problemHTML: `There are <strong>18 animals</strong> (birds: 2 legs, cats: 4 legs, dogs: 4 legs). There are <strong>4 dogs</strong>. Total legs: <strong>56</strong>. How many cats?`,
       solutionHTML:
-        `Remove spiders: 18 − 4 = 14 animals; 72 − 4×8 = 40 legs.<br>
-         Two-type: 14 birds &amp; dogs, 40 legs.<br>
+        `Remove dogs: 18 − 4 = 14 animals; 56 − 4×4 = 40 legs.<br>
+         Two-type: 14 birds &amp; cats, 40 legs.<br>
          Assume all birds: 14×2 = 28. Gap = 40 − 28 = 12.<br>
-         Dogs = 12 ÷ 2 = <strong>6</strong>. Birds = 14 − 6 = 8.<br>
-         Check: 8×2 + 6×4 + 4×8 = 16 + 24 + 32 = 72 ✓`,
+         Cats = 12 ÷ 2 = <strong>6</strong>. Birds = 14 − 6 = 8.<br>
+         Check: 8×2 + 6×4 + 4×4 = 16 + 24 + 16 = 56 ✓`,
     },
     misconception: "Subtracting the known count from heads but forgetting to subtract its quantity from the total — you must update BOTH sides.",
     keyConcepts: [

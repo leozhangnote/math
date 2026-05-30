@@ -327,8 +327,12 @@ function gen_parts_of_whole(prefix = "q") {
   ];
 
   const correct = frac(n, d);
-  const decoys = [frac(d, n), frac(n, d + 1), frac(d - n, d), frac(n + 1, d)]
-    .filter(c => c !== correct);
+  // Only keep proper-fraction decoys (grade 3 hasn't covered improper fractions)
+  const decoys = [
+    [n, d + 1], [d - n, d], [n + 1, d], [n, d + 2]
+  ].filter(([num, den]) => num > 0 && den > 0 && num < den)
+   .map(([num, den]) => frac(num, den))
+   .filter(c => c !== correct);
   const choices = shuffle([correct, ...[...new Set(decoys)].slice(0, 3)]);
 
   return {
@@ -377,7 +381,7 @@ function gen_unit_fractions(prefix = "q") {
 }
 
 function gen_non_unit_fractions(prefix = "q") {
-  const pairs = [[2,3],[3,4],[2,5],[3,5],[3,8],[5,6],[5,8],[2,6]];
+  const pairs = [[2,3],[3,4],[2,5],[3,5],[3,8],[5,6],[5,8],[3,7]];
   const [n, d] = pick(pairs);
 
   const contexts = [
